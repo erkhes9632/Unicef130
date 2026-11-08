@@ -99,7 +99,8 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
         <div className="container-page max-w-3xl py-10 sm:py-14">
           <RichText doc={item.content} />
 
-          {item.tags.length > 0 && (
+          {/* Tags are entered in Mongolian only, so they are shown on the Mongolian site. */}
+          {locale === "mn" && item.tags.length > 0 && (
             <div className="mt-10 flex flex-wrap items-center gap-2">
               <span className="text-sm font-bold">{t("tags")}:</span>
               {item.tags.map((tag) => (

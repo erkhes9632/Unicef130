@@ -2,11 +2,11 @@
 
 ## Next step
 
-**Phase 9 — English**: review/complete `messages/en.json` (natural English for all public UI),
-English fields for the seeded sample content (already present in mock data), check `/en/*` pages
-render fully in English, keep key parity test.
+**Phase 10 — Deploy-ready & handover (NO deploy)**: verify production build (`bun run build` +
+`bun run cf:build`), write README.md (Mongolian) and DEPLOY_CHECKLIST.md with the commands the
+developer runs (D1/R2 create, secrets, migrations, deploy, custom domain, first admin), handover notes.
 
-**Current phase:** Phase 9 (Phases 0–8 done)
+**Current phase:** Phase 10 (Phases 0–9 done)
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -111,9 +111,13 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - [x] `loading.tsx` / `error.tsx` for public and admin, `global-error.tsx`
 - [x] Tests: `bun test` — 43 tests (slug, form + admin schemas, rich-text XSS, csv, UB dates, ics, roles, PBKDF2, image sniffing, Sheets JWT, Server Action role guards + public form actions with mocks)
 
-### Phase 9 — English
+### Phase 9 — English ✅
 
-- [ ] Fill `messages/en.json` + English content fields
+- [x] `messages/en.json` complete; test enforces key parity, matching ICU placeholders, no empty strings, no Cyrillic in English
+- [x] English sample content for all news/events (`src/lib/mock/content-en.ts`, seeded into `*_en` columns)
+- [x] Logo alt texts localized; English address/office hours in site settings (`addressEn`, `officeHoursEn`)
+- [x] English display of classes ("10А" → "10A", "Багш" → "Teacher"), gallery alt texts from the English album title, Mongolian-only tags hidden on `/en`
+- [x] Automated scan: no Cyrillic text left on `/en/*` pages
 
 ### Phase 10 — Deploy-ready & handover (NO actual deploy)
 

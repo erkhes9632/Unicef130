@@ -1,13 +1,15 @@
 import { Mail, MapPin, Phone } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { SocialIcon, socialTitle } from "@/components/brand/social-icon";
 import { mainNav } from "@/config/site";
 import { Link } from "@/i18n/navigation";
+import { pick } from "@/lib/data/localize";
 import { getSiteSettings } from "@/lib/data/settings";
 
 export async function SiteFooter() {
   const t = await getTranslations();
+  const locale = await getLocale();
   const { contact, socials } = await getSiteSettings();
   const visibleSocials = socials.filter((s) => s.url);
   const year = new Date().getFullYear();
@@ -50,7 +52,7 @@ export async function SiteFooter() {
                 className="mt-0.5 size-4 shrink-0 text-brand-cyan-strong"
                 aria-hidden="true"
               />
-              <span>{contact.address}</span>
+              <span>{pick(locale, contact.address, contact.addressEn)}</span>
             </li>
             <li className="flex gap-2">
               <Mail className="mt-0.5 size-4 shrink-0 text-brand-cyan-strong" aria-hidden="true" />

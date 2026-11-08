@@ -19,7 +19,7 @@ export async function BrandLockup({
       <span className="flex items-center gap-1.5">
         <LogoImage
           src={siteConfig.logos.school.src}
-          alt={siteConfig.logos.school.alt}
+          alt={t("schoolLogoAlt")}
           size={size}
           placeholderLabel={t("logoPlaceholder")}
         />
@@ -28,7 +28,7 @@ export async function BrandLockup({
         </span>
         <LogoImage
           src={siteConfig.logos.unicef.src}
-          alt={siteConfig.logos.unicef.alt}
+          alt={t("unicefLogoAlt")}
           size={size}
           placeholderLabel={t("logoPlaceholder")}
         />

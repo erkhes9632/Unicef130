@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
-import { pick } from "./localize";
+import { displayClassName, pick } from "./localize";
 
 export type MemberItem = {
   id: string;
@@ -20,7 +20,7 @@ function toItem(locale: Locale, m: Row): MemberItem {
     id: m.id,
     name: pick(locale, m.name, m.nameEn),
     role: pick(locale, m.role, m.roleEn),
-    className: m.className,
+    className: displayClassName(locale, m.className),
     photoUrl: m.showPhoto ? m.photoUrl : null,
   };
 }

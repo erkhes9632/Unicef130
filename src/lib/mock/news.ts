@@ -1,8 +1,9 @@
 // TODO(content): sample news posts — replace with real posts via /admin → Мэдээ.
 import type { NewsPost } from "@/lib/types";
+import { newsContentEn } from "./content-en";
 import { b, doc, h, p, quote, ul } from "./rich-text";
 
-export const mockNews: NewsPost[] = [
+const baseNews: NewsPost[] = [
   {
     id: "news-1",
     slug: "delkhiin-khuukhdiin-udriig-temdeglene",
@@ -180,3 +181,8 @@ export const mockNews: NewsPost[] = [
     publishedAt: "2025-10-01T09:00:00+08:00",
   },
 ];
+
+export const mockNews: NewsPost[] = baseNews.map((n) => ({
+  ...n,
+  contentEn: n.contentEn ?? newsContentEn[n.slug] ?? null,
+}));

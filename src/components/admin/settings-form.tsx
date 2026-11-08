@@ -49,6 +49,14 @@ export function SettingsForm({
             maxLength={300}
           />
         </AdminField>
+        <AdminField label="Address (English)" htmlFor="contact.addressEn">
+          <Input
+            id="contact.addressEn"
+            name="contact.addressEn"
+            defaultValue={initial.contact.addressEn}
+            maxLength={300}
+          />
+        </AdminField>
         <div className="grid gap-4 sm:grid-cols-2">
           <AdminField label="И-мэйл" htmlFor="contact.email" errors={errs(state, "contact")}>
             <Input
@@ -72,6 +80,14 @@ export function SettingsForm({
             id="contact.officeHours"
             name="contact.officeHours"
             defaultValue={initial.contact.officeHours}
+            maxLength={120}
+          />
+        </AdminField>
+        <AdminField label="Office hours (English)" htmlFor="contact.officeHoursEn">
+          <Input
+            id="contact.officeHoursEn"
+            name="contact.officeHoursEn"
+            defaultValue={initial.contact.officeHoursEn}
             maxLength={120}
           />
         </AdminField>

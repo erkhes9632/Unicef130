@@ -16,7 +16,9 @@
     "logoPlaceholder": "Logo",
     "search": "Search",
     "readMore": "Read more",
-    "photoPlaceholder": "Photo coming soon"
+    "photoPlaceholder": "Photo coming soon",
+    "schoolLogoAlt": "School No. 130 logo",
+    "unicefLogoAlt": "UNICEF logo"
   },
   "Nav": {
     "label": "Main navigation",

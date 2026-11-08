@@ -87,7 +87,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               <div className="flex items-center justify-center gap-4 sm:gap-6">
                 <LogoImage
                   src={siteConfig.logos.school.src}
-                  alt={siteConfig.logos.school.alt}
+                  alt={t("Common.schoolLogoAlt")}
                   size={96}
                   placeholderLabel={t("Common.logoPlaceholder")}
                 />
@@ -96,7 +96,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 </span>
                 <LogoImage
                   src={siteConfig.logos.unicef.src}
-                  alt={siteConfig.logos.unicef.alt}
+                  alt={t("Common.unicefLogoAlt")}
                   size={96}
                   placeholderLabel={t("Common.logoPlaceholder")}
                 />

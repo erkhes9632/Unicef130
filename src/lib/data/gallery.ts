@@ -32,11 +32,16 @@ function toImage(r: ImageRow): GalleryImage {
 }
 
 function toItem(locale: Locale, a: AlbumRow, imgs: ImageRow[]): AlbumItem {
-  const list = imgs.map(toImage);
+  const title = pick(locale, a.title, a.titleEn);
+  // Image alt texts are entered in Mongolian; in English use the album title instead.
+  const list = imgs.map((r, i) => {
+    const img = toImage(r);
+    return locale === "en" ? { ...img, alt: `${title} — ${i + 1}` } : img;
+  });
   return {
     id: a.id,
     slug: a.slug,
-    title: pick(locale, a.title, a.titleEn),
+    title,
     description: pick(locale, a.description, a.descriptionEn),
     date: a.date,
     coverUrl: a.coverUrl ?? list[0]?.thumbUrl ?? null,

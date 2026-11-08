@@ -9,11 +9,9 @@ export const siteConfig = {
   shortName: "130 UNICEF",
   schoolName: "130-р сургууль",
   foundedYear: 2025,
-  // TODO(deploy): replace with the production domain once it is known.
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   logos: {
-    school: { src: "/logos/school-130.png", alt: "130-р сургуулийн лого" },
-    unicef: { src: "/logos/unicef.png", alt: "UNICEF лого" },
+    school: { src: "/logos/school-130.png" },
+    unicef: { src: "/logos/unicef.png" },
   },
 } as const;
 
@@ -23,20 +21,24 @@ export type SocialLink = { platform: SocialPlatform; url: string };
 
 export type ContactInfo = {
   address: string;
+  addressEn: string;
   email: string;
   phone: string;
   /** Google Maps embed URL (https://www.google.com/maps/embed?pb=...) */
   mapEmbedUrl: string;
   officeHours: string;
+  officeHoursEn: string;
 };
 
 // TODO(content): real address, phone, email and map location of School No. 130.
 export const fallbackContact: ContactInfo = {
   address: "Улаанбаатар хот, 130-р сургууль",
+  addressEn: "School No. 130, Ulaanbaatar, Mongolia",
   email: "unicef.club130@example.com",
   phone: "+976 0000 0000",
   mapEmbedUrl: "",
   officeHours: "Даваа–Баасан, 13:00–17:00",
+  officeHoursEn: "Mon–Fri, 13:00–17:00",
 };
 
 // TODO(content): real social media links (empty url = hidden).

@@ -16,9 +16,11 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
     const parsed = settingsInputSchema.safeParse({
       contact: {
         address: fd.str(data, "contact.address"),
+        addressEn: fd.str(data, "contact.addressEn"),
         email: fd.str(data, "contact.email"),
         phone: fd.str(data, "contact.phone"),
         officeHours: fd.str(data, "contact.officeHours"),
+        officeHoursEn: fd.str(data, "contact.officeHoursEn"),
         mapEmbedUrl: fd.str(data, "contact.mapEmbedUrl"),
       },
       socials: socialPlatforms.map((platform) => ({

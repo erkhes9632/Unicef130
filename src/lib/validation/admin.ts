@@ -106,9 +106,11 @@ const httpsUrl = z
 export const settingsInputSchema = z.object({
   contact: z.object({
     address: z.string().trim().max(300),
+    addressEn: z.string().trim().max(300),
     email: z.union([z.literal(""), z.email({ error: "И-мэйл буруу." })]),
     phone: z.string().trim().max(40),
     officeHours: z.string().trim().max(120),
+    officeHoursEn: z.string().trim().max(120),
     mapEmbedUrl: z
       .string()
       .trim()

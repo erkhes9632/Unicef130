@@ -76,9 +76,11 @@ describe("admin schemas", () => {
     const s = {
       contact: {
         address: "",
+        addressEn: "",
         email: "",
         phone: "",
         officeHours: "",
+        officeHoursEn: "",
         mapEmbedUrl: "https://www.google.com/maps/embed?pb=1",
       },
       socials: [{ platform: "facebook", url: "https://facebook.com/x" }],

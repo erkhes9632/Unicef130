@@ -1,8 +1,9 @@
 // TODO(content): sample events — replace with real events via /admin → Арга хэмжээ.
 import type { ClubEvent } from "@/lib/types";
+import { eventContentEn } from "./content-en";
 import { doc, p, ul } from "./rich-text";
 
-export const mockEvents: ClubEvent[] = [
+const baseEvents: ClubEvent[] = [
   {
     id: "event-1",
     slug: "delkhiin-khuukhdiin-udur-2026",
@@ -103,3 +104,8 @@ export const mockEvents: ClubEvent[] = [
     published: true,
   },
 ];
+
+export const mockEvents: ClubEvent[] = baseEvents.map((e) => ({
+  ...e,
+  contentEn: e.contentEn ?? eventContentEn[e.slug] ?? null,
+}));

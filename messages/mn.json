@@ -16,7 +16,9 @@
     "logoPlaceholder": "Лого",
     "search": "Хайх",
     "readMore": "Дэлгэрэнгүй унших",
-    "photoPlaceholder": "Зураг удахгүй"
+    "photoPlaceholder": "Зураг удахгүй",
+    "schoolLogoAlt": "130-р сургуулийн лого",
+    "unicefLogoAlt": "UNICEF-ийн лого"
   },
   "Nav": {
     "label": "Үндсэн цэс",

@@ -7,6 +7,7 @@ import { ContactForm } from "@/components/forms/contact-form";
 import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
+import { pick } from "@/lib/data/localize";
 import { getSiteSettings } from "@/lib/data/settings";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
 
@@ -38,7 +39,7 @@ function safeMapUrl(url: string) {
 }
 
 export default async function ContactPage({ params }: PageProps<"/[locale]/contact">) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations("Contact");
   const { contact, socials } = await getSiteSettings();
   const visibleSocials = socials.filter((s) => s.url);
@@ -46,7 +47,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const turnstileSiteKey = await getTurnstileSiteKey();
 
   const items = [
-    { icon: MapPin, label: t("address"), value: contact.address },
+    { icon: MapPin, label: t("address"), value: pick(locale, contact.address, contact.addressEn) },
     { icon: Mail, label: t("email"), value: contact.email, href: `mailto:${contact.email}` },
     {
       icon: Phone,
@@ -54,7 +55,11 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
       value: contact.phone,
       href: `tel:${contact.phone.replace(/\s/g, "")}`,
     },
-    { icon: Clock, label: t("hours"), value: contact.officeHours },
+    {
+      icon: Clock,
+      label: t("hours"),
+      value: pick(locale, contact.officeHours, contact.officeHoursEn),
+    },
   ];
 
   return (
