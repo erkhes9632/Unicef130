@@ -45,3 +45,8 @@ export function monthGrid(year: number, month: number): (number | null)[][] {
 export function todayUb() {
   return ubParts(Date.now());
 }
+
+/** Current time in ms (request time). Wrapper keeps server components lint-pure. */
+export function nowMs() {
+  return Date.now();
+}

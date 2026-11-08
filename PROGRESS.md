@@ -2,11 +2,12 @@
 
 ## Next step
 
-**Phase 5 — Admin CRUD**: shared admin form building blocks (slug transliteration, Tiptap editor,
-server-action result type), then News CRUD → Events → Members → Settings → Users, then switch
-`src/lib/data/*` from mock to D1.
+**Phase 6 — Forms**: Turnstile (widget + Siteverify, test keys fallback), store join/contact
+submissions in D1, Google Sheets sync (fetch + Web Crypto JWT, skipped with log when not
+configured) + notification hook, admin applications page (filter, notes, status, CSV export,
+synced indicator) and contact messages page (mark as read).
 
-**Current phase:** Phase 5 (Phases 0–4 done)
+**Current phase:** Phase 6 (Phases 0–5 done)
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -70,14 +71,16 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - [x] `bun run admin:create -- --email ... [--password ...] [--role admin|editor] [--reset] [--print-sql]` (local D1)
 - [x] Verified on local workerd: sign-up disabled, 401 wrong password, login 200, /admin redirect when signed out, editor can't see admin-only nav, CSRF origin check 403, sign-in rate limit 429
 
-### Phase 5 — Admin CRUD
+### Phase 5 — Admin CRUD ✅
 
-- [ ] News (Tiptap, draft/published, Cyrillic→Latin slugs)
-- [ ] Events
-- [ ] Members
-- [ ] Site settings
-- [ ] Users (create/disable)
-- [ ] Switch public pages from mock data to D1
+- [x] Shared: `ActionState` + `actionError()` (`src/lib/admin/action-state.ts`), admin form controls, Tiptap editor (JSON in hidden input), slug field (Cyrillic→Latin `src/lib/slug.ts`), confirm dialog, UB datetime-local helpers
+- [x] News CRUD (draft/published, scheduled publish date, category, tags, cover URL field, EN fields)
+- [x] Events CRUD (start/end in UB time, location, published flag, EN fields)
+- [x] Members CRUD (group, class, order, photo + "show publicly" consent toggle, active)
+- [x] Site settings (admin only): contact, map embed (Google only), socials, stats, donation link
+- [x] Users (admin only): create with generated one-time password, change role, disable/enable (sessions revoked), reset password; can't lock yourself out; ≥1 active admin
+- [x] Public data layer switched from mock → D1 (`src/lib/data/*`)
+- [x] Verified on local workerd via no-JS form posts: create/validate news, XSS escaped, editor blocked from admin-only action server-side, anonymous action → login, settings reflected on site, user creation + login, disabled user's existing session rejected
 
 ### Phase 6 — Forms
 
@@ -154,6 +157,10 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 | 2026-11-08 | Password hashing = PBKDF2-SHA256 100k iterations via Web Crypto instead of Better Auth's scrypt. | Pure-JS scrypt can exceed the Workers CPU limit; Web Crypto is native. |
 | 2026-11-08 | Admin UI strings are Mongolian, inline in admin components (not in messages/*.json). | Spec §5: admin may be Mongolian only. Public site strings all live in messages. |
 | 2026-11-08 | BETTER_AUTH_SECRET generated locally into `.dev.vars` (not committed). Production: developer runs `bunx wrangler secret put BETTER_AUTH_SECRET` with a new value from `openssl rand -base64 32`. | Never commit secrets. |
+
+| 2026-11-08 | Admin session check bypasses Better Auth's cookie cache (`disableCookieCache`). | With the 5-min cookie cache a disabled user kept access; found in testing. |
+| 2026-11-08 | Admin forms = Server Actions + `useActionState` with progressive enhancement; redirects after create. | Works without JS; one pattern for all CRUD. |
+| 2026-11-08 | Search over Cyrillic done in JS over latest 500 rows. | SQLite LIKE/lower() don't fold Cyrillic case. |
 
 ## Open questions (for the developer)
 

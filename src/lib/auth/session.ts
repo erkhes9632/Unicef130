@@ -16,7 +16,12 @@ export type CurrentUser = {
 /** Session user for this request (deduplicated per render), or null. Disabled users → null. */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const auth = await getAuth();
-  const result = await auth.api.getSession({ headers: await headers() });
+  // Always validate against D1 (no cookie cache) so disabled users / revoked sessions are
+  // rejected immediately. Admin traffic is low, so the extra query is fine.
+  const result = await auth.api.getSession({
+    headers: await headers(),
+    query: { disableCookieCache: true },
+  });
   if (!result) return null;
   const u = result.user as typeof result.user & { role?: unknown; banned?: unknown };
   if (u.banned) return null;

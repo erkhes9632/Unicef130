@@ -1,6 +1,8 @@
+import { and, asc, desc, eq, gte, lt, or, isNull } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
-import { mockEvents } from "@/lib/mock/events";
-import type { ClubEvent, RichTextDoc } from "@/lib/types";
+import { getDb } from "@/db";
+import { events } from "@/db/schema";
+import type { RichTextDoc } from "@/lib/types";
 import { pick } from "./localize";
 
 export type EventItem = {
@@ -15,7 +17,9 @@ export type EventItem = {
   endsAt: string | null;
 };
 
-function toItem(locale: Locale, e: ClubEvent): EventItem {
+type Row = typeof events.$inferSelect;
+
+function toItem(locale: Locale, e: Row): EventItem {
   return {
     id: e.id,
     slug: e.slug,
@@ -24,8 +28,8 @@ function toItem(locale: Locale, e: ClubEvent): EventItem {
     content: pick(locale, e.content, e.contentEn),
     coverUrl: e.coverUrl,
     location: pick(locale, e.location, e.locationEn),
-    startsAt: e.startsAt,
-    endsAt: e.endsAt,
+    startsAt: e.startsAt.toISOString(),
+    endsAt: e.endsAt ? e.endsAt.toISOString() : null,
   };
 }
 
@@ -34,49 +38,82 @@ export function isUpcoming(e: Pick<EventItem, "startsAt" | "endsAt">, now = Date
   return Date.parse(e.endsAt ?? e.startsAt) >= now;
 }
 
-// Phase 5: replace with D1 queries (Drizzle). Keep the signatures.
-async function publishedEvents(): Promise<ClubEvent[]> {
-  return mockEvents
-    .filter((e) => e.published)
-    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
-}
+const upcomingWhere = (now: Date) =>
+  and(
+    eq(events.published, true),
+    or(gte(events.endsAt, now), and(isNull(events.endsAt), gte(events.startsAt, now))),
+  );
+const pastWhere = (now: Date) =>
+  and(
+    eq(events.published, true),
+    or(lt(events.endsAt, now), and(isNull(events.endsAt), lt(events.startsAt, now))),
+  );
 
-export async function listEvents(locale: Locale, scope: "upcoming" | "past") {
-  const items = (await publishedEvents()).map((e) => toItem(locale, e));
-  const now = Date.now();
-  return scope === "upcoming"
-    ? items.filter((e) => isUpcoming(e, now))
-    : items.filter((e) => !isUpcoming(e, now)).reverse();
+export async function listEvents(locale: Locale, scope: "upcoming" | "past", limit = 100) {
+  const db = await getDb();
+  const now = new Date();
+  const rows =
+    scope === "upcoming"
+      ? await db
+          .select()
+          .from(events)
+          .where(upcomingWhere(now))
+          .orderBy(asc(events.startsAt))
+          .limit(limit)
+      : await db
+          .select()
+          .from(events)
+          .where(pastWhere(now))
+          .orderBy(desc(events.startsAt))
+          .limit(limit);
+  return rows.map((r) => toItem(locale, r));
 }
 
 export async function getUpcomingEvents(locale: Locale, limit = 3) {
-  return (await listEvents(locale, "upcoming")).slice(0, limit);
+  return listEvents(locale, "upcoming", limit);
 }
 
 /** Events that start within the given month (Ulaanbaatar time, UTC+8). `month` is 1–12. */
 export async function getEventsInMonth(locale: Locale, year: number, month: number) {
-  const start = Date.parse(`${year}-${String(month).padStart(2, "0")}-01T00:00:00+08:00`);
+  const start = new Date(`${year}-${String(month).padStart(2, "0")}-01T00:00:00+08:00`);
   const nextYear = month === 12 ? year + 1 : year;
   const nextMonth = month === 12 ? 1 : month + 1;
-  const end = Date.parse(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+08:00`);
-  return (await publishedEvents())
-    .filter((e) => {
-      const t = Date.parse(e.startsAt);
-      return t >= start && t < end;
-    })
-    .map((e) => toItem(locale, e));
+  const end = new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+08:00`);
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.published, true), gte(events.startsAt, start), lt(events.startsAt, end)))
+    .orderBy(asc(events.startsAt));
+  return rows.map((r) => toItem(locale, r));
 }
 
 export async function getEventBySlug(locale: Locale, slug: string) {
-  const e = (await publishedEvents()).find((ev) => ev.slug === slug);
-  return e ? toItem(locale, e) : null;
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.published, true), eq(events.slug, slug)))
+    .limit(1);
+  return row ? toItem(locale, row) : null;
 }
 
+/** See searchNews for why matching happens in JS. */
 export async function searchEvents(locale: Locale, query: string, limit = 20) {
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(events)
+    .where(eq(events.published, true))
+    .orderBy(desc(events.startsAt))
+    .limit(500);
   const q = query.toLocaleLowerCase();
-  return (await publishedEvents())
-    .map((e) => toItem(locale, e))
-    .filter((e) => [e.title, e.summary, e.location].some((f) => f.toLocaleLowerCase().includes(q)))
-    .reverse()
-    .slice(0, limit);
+  return rows
+    .filter((r) =>
+      [r.title, r.titleEn ?? "", r.summary, r.summaryEn ?? "", r.location].some((f) =>
+        f.toLocaleLowerCase().includes(q),
+      ),
+    )
+    .slice(0, limit)
+    .map((r) => toItem(locale, r));
 }

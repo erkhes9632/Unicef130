@@ -1,6 +1,7 @@
+import { asc, eq } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
-import { mockMembers } from "@/lib/mock/members";
-import type { Member } from "@/lib/types";
+import { getDb } from "@/db";
+import { members } from "@/db/schema";
 import { pick } from "./localize";
 
 export type MemberItem = {
@@ -12,7 +13,9 @@ export type MemberItem = {
   photoUrl: string | null;
 };
 
-function toItem(locale: Locale, m: Member): MemberItem {
+type Row = typeof members.$inferSelect;
+
+function toItem(locale: Locale, m: Row): MemberItem {
   return {
     id: m.id,
     name: pick(locale, m.name, m.nameEn),
@@ -22,11 +25,15 @@ function toItem(locale: Locale, m: Member): MemberItem {
   };
 }
 
-// Phase 5: replace with D1 queries (Drizzle). Keep the signature.
 export async function listMembers(locale: Locale) {
-  const sorted = [...mockMembers].sort((a, b) => a.order - b.order);
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(members)
+    .where(eq(members.active, true))
+    .orderBy(asc(members.sortOrder), asc(members.name));
   return {
-    leadership: sorted.filter((m) => m.group === "leadership").map((m) => toItem(locale, m)),
-    members: sorted.filter((m) => m.group === "member").map((m) => toItem(locale, m)),
+    leadership: rows.filter((m) => m.group === "leadership").map((m) => toItem(locale, m)),
+    members: rows.filter((m) => m.group === "member").map((m) => toItem(locale, m)),
   };
 }
