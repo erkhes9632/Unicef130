@@ -3,6 +3,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { SiteHeader } from "@/components/layout/site-header";
 import { routing } from "@/i18n/routing";
 import { getSiteSettings } from "@/lib/data/settings";
@@ -62,6 +63,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
 
   return (
     <NextIntlClientProvider messages={clientMessages}>
+      <HtmlLangSync locale={locale} />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organization)} />
       <a
         href="#main"

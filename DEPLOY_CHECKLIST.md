@@ -100,8 +100,11 @@ bunx wrangler secret put GOOGLE_SHEET_ID                       # Sheet URL-ий�
 bun run deploy          # = opennextjs-cloudflare build && opennextjs-cloudflare deploy
 ```
 
-- ☐ Bundle хэмжээ: одоогоор gzip-ээр ~2 MB (Workers Free-ийн хязгаар 3 MB). Хэтэрвэл Workers Paid
-  ($5/сар) руу шилжих эсвэл хамаарлыг багасгана.
+- ☐ Bundle хэмжээ: handler ≈ 7.8 MB uncompressed. Cloudflare-ийн хязгаар 64 MiB uncompressed (Free ба
+  Paid аль алинд; 2026-10-29-ний docs). Асуудалгүй.
+- ☐ **Plan:** Workers Free нь хүсэлт бүрт **10 ms CPU** хязгаартай. Next.js SSR + нэвтрэлт (PBKDF2) энэ
+  хязгаараас хэтэрч болзошгүй (Error 1102). **Workers Paid ($5/сар, 30 сек CPU)** ашиглахыг зөвлөнө —
+  PRODUCTION_REPORT.md → 9-р хэсэг.
 - ☐ Deploy-ийн дараа `https://unicef-club-130.<account>.workers.dev` нээгдэж байгааг шалгана.
 
 ## 8. Custom domain холбох
