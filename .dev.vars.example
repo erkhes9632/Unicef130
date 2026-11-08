@@ -1,10 +1,13 @@
-# Copy to .dev.vars (gitignored) for local development.
-# In production use: bunx wrangler secret put <NAME>
+# Copy to .dev.vars (gitignored) for local development:  cp .dev.vars.example .dev.vars
+# In production the developer sets secrets with: bunx wrangler secret put <NAME>   (see DEPLOY_CHECKLIST.md)
 NEXTJS_ENV=development
 
+# Better Auth — generate with: openssl rand -base64 32
+BETTER_AUTH_SECRET=
+# Comma-separated origins allowed to call /api/auth (dev server + local preview).
+BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8787,http://localhost:8799
+
 # Added in later phases:
-# BETTER_AUTH_SECRET=
-# BETTER_AUTH_URL=http://localhost:3000
 # TURNSTILE_SECRET_KEY=
 # NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 # GOOGLE_SERVICE_ACCOUNT_EMAIL=

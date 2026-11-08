@@ -104,9 +104,7 @@
       "indexes": {
         "account_user_id_idx": {
           "name": "account_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -115,12 +113,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -187,9 +181,7 @@
       "indexes": {
         "activity_created_idx": {
           "name": "activity_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -198,12 +190,8 @@
           "name": "activity_log_user_id_user_id_fk",
           "tableFrom": "activity_log",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -300,16 +288,12 @@
       "indexes": {
         "albums_slug_idx": {
           "name": "albums_slug_idx",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         },
         "albums_date_idx": {
           "name": "albums_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         }
       },
@@ -427,10 +411,7 @@
       "indexes": {
         "applications_status_created_idx": {
           "name": "applications_status_created_idx",
-          "columns": [
-            "status",
-            "created_at"
-          ],
+          "columns": ["status", "created_at"],
           "isUnique": false
         }
       },
@@ -497,9 +478,7 @@
       "indexes": {
         "contact_messages_created_idx": {
           "name": "contact_messages_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -632,16 +611,12 @@
       "indexes": {
         "events_slug_idx": {
           "name": "events_slug_idx",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         },
         "events_starts_at_idx": {
           "name": "events_starts_at_idx",
-          "columns": [
-            "starts_at"
-          ],
+          "columns": ["starts_at"],
           "isUnique": false
         }
       },
@@ -725,10 +700,7 @@
       "indexes": {
         "images_album_order_idx": {
           "name": "images_album_order_idx",
-          "columns": [
-            "album_id",
-            "sort_order"
-          ],
+          "columns": ["album_id", "sort_order"],
           "isUnique": false
         }
       },
@@ -737,12 +709,8 @@
           "name": "images_album_id_albums_id_fk",
           "tableFrom": "images",
           "tableTo": "albums",
-          "columnsFrom": [
-            "album_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["album_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -857,10 +825,7 @@
       "indexes": {
         "members_order_idx": {
           "name": "members_order_idx",
-          "columns": [
-            "group",
-            "sort_order"
-          ],
+          "columns": ["group", "sort_order"],
           "isUnique": false
         }
       },
@@ -994,17 +959,12 @@
       "indexes": {
         "news_slug_idx": {
           "name": "news_slug_idx",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         },
         "news_status_published_idx": {
           "name": "news_status_published_idx",
-          "columns": [
-            "status",
-            "published_at"
-          ],
+          "columns": ["status", "published_at"],
           "isUnique": false
         }
       },
@@ -1013,12 +973,8 @@
           "name": "news_author_id_user_id_fk",
           "tableFrom": "news",
           "tableTo": "user",
-          "columnsFrom": [
-            "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1099,16 +1055,12 @@
       "indexes": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "session_user_id_idx": {
           "name": "session_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -1117,12 +1069,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1252,9 +1200,7 @@
       "indexes": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -1314,9 +1260,7 @@
       "indexes": {
         "verification_identifier_idx": {
           "name": "verification_identifier_idx",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": false
         }
       },

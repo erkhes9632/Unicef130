@@ -2,11 +2,14 @@
 
 ## Next step
 
-**Phase 4 — Auth & admin shell**: Better Auth (`src/lib/auth/*`) with drizzle adapter + admin
-plugin, `/api/auth/[...all]`, `/admin/login`, protected `/admin` layout, `requireRole()` helper for
-Server Actions, `bun run admin:create` (local) script, BETTER_AUTH_SECRET in `.dev.vars`.
+**Phase 5 — Admin CRUD**: shared admin form building blocks (slug transliteration, Tiptap editor,
+server-action result type), then News CRUD → Events → Members → Settings → Users, then switch
+`src/lib/data/*` from mock to D1.
 
-**Current phase:** Phase 4 (Phases 0–3 done)
+**Current phase:** Phase 5 (Phases 0–4 done)
+
+Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
+`admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
 
 ---
 
@@ -57,11 +60,15 @@ Server Actions, `bun run admin:create` (local) script, BETTER_AUTH_SECRET in `.d
 - [x] `src/db/index.ts` → `getDb()` (D1 binding via getCloudflareContext)
 - [x] `bun run db:seed:local` (scripts/seed.ts, reuses mock data + default settings); `bun run db:reset:local`
 
-### Phase 4 — Auth & admin shell
+### Phase 4 — Auth & admin shell ✅
 
-- [ ] Better Auth (Drizzle/D1), email+password, roles admin/editor, no public sign-up
-- [ ] Login page, protected `/admin` layout, role guards in Server Actions
-- [ ] First-admin seed script (local)
+- [x] Better Auth (`src/lib/auth/index.ts`): drizzle adapter, email+password, sign-up disabled, roles via `user.role`, disabled users blocked in `databaseHooks.session.create.before`, `nextCookies()`
+- [x] `/api/auth/[...all]` handler; trusted origins from `BETTER_AUTH_TRUSTED_ORIGINS`
+- [x] PBKDF2 (Web Crypto) password hashing (`src/lib/auth/password.ts`)
+- [x] `/admin/login` (server action), protected `/admin/(panel)` layout, sidebar + mobile menu, logout, dashboard (counts, recent activity, new applications)
+- [x] Guards: `requireUser()` for pages, `requireRole()` for Server Actions (`src/lib/auth/session.ts`), `logActivity()`
+- [x] `bun run admin:create -- --email ... [--password ...] [--role admin|editor] [--reset] [--print-sql]` (local D1)
+- [x] Verified on local workerd: sign-up disabled, 401 wrong password, login 200, /admin redirect when signed out, editor can't see admin-only nav, CSRF origin check 403, sign-in rate limit 429
 
 ### Phase 5 — Admin CRUD
 
@@ -142,6 +149,11 @@ Server Actions, `bun run admin:create` (local) script, BETTER_AUTH_SECRET in `.d
 | 2026-11-08 | Local scripts (seed, admin) generate SQL and run `wrangler d1 execute DB --local --file`. No remote option in code. | Hard rules: local only. |
 | 2026-11-08 | Timestamps stored as integer ms; JSON columns for rich text, tags, helpWith, settings values. | D1/SQLite friendly, simple to read back. |
 | 2026-11-08 | Images stored by URL (`/media/<key>` for R2 uploads, `/placeholders/*` for samples). | One field for both seeded and uploaded images. |
+
+| 2026-11-08 | Roles stored in `user.role` (admin/editor) as a Better Auth additional field; Better Auth admin plugin **not** used. User management is done in our own Server Actions. | The admin plugin's role model is admin/user; ours is admin/editor. Fewer moving parts. |
+| 2026-11-08 | Password hashing = PBKDF2-SHA256 100k iterations via Web Crypto instead of Better Auth's scrypt. | Pure-JS scrypt can exceed the Workers CPU limit; Web Crypto is native. |
+| 2026-11-08 | Admin UI strings are Mongolian, inline in admin components (not in messages/*.json). | Spec §5: admin may be Mongolian only. Public site strings all live in messages. |
+| 2026-11-08 | BETTER_AUTH_SECRET generated locally into `.dev.vars` (not committed). Production: developer runs `bunx wrangler secret put BETTER_AUTH_SECRET` with a new value from `openssl rand -base64 32`. | Never commit secrets. |
 
 ## Open questions (for the developer)
 
