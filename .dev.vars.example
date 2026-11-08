@@ -7,9 +7,13 @@ BETTER_AUTH_SECRET=
 # Comma-separated origins allowed to call /api/auth (dev server + local preview).
 BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8787,http://localhost:8799
 
-# Added in later phases:
+# Cloudflare Turnstile (optional locally). Empty → Cloudflare test keys (always pass).
+# TURNSTILE_SITE_KEY=
 # TURNSTILE_SECRET_KEY=
-# NEXT_PUBLIC_TURNSTILE_SITE_KEY=
-# GOOGLE_SERVICE_ACCOUNT_EMAIL=
-# GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=
-# GOOGLE_SHEET_ID=
+
+# Google Sheets sync for join applications (optional). Empty → sync skipped with a log line.
+# Private key: paste the "private_key" value from the service-account JSON (keep the \n escapes).
+# GOOGLE_SERVICE_ACCOUNT_EMAIL=club-sheets@your-project.iam.gserviceaccount.com
+# GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# GOOGLE_SHEET_ID=1AbC...   (from the sheet URL: /spreadsheets/d/<ID>/edit)
+# GOOGLE_SHEET_TAB=Applications

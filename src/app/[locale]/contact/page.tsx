@@ -7,6 +7,7 @@ import { ContactForm } from "@/components/forms/contact-form";
 import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
 import { getSiteSettings } from "@/lib/data/settings";
+import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
 
 export async function generateMetadata({
   params,
@@ -36,6 +37,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const { contact, socials } = await getSiteSettings();
   const visibleSocials = socials.filter((s) => s.url);
   const mapUrl = safeMapUrl(contact.mapEmbedUrl);
+  const turnstileSiteKey = await getTurnstileSiteKey();
 
   const items = [
     { icon: MapPin, label: t("address"), value: contact.address },
@@ -105,7 +107,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
             <h2 id="contact-form-title" className="mb-6 text-2xl font-extrabold">
               {t("formTitle")}
             </h2>
-            <ContactForm />
+            <ContactForm turnstileSiteKey={turnstileSiteKey} />
           </section>
           <section aria-labelledby="map-title">
             <h2 id="map-title" className="mb-4 text-2xl font-extrabold">

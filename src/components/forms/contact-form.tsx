@@ -10,15 +10,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { contactFormSchema, type ContactFormValues } from "@/lib/validation/forms";
+import { Turnstile } from "./turnstile";
 import { FormField } from "./form-field";
 
 const defaultValues: ContactFormValues = { name: "", email: "", subject: "", message: "" };
 
-export function ContactForm() {
+export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const t = useTranslations("Forms");
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [token, setToken] = useState("");
+  // Bumping the key remounts the widget → fresh token (tokens are single-use).
+  const [widgetKey, setWidgetKey] = useState(0);
   const { register, handleSubmit, formState, setError, reset } = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues,
@@ -27,8 +31,14 @@ export function ContactForm() {
 
   const onSubmit = handleSubmit((values) => {
     setServerError(null);
+    if (!token) {
+      setServerError(t("captchaError"));
+      return;
+    }
     startTransition(async () => {
-      const res = await submitContactMessage(values);
+      const res = await submitContactMessage({ ...values, turnstileToken: token });
+      setToken("");
+      setWidgetKey((k) => k + 1);
       if (res.ok) {
         setDone(true);
         reset(defaultValues);
@@ -90,6 +100,8 @@ export function ContactForm() {
           />
         )}
       </FormField>
+      <Turnstile key={widgetKey} siteKey={turnstileSiteKey} onToken={setToken} action="contact" />
+
       {serverError && (
         <p
           role="alert"

@@ -2,12 +2,12 @@
 
 ## Next step
 
-**Phase 6 — Forms**: Turnstile (widget + Siteverify, test keys fallback), store join/contact
-submissions in D1, Google Sheets sync (fetch + Web Crypto JWT, skipped with log when not
-configured) + notification hook, admin applications page (filter, notes, status, CSV export,
-synced indicator) and contact messages page (mark as read).
+**Phase 7 — Media**: R2 upload route (auth + type/size validation, keys under `news/`, `events/`,
+`members/`, `gallery/`), `/media/[...key]` serving route with caching, client-side resize/compress
+(WebP, max 1920px + 640px thumb) before upload, replace `ImageField` URL input with uploader,
+gallery admin (albums CRUD, multi-upload, reorder, delete incl. R2 cleanup).
 
-**Current phase:** Phase 6 (Phases 0–5 done)
+**Current phase:** Phase 7 (Phases 0–6 done)
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -82,13 +82,16 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - [x] Public data layer switched from mock → D1 (`src/lib/data/*`)
 - [x] Verified on local workerd via no-JS form posts: create/validate news, XSS escaped, editor blocked from admin-only action server-side, anonymous action → login, settings reflected on site, user creation + login, disabled user's existing session rejected
 
-### Phase 6 — Forms
+### Phase 6 — Forms ✅
 
-- [ ] Join form + contact form (zod + RHF, server validation)
-- [ ] Turnstile (test keys fallback)
-- [ ] D1 storage
-- [ ] Google Sheets sync (skipped with log if not configured) + email hook
-- [ ] Admin applications view (status filter, notes, CSV export, synced indicator), contact messages
+- [x] Join + contact forms: RHF + zod on the client, re-validated in Server Actions (`src/app/actions/forms.ts`)
+- [x] Turnstile widget (`components/forms/turnstile.tsx`, explicit render, remount to reset) + Siteverify (`lib/integrations/turnstile.ts`); site key passed at runtime; test keys fallback
+- [x] D1 storage (phone normalized to +976…, class to "10А", consent timestamp)
+- [x] Google Sheets sync via service-account JWT (Web Crypto RS256) + Sheets REST append (RAW, no formula eval); runs in `waitUntil`; result stored (`sheets_synced_at` / `sheets_error`); skipped with log when not configured
+- [x] Notification hook (`lib/integrations/notifications.ts`, no-op)
+- [x] Admin applications: status tabs with counts, status select, notes, synced indicator, retry sync, CSV export (BOM, formula-injection guard), delete (admin only)
+- [x] Admin contact messages: filter, mark read/unread, delete (admin only)
+- [x] Verified on local workerd: valid join → stored + sheets skipped log; missing token → captcha; invalid → field errors; contact stored; CSV export OK; anon export 401; JWT signature verified with a local RSA key
 
 ### Phase 7 — Media
 
@@ -162,11 +165,16 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 | 2026-11-08 | Admin forms = Server Actions + `useActionState` with progressive enhancement; redirects after create. | Works without JS; one pattern for all CRUD. |
 | 2026-11-08 | Search over Cyrillic done in JS over latest 500 rows. | SQLite LIKE/lower() don't fold Cyrillic case. |
 
+| 2026-11-08 | Turnstile site key read from env at request time (`TURNSTILE_SITE_KEY`), not `NEXT_PUBLIC_*`. | Change keys with `wrangler secret/vars` without rebuilding. |
+| 2026-11-08 | Sheets sync is fire-and-forget (`ctx.waitUntil`) with a retry button in admin. | The applicant never waits for / fails because of Google. |
+| 2026-11-08 | Deleting applications/messages is admin-only. | Personal data of minors. |
+
 ## Open questions (for the developer)
 
 - Logo files: please put `public/logos/school-130.png` and `public/logos/unicef.png` (placeholder boxes until then).
 - Real contact details (address, phone, email), social links, and a map location for `/contact`.
 - Real leadership/member names, roles, classes and photos (with consent) for `/members`.
+- (Not blocking) Production Turnstile keys and Google service account + Sheet ID — the app works without them locally; needed before going live (see DEPLOY_CHECKLIST.md in Phase 10).
 
 ## TODO(content)
 

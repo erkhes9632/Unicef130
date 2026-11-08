@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { helpOptions, joinFormSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { cn } from "@/lib/utils";
+import { Turnstile } from "./turnstile";
 import { FormField, translateError } from "./form-field";
 
 const defaultValues: JoinFormValues = {
@@ -24,19 +25,28 @@ const defaultValues: JoinFormValues = {
   consent: false as unknown as true,
 };
 
-export function JoinForm() {
+export function JoinForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const t = useTranslations("Forms");
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [token, setToken] = useState("");
+  // Bumping the key remounts the widget → fresh token (tokens are single-use).
+  const [widgetKey, setWidgetKey] = useState(0);
   const form = useForm<JoinFormValues>({ resolver: zodResolver(joinFormSchema), defaultValues });
   const { register, control, handleSubmit, formState, setError, reset } = form;
   const errors = formState.errors;
 
   const onSubmit = handleSubmit((values) => {
     setServerError(null);
+    if (!token) {
+      setServerError(t("captchaError"));
+      return;
+    }
     startTransition(async () => {
-      const res = await submitJoinApplication(values);
+      const res = await submitJoinApplication({ ...values, turnstileToken: token });
+      setToken("");
+      setWidgetKey((k) => k + 1);
       if (res.ok) {
         setDone(true);
         reset(defaultValues);
@@ -186,6 +196,8 @@ export function JoinForm() {
           </div>
         )}
       />
+
+      <Turnstile key={widgetKey} siteKey={turnstileSiteKey} onToken={setToken} action="join" />
 
       {serverError && (
         <p

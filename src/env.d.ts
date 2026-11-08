@@ -3,6 +3,8 @@
 interface CloudflareEnv {
   /** Public base URL used by Better Auth; inferred from the request when unset. */
   BETTER_AUTH_URL?: string;
+  /** Cloudflare Turnstile site key (public). Missing → official test site key. */
+  TURNSTILE_SITE_KEY?: string;
   /** Cloudflare Turnstile secret. Missing → official test secret (always passes). */
   TURNSTILE_SECRET_KEY?: string;
   /** Google service account used to append join applications to a Sheet (optional). */
