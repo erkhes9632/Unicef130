@@ -2,14 +2,20 @@
 
 ## Next step
 
-**All phases (0–10) are done.** The project is deploy-ready but **not deployed** (by design).
-Remaining work is for the developer:
+**Production-readiness report done → `PRODUCTION_REPORT.md` (2026-11-08).** Verdict: functionally
+ready; fix the **P1** items below before deploying (nothing deployed — hard rules unchanged).
 
-1. Add real content / files listed under **TODO(content)** (logos first).
-2. Follow **DEPLOY_CHECKLIST.md** to create D1/R2, set secrets/vars and deploy.
-3. Optional improvements: see "Known bugs" (404 shell, simulated Lighthouse on font-heavy pages).
+P1 (before deploy), from PRODUCTION_REPORT.md §10:
 
-**Current phase:** Done — maintenance mode.
+1. Rate-limit the admin login **form** (Server Action bypasses Better Auth's HTTP rate limiter —
+   verified: 8 wrong attempts all processed). D1-backed counter per IP+email, `rateLimit.storage:
+"database"`, Turnstile on login.
+2. Security headers (CSP incl. challenges.cloudflare.com + fonts, X-Frame-Options, Referrer-Policy,
+   Permissions-Policy, HSTS after domain).
+3. Don't write applicants' names into `activity_log` (use IDs); purge related log rows on delete.
+4. Developer: choose Workers Paid (10 ms CPU limit on Free), set all secrets/vars (§8).
+
+**Current phase:** Done (Phases 0–10) + production report. Next: P1 fixes, then P2 list in the report.
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -124,7 +130,7 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 
 ### Phase 10 — Deploy-ready & handover (NO actual deploy) ✅
 
-- [x] Production build passes (`bun run check`, `bun run build`, `bun run cf:build`); handler ≈ 2.0 MB gzip (Workers Free limit 3 MB)
+- [x] Production build passes (`bun run check`, `bun run build`, `bun run cf:build`); handler ≈ 7.8 MB uncompressed / 2.0 MB gzip (Cloudflare limit: 64 MiB uncompressed on Free and Paid — corrected 2026-11-08; the earlier "3 MB" note was outdated)
 - [x] Final smoke test on local workerd: all public routes 200, unknown routes 404, admin protected
 - [x] Fixed regression: public `loading.tsx` made `notFound()` return 200 (streaming) → removed
 - [x] `wrangler.jsonc`: commented production `vars` + custom-domain `routes` templates (`TODO(deploy)`)
@@ -194,6 +200,9 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 
 | 2026-11-08 | No `loading.tsx` for public `[locale]` routes. | With streaming, `notFound()` after the shell is flushed returns HTTP 200 instead of 404. SSR is fast enough without it. Admin keeps its loading state. |
 
+| 2026-11-08 | Cloudflare Workers size limit is 64 MiB uncompressed on Free and Paid (docs updated 2026-10-29); the earlier "3 MB gzip" note was wrong and was corrected in DEPLOY_CHECKLIST/PROGRESS. Recommend Workers Paid because of the 10 ms CPU limit on Free. | Verified against developers.cloudflare.com/workers/platform/limits. |
+| 2026-11-08 | Production-readiness verified with a 27-step browser E2E (puppeteer-core from the scratchpad) on local workerd; scripts not committed (P3: move into repo/CI). | Only verified behaviour is claimed in PRODUCTION_REPORT.md. |
+
 ## Open questions (for the developer)
 
 - Logo files: please put `public/logos/school-130.png` and `public/logos/unicef.png` (placeholder boxes until then).
@@ -217,6 +226,12 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - 404 pages: HTML shell is empty and the 404 content renders from the RSC payload on the client (same with `next start`, so it's Next 16 behavior, not Workers). Status code + `noindex` are correct. Revisit in Phase 8.
 - Build warns "middleware file convention is deprecated" — intentional (see Decisions).
 - Admin `loading.tsx` streams, so an unknown admin record id (`/admin/news/<bad-id>`) renders the 404 UI with HTTP 200 (admin only, noindex) — harmless.
+- **[P1]** Admin login form (Server Action) is not rate-limited; only `/api/auth/*` is (in-memory, per isolate).
+- **[P1]** No security headers (CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS).
+- **[P1]** Applicant names are written to `activity_log.summary` and remain after the application is deleted; deleting an application doesn't remove its Google Sheet row.
+- **[P2]** CSV export is allowed for editors (decide if admin-only). No retention policy for applications.
+- **[P3]** Images uploaded but never saved stay in R2 (no orphan cleanup).
+- Fixed 2026-11-08: `<html lang>` stayed "mn" after client-side switch to English (`HtmlLangSync`).
 - Console 404s for `/logos/school-130.png` and `/logos/unicef.png` until the developer adds the files (placeholders render fine). Lowers Lighthouse best-practices to 96.
 - Lighthouse _simulated_ mobile score is 85 on content-heavy pages (/, /news, /members) mainly due to 6 web-font files (Montserrat + Nunito Sans × latin/cyrillic/cyrillic-ext — Mongolian Ө/Ү are in cyrillic-ext). Real-throttled runs score 99. Option if needed: `display: "optional"` for headings or self-subset fonts.
 - Local preview has no gzip/brotli; Cloudflare's edge compresses in production (HTML 138 KB → ~22 KB).
