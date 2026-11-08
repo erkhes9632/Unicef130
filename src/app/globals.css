@@ -2,14 +2,33 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-display), var(--font-body), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Brand utilities: bg-brand-cyan, text-brand-cyan-strong, bg-brand-cyan-soft, ... */
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-green: var(--brand-green);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-night: var(--brand-night);
+  --color-brand-cyan-strong: var(--brand-cyan-strong);
+  --color-brand-purple-strong: var(--brand-purple-strong);
+  --color-brand-green-strong: var(--brand-green-strong);
+  --color-brand-blue-strong: var(--brand-blue-strong);
+  --color-brand-gold-strong: var(--brand-gold-strong);
+  --color-brand-cyan-soft: var(--brand-cyan-soft);
+  --color-brand-purple-soft: var(--brand-purple-soft);
+  --color-brand-green-soft: var(--brand-green-soft);
+  --color-brand-blue-soft: var(--brand-blue-soft);
+  --color-brand-gold-soft: var(--brand-gold-soft);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,87 +67,196 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ==========================================================================
+   BRAND PALETTE — single source of truth. Tweak the hex values here.
+   Raw colors are approximations from the School 130 logo + UNICEF cyan.
+   - `--brand-*`         raw color: decorative shapes, fills, icons, borders.
+   - `--brand-*-strong`  text-safe variant (>= 4.5:1 on --background, WCAG AA).
+   - `--brand-*-soft`    tinted background for chips/cards (text on it: --foreground).
+   Contrast notes (light): cyan-strong 5.3, purple-strong 6.7, green-strong 5.1,
+   blue-strong 5.8, gold-strong 5.9 on #FFF. Primary button = cyan bg + navy text (7.1).
+   Dark mode: strong variants 7.0–12.2 on #0B1220.
+   ========================================================================== */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --brand-cyan: #1cabe2;
+  --brand-purple: #8e4fc6;
+  --brand-green: #4cb847;
+  --brand-blue: #2f7ed8;
+  --brand-gold: #f5b301;
+  --brand-ink: #1f2937;
+  --brand-paper: #ffffff;
+  --brand-night: #0b1220;
+
+  --brand-cyan-strong: #00749e;
+  --brand-purple-strong: #7a3db3;
+  --brand-green-strong: #2e7d2a;
+  --brand-blue-strong: #1f66b8;
+  --brand-gold-strong: #8a5a00;
+
+  --brand-cyan-soft: color-mix(in oklab, var(--brand-cyan) 12%, var(--background));
+  --brand-purple-soft: color-mix(in oklab, var(--brand-purple) 12%, var(--background));
+  --brand-green-soft: color-mix(in oklab, var(--brand-green) 12%, var(--background));
+  --brand-blue-soft: color-mix(in oklab, var(--brand-blue) 12%, var(--background));
+  --brand-gold-soft: color-mix(in oklab, var(--brand-gold) 16%, var(--background));
+
+  /* shadcn/ui semantic tokens */
+  --background: var(--brand-paper);
+  --foreground: var(--brand-ink);
+  --card: var(--brand-paper);
+  --card-foreground: var(--brand-ink);
+  --popover: var(--brand-paper);
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-cyan);
+  --primary-foreground: var(--brand-night);
+  --secondary: #f1f4f9;
+  --secondary-foreground: var(--brand-ink);
+  --muted: #f3f5f9;
+  --muted-foreground: #5b6474;
+  --accent: var(--brand-cyan-soft);
+  --accent-foreground: var(--brand-ink);
+  --destructive: #c62828;
+  --border: #e5e8ee;
+  --input: #d9dee7;
+  --ring: var(--brand-cyan);
+  --chart-1: var(--brand-cyan);
+  --chart-2: var(--brand-purple);
+  --chart-3: var(--brand-green);
+  --chart-4: var(--brand-blue);
+  --chart-5: var(--brand-gold);
+  --radius: 0.875rem;
+  --sidebar: #f7f9fc;
+  --sidebar-foreground: var(--brand-ink);
+  --sidebar-primary: var(--brand-cyan);
+  --sidebar-primary-foreground: var(--brand-night);
+  --sidebar-accent: var(--brand-cyan-soft);
+  --sidebar-accent-foreground: var(--brand-ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--brand-cyan);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --brand-cyan-strong: #4cc3ee;
+  --brand-purple-strong: #b88ae6;
+  --brand-green-strong: #6fcf6a;
+  --brand-blue-strong: #6aa8f0;
+  --brand-gold-strong: #ffc933;
+
+  --brand-cyan-soft: color-mix(in oklab, var(--brand-cyan) 16%, var(--background));
+  --brand-purple-soft: color-mix(in oklab, var(--brand-purple) 18%, var(--background));
+  --brand-green-soft: color-mix(in oklab, var(--brand-green) 16%, var(--background));
+  --brand-blue-soft: color-mix(in oklab, var(--brand-blue) 18%, var(--background));
+  --brand-gold-soft: color-mix(in oklab, var(--brand-gold) 16%, var(--background));
+
+  --background: var(--brand-night);
+  --foreground: #e6eaf2;
+  --card: #121a2b;
+  --card-foreground: #e6eaf2;
+  --popover: #121a2b;
+  --popover-foreground: #e6eaf2;
+  --primary: var(--brand-cyan);
+  --primary-foreground: var(--brand-night);
+  --secondary: #1a2336;
+  --secondary-foreground: #e6eaf2;
+  --muted: #1a2336;
+  --muted-foreground: #9aa4b5;
+  --accent: var(--brand-cyan-soft);
+  --accent-foreground: #e6eaf2;
+  --destructive: #ef6b6b;
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.16);
+  --ring: var(--brand-cyan);
+  --sidebar: #0f1729;
+  --sidebar-foreground: #e6eaf2;
+  --sidebar-primary: var(--brand-cyan);
+  --sidebar-primary-foreground: var(--brand-night);
+  --sidebar-accent: var(--brand-cyan-soft);
+  --sidebar-accent-foreground: #e6eaf2;
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--brand-cyan);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply scroll-smooth font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading tracking-tight text-balance;
+  }
+  a {
+    text-underline-offset: 0.2em;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--brand-cyan) 35%, transparent);
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
   html {
-    @apply font-sans;
+    scroll-behavior: auto;
   }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@utility container-page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 80rem;
+  padding-inline: 1rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/* Gentle floating motion for decorative shapes (disabled by reduced-motion above). */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+@utility animate-float-soft {
+  animation: float-soft 9s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@utility animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
 }

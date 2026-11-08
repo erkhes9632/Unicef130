@@ -1,0 +1,64 @@
+{
+  "Metadata": {
+    "title": "130 UNICEF Club — School No. 130",
+    "titleTemplate": "%s | 130 UNICEF Club",
+    "description": "The UNICEF club of School No. 130 in Ulaanbaatar: students helping children inside and outside school, promoting children's rights and organising volunteer activities."
+  },
+  "Common": {
+    "brandPair": "School No. 130 × UNICEF",
+    "clubName": "130 UNICEF Club",
+    "schoolName": "School No. 130",
+    "joinCta": "Become a member",
+    "learnMore": "Learn more",
+    "viewAll": "View all",
+    "backHome": "Back to home",
+    "skipToContent": "Skip to main content",
+    "logoPlaceholder": "Logo",
+    "search": "Search"
+  },
+  "Nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "about": "About",
+    "news": "News",
+    "events": "Events",
+    "members": "Members",
+    "gallery": "Gallery",
+    "support": "Support",
+    "contact": "Contact",
+    "join": "Join",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menu": "Menu"
+  },
+  "Theme": {
+    "toggle": "Toggle color mode",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "Locale": {
+    "switch": "Change language",
+    "mn": "Монгол",
+    "en": "English"
+  },
+  "Footer": {
+    "about": "A UNICEF-inspired student club helping children inside and outside our school. Founded in 2025.",
+    "explore": "Explore",
+    "getInvolved": "Get involved",
+    "contact": "Contact",
+    "follow": "Follow us",
+    "rights": "© {year} 130 UNICEF Club, School No. 130.",
+    "disclaimer": "This is a school student club website, not an official UNICEF website.",
+    "admin": "Admin"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "Sorry, the page you are looking for does not exist or has been moved.",
+    "code": "404"
+  },
+  "Home": {
+    "placeholderTitle": "Together, for every child!",
+    "placeholderBody": "130 UNICEF Club — a student volunteer club helping children inside and outside our school."
+  }
+}
