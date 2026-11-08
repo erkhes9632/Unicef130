@@ -19,7 +19,10 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-background lg:flex">
         <div className="border-b p-4">
           <Link href="/admin">
-            <BrandLockup size={32} />
+            <BrandLockup
+              size={28}
+              className="[&_span]:text-[11px] [&>span:last-child>span:first-child]:text-sm"
+            />
           </Link>
         </div>
         <nav aria-label="Админ цэс" className="flex-1 overflow-y-auto p-3">

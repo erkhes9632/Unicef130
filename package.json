@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p scripts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "bun run lint && bun run typecheck && bun run format:check",
+    "check": "bun run lint && bun run typecheck && bun run format:check && bun run test",
     "cf:build": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -21,7 +21,8 @@
     "db:seed:local": "bun scripts/seed.ts",
     "db:reset:local": "rm -rf .wrangler/state/v3/d1 && bun run db:migrate:local && bun run db:seed:local",
     "db:studio:local": "echo \"Open the local D1 in Wrangler: bunx wrangler d1 execute DB --local --command \\\"SELECT name FROM sqlite_master\\\"\"",
-    "admin:create": "bun scripts/create-admin.ts"
+    "admin:create": "bun scripts/create-admin.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.3",

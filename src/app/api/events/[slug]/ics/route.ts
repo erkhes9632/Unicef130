@@ -1,7 +1,7 @@
-import { siteConfig } from "@/config/site";
 import { routing, type Locale } from "@/i18n/routing";
 import { getEventBySlug } from "@/lib/data/events";
 import { buildIcs } from "@/lib/dates/ics";
+import { getSiteUrl } from "@/lib/seo";
 
 /** iCalendar download for "Add to calendar". */
 export async function GET(request: Request, ctx: RouteContext<"/api/events/[slug]/ics">) {
@@ -23,7 +23,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/events/[slug
     end: event.endsAt
       ? new Date(event.endsAt)
       : new Date(Date.parse(event.startsAt) + 60 * 60 * 1000),
-    url: new URL(`${prefix}/events/${event.slug}`, siteConfig.url).toString(),
+    url: `${await getSiteUrl()}${prefix}/events/${event.slug}`,
   });
 
   return new Response(ics, {

@@ -6,6 +6,7 @@ import { Section } from "@/components/common/section";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/data/settings";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +15,12 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/support">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Support" });
-  return { title: t("metaTitle"), description: t("description") };
+  return pageMetadata({
+    locale,
+    path: "/support",
+    title: t("metaTitle"),
+    description: t("description"),
+  });
 }
 
 const ways = [

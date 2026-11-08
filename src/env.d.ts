@@ -1,6 +1,8 @@
 // Optional environment variables / secrets (not always present in .dev.vars, so `wrangler types`
 // may not emit them). Merged into the generated CloudflareEnv interface.
 interface CloudflareEnv {
+  /** Public site origin, e.g. https://unicef130.mn (no trailing slash). Used for SEO URLs. */
+  SITE_URL?: string;
   /** Public base URL used by Better Auth; inferred from the request when unset. */
   BETTER_AUTH_URL?: string;
   /** Cloudflare Turnstile site key (public). Missing → official test site key. */

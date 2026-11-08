@@ -4,12 +4,18 @@ import { getTranslations } from "next-intl/server";
 import { JoinForm } from "@/components/forms/join-form";
 import { PageHero } from "@/components/common/page-hero";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/join">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Join" });
-  return { title: t("metaTitle"), description: t("description") };
+  return pageMetadata({
+    locale,
+    path: "/join",
+    title: t("metaTitle"),
+    description: t("description"),
+  });
 }
 
 export default async function JoinPage({ params }: PageProps<"/[locale]/join">) {

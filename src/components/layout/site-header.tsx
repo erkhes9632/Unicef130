@@ -13,11 +13,11 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur supports-backdrop-filter:bg-background/70">
-      <div className="container-page flex h-16 items-center gap-3 xl:h-[4.5rem]">
+      <div className="container-page flex h-16 min-w-0 items-center gap-2 sm:gap-3 xl:h-[4.5rem]">
         <Link href="/" className="rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50">
           <BrandLockup
             size={36}
-            className="[&>span:last-child]:hidden min-[380px]:[&>span:last-child]:flex"
+            className="[&>span:last-child]:hidden sm:[&>span:last-child]:flex"
           />
         </Link>
 
@@ -26,7 +26,13 @@ export async function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-0.5 xl:ml-0">
-          <Button asChild variant="ghost" size="icon" aria-label={t("Common.search")}>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            aria-label={t("Common.search")}
+            className="hidden sm:inline-flex"
+          >
             <Link href="/search">
               <Search className="size-5" />
             </Link>

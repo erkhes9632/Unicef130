@@ -8,6 +8,7 @@ import { EventCard } from "@/components/events/event-card";
 import { MonthCalendar } from "@/components/events/month-calendar";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { getEventsInMonth, listEvents } from "@/lib/data/events";
 import { parseMonth } from "@/lib/dates/ub-time";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,12 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/events">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Events" });
-  return { title: t("metaTitle"), description: t("description") };
+  return pageMetadata({
+    locale,
+    path: "/events",
+    title: t("metaTitle"),
+    description: t("description"),
+  });
 }
 
 const tabClass = (active: boolean) =>
@@ -50,6 +56,7 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
         description={t("description")}
       />
       <Section className="pt-8 sm:pt-10">
+        <h2 className="sr-only">{t("metaTitle")}</h2>
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex w-fit rounded-full bg-muted p-1">
             <Link

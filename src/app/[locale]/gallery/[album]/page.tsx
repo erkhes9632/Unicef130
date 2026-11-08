@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { getAlbumBySlug } from "@/lib/data/gallery";
+import { pageMetadata } from "@/lib/seo";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
 
 export async function generateMetadata({
@@ -17,13 +18,13 @@ export async function generateMetadata({
   const { album: slug } = await params;
   const album = await getAlbumBySlug(locale, slug);
   if (!album) return {};
-  return {
+  return pageMetadata({
+    locale,
+    path: `/gallery/${album.slug}`,
     title: album.title,
     description: album.description,
-    openGraph: {
-      images: album.coverUrl && !album.coverUrl.endsWith(".svg") ? [album.coverUrl] : undefined,
-    },
-  };
+    image: album.coverUrl,
+  });
 }
 
 export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery/[album]">) {

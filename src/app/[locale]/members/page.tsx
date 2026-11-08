@@ -6,6 +6,7 @@ import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { listMembers } from "@/lib/data/members";
 
 export async function generateMetadata({
@@ -13,7 +14,12 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/members">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Members" });
-  return { title: t("metaTitle"), description: t("description") };
+  return pageMetadata({
+    locale,
+    path: "/members",
+    title: t("metaTitle"),
+    description: t("description"),
+  });
 }
 
 export default async function MembersPage({ params }: PageProps<"/[locale]/members">) {

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getLocale } from "next-intl/server";
+import { getSiteUrl } from "@/lib/seo";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
@@ -7,10 +8,13 @@ import { cn } from "@/lib/utils";
 import { fontBody, fontDisplay } from "./fonts";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  applicationName: siteConfig.name,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    metadataBase: new URL(await getSiteUrl()),
+    applicationName: siteConfig.name,
+    icons: { icon: "/favicon.ico" },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -29,7 +33,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={cn(fontDisplay.variable, fontBody.variable, "h-full antialiased")}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col overflow-x-clip">
         <ThemeProvider>
           {children}
           <Toaster richColors position="top-center" />

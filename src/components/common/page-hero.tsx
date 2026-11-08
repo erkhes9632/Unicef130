@@ -22,7 +22,7 @@ export function PageHero({
     <div className={cn("relative isolate border-b border-border/60", className)}>
       <DecorativeShapes />
       <div className="container-page py-12 sm:py-16">
-        <div className="max-w-3xl animate-fade-up space-y-4">
+        <div className="max-w-3xl space-y-4">
           {eyebrow && <Eyebrow color={eyebrowColor}>{eyebrow}</Eyebrow>}
           <h1 className="text-4xl font-extrabold sm:text-5xl">{title}</h1>
           {description && <p className="text-lg text-muted-foreground">{description}</p>}

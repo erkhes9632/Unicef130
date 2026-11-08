@@ -12,6 +12,7 @@ import { siteConfig } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { getUpcomingEvents } from "@/lib/data/events";
+import { pageMetadata } from "@/lib/seo";
 import { getGalleryPreview } from "@/lib/data/gallery";
 import { getLatestNews } from "@/lib/data/news";
 import { getSiteSettings } from "@/lib/data/settings";
@@ -32,13 +33,19 @@ const statTones = [
   "text-brand-blue-strong",
 ];
 
+export async function generateMetadata({ params }: PageProps<"/[locale]">) {
+  const locale = await resolveLocale(params);
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  return pageMetadata({ locale, path: "/", description: t("description") });
+}
+
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const locale = await resolveLocale(params);
   const t = await getTranslations();
   const [news, events, gallery, settings] = await Promise.all([
     getLatestNews(locale, 3),
     getUpcomingEvents(locale, 3),
-    getGalleryPreview(locale, 6),
+    getGalleryPreview(locale, 5),
     getSiteSettings(),
   ]);
   const socials = settings.socials.filter((s) => s.url);
@@ -55,7 +62,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       <section className="relative isolate overflow-hidden">
         <DecorativeShapes variant="hero" />
         <div className="container-page grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.15fr_1fr] lg:py-24">
-          <div className="animate-fade-up space-y-6">
+          <div className="space-y-6">
             <Eyebrow>{t("Home.heroEyebrow")}</Eyebrow>
             <h1 className="text-4xl leading-[1.1] font-extrabold sm:text-5xl lg:text-6xl">
               {t("Home.heroTitle")}

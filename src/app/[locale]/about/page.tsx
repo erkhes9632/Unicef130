@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { listMembers } from "@/lib/data/members";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/about">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "About" });
-  return { title: t("metaTitle"), description: t("intro") };
+  return pageMetadata({ locale, path: "/about", title: t("metaTitle"), description: t("intro") });
 }
 
 const values = [

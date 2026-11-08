@@ -47,7 +47,7 @@ export async function MonthCalendar({
             <ChevronLeft />
           </Link>
         </Button>
-        <h2 className="text-center text-lg font-extrabold capitalize sm:text-xl" aria-live="polite">
+        <h2 className="text-center text-lg font-extrabold sm:text-xl" aria-live="polite">
           {monthLabel}
         </h2>
         <Button asChild variant="outline" size="icon" aria-label={t("nextMonth")}>
@@ -109,6 +109,7 @@ export async function MonthCalendar({
                         </ul>
                         {dayEvents.length > 0 && (
                           <span
+                            role="img"
                             className="flex gap-0.5 sm:hidden"
                             aria-label={t("eventsOnDay", { count: dayEvents.length })}
                           >

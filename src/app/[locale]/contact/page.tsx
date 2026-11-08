@@ -6,6 +6,7 @@ import { PageHero } from "@/components/common/page-hero";
 import { ContactForm } from "@/components/forms/contact-form";
 import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/data/settings";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
 
@@ -14,7 +15,12 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/contact">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Contact" });
-  return { title: t("metaTitle"), description: t("description") };
+  return pageMetadata({
+    locale,
+    path: "/contact",
+    title: t("metaTitle"),
+    description: t("description"),
+  });
 }
 
 /** Only Google Maps embeds are allowed in the iframe. */

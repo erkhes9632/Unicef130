@@ -34,7 +34,7 @@ export async function BrandLockup({
         />
       </span>
       {showText && (
-        <span className="flex flex-col leading-tight">
+        <span className="flex flex-col leading-tight whitespace-nowrap">
           <span className="font-heading text-base font-extrabold tracking-tight">
             {t("clubName")}
           </span>

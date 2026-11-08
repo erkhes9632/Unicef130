@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,12 @@ export function MobileNav() {
         <nav aria-label={t("Nav.label")} className="px-2">
           <MobileNavLinks onNavigate={() => setOpen(false)} />
         </nav>
-        <div className="p-4">
+        <div className="space-y-2 p-4">
+          <Button asChild variant="outline" size="lg" className="w-full">
+            <Link href="/search" onClick={() => setOpen(false)}>
+              <Search /> {t("Common.search")}
+            </Link>
+          </Button>
           <Button asChild size="lg" className="w-full">
             <Link href="/join" onClick={() => setOpen(false)}>
               {t("Common.joinCta")}

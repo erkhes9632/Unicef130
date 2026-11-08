@@ -5,7 +5,7 @@ export const fontDisplay = Montserrat({
   subsets: ["latin", "cyrillic"],
   variable: "--font-display",
   display: "swap",
-  weight: ["600", "700", "800"],
+  // No `weight` → one variable font file per subset (static weights would download a file each).
 });
 
 export const fontBody = Nunito_Sans({

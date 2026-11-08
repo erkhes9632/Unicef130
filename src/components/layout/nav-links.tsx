@@ -15,24 +15,27 @@ export function NavLinks({ className }: { className?: string }) {
   const pathname = usePathname();
 
   return (
-    <ul className={cn("flex items-center gap-1", className)}>
-      {mainNav.map((item) => {
-        const active = isActive(pathname, item.href);
-        return (
-          <li key={item.key}>
-            <Link
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "rounded-full px-3 py-2 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
-                active && "bg-brand-cyan-soft text-foreground",
-              )}
-            >
-              {t(item.key)}
-            </Link>
-          </li>
-        );
-      })}
+    <ul className={cn("flex items-center gap-0.5", className)}>
+      {/* "Home" is reachable via the logo, so it's omitted here to save space. */}
+      {mainNav
+        .filter((item) => item.key !== "home")
+        .map((item) => {
+          const active = isActive(pathname, item.href);
+          return (
+            <li key={item.key}>
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
+                  active && "bg-brand-cyan-soft text-foreground",
+                )}
+              >
+                {t(item.key)}
+              </Link>
+            </li>
+          );
+        })}
     </ul>
   );
 }

@@ -33,7 +33,7 @@ export function DecorativeShapes({
           </svg>
           <svg
             viewBox="0 0 100 100"
-            className="absolute bottom-16 left-[6%] hidden size-16 animate-float-soft text-brand-green [animation-delay:-3s] md:block"
+            className="absolute right-[4%] bottom-10 hidden size-16 animate-float-soft text-brand-green [animation-delay:-3s] md:block"
           >
             <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="12" />
           </svg>

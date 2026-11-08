@@ -8,6 +8,7 @@ import { Section } from "@/components/common/section";
 import { NewsCard } from "@/components/news/news-card";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { listNews } from "@/lib/data/news";
 import { newsCategories, type NewsCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,12 @@ import { cn } from "@/lib/utils";
 export async function generateMetadata({ params }: PageProps<"/[locale]/news">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "News" });
-  return { title: t("metaTitle"), description: t("description") };
+  return pageMetadata({
+    locale,
+    path: "/news",
+    title: t("metaTitle"),
+    description: t("description"),
+  });
 }
 
 function parseCategory(value: unknown): NewsCategory | undefined {
@@ -40,6 +46,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<"/[lo
     <>
       <PageHero eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <Section className="pt-8 sm:pt-10">
+        <h2 className="sr-only">{t("metaTitle")}</h2>
         <nav aria-label={t("filterLabel")} className="-mx-4 mb-8 overflow-x-auto px-4">
           <ul className="flex w-max gap-2">
             <li>

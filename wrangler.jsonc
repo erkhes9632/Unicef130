@@ -4,6 +4,9 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // esbuild's keep_names injects `__name()` into functions; next-themes serializes its theme
+  // script with Function#toString, which then throws "__name is not defined" in the browser.
+  "keep_names": false,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",

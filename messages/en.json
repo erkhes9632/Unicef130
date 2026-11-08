@@ -354,5 +354,11 @@
       "consent": "You must agree to continue",
       "helpWith": "Please choose at least one"
     }
+  },
+  "Errors": {
+    "title": "Sorry, something went wrong",
+    "body": "There was a problem loading this page. Please try again.",
+    "retry": "Try again",
+    "loading": "Loading..."
   }
 }

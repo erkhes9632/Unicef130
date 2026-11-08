@@ -9,11 +9,11 @@ import { NewsCard } from "@/components/news/news-card";
 import { ShareButtons } from "@/components/news/share-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/config/site";
-import { getPathname, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { getNewsBySlug, getRelatedNews } from "@/lib/data/news";
 import { formatDate } from "@/lib/dates/format";
+import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -22,17 +22,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const item = await getNewsBySlug(locale, slug);
   if (!item) return {};
-  return {
+  return pageMetadata({
+    locale,
+    path: `/news/${item.slug}`,
     title: item.title,
     description: item.excerpt,
-    openGraph: {
-      type: "article",
-      title: item.title,
-      description: item.excerpt,
-      publishedTime: item.publishedAt,
-      images: item.coverUrl ? [item.coverUrl] : undefined,
-    },
-  };
+    image: item.coverUrl,
+    type: "article",
+    publishedTime: item.publishedAt,
+  });
 }
 
 export default async function NewsDetailPage({ params }: PageProps<"/[locale]/news/[slug]">) {
@@ -43,13 +41,27 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
 
   const t = await getTranslations("News");
   const related = await getRelatedNews(locale, item, 3);
-  const url = new URL(
-    getPathname({ href: `/news/${item.slug}`, locale }),
-    siteConfig.url,
-  ).toString();
+  const siteUrl = await getSiteUrl();
+  const url = `${siteUrl}${localizedPath(locale, `/news/${item.slug}`)}`;
+
+  const structured = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: item.title,
+    description: item.excerpt,
+    datePublished: item.publishedAt,
+    image:
+      item.coverUrl && !item.coverUrl.endsWith(".svg")
+        ? [`${siteUrl}${item.coverUrl}`]
+        : [`${siteUrl}/og-default.png`],
+    mainEntityOfPage: url,
+    inLanguage: locale,
+    publisher: { "@type": "Organization", name: "130 UNICEF клуб", url: siteUrl },
+  };
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structured)} />
       <article>
         <header className="container-page max-w-4xl pt-8 sm:pt-12">
           <Button asChild variant="ghost" size="sm" className="mb-6 -ml-3">

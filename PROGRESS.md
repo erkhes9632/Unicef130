@@ -2,12 +2,11 @@
 
 ## Next step
 
-**Phase 8 — Quality**: SEO (per-page metadata + alternates/hreflang, OG image route,
-`sitemap.ts`, `robots.ts`, JSON-LD Organization/NewsArticle/Event), accessibility pass, performance
-check (Lighthouse mobile if Chrome is available), `loading.tsx`/`error.tsx`, tests with `bun test`
-(validation, slug, csv, dates, password, sanitize, sheets JWT, action guards).
+**Phase 9 — English**: review/complete `messages/en.json` (natural English for all public UI),
+English fields for the seeded sample content (already present in mock data), check `/en/*` pages
+render fully in English, keep key parity test.
 
-**Current phase:** Phase 8 (Phases 0–7 done)
+**Current phase:** Phase 9 (Phases 0–8 done)
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -103,13 +102,14 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - [x] Public gallery already uses the lightbox (Phase 2) with thumbs/full URLs from D1
 - [x] Verified on local workerd: upload OK + byte-identical fetch, 304 with ETag, fake image rejected, bad kind 400, anon 401, bad origin 403, traversal 404, replaced cover removed from R2
 
-### Phase 8 — Quality
+### Phase 8 — Quality ✅
 
-- [ ] SEO (metadata, OG images, sitemap.ts, robots.ts, JSON-LD Organization)
-- [ ] Accessibility pass
-- [ ] Performance (Lighthouse ≥ 90 mobile)
-- [ ] Error / loading states
-- [ ] Tests for Server Actions + validation
+- [x] SEO: `pageMetadata()` (canonical + hreflang mn/en/x-default, OG/Twitter), runtime site URL (`SITE_URL` → request host), `public/og-default.png` (source `scripts/og/og-default.html`), dynamic `sitemap.xml` from D1, `robots.txt`, JSON-LD Organization / NewsArticle / Event
+- [x] Accessibility: axe-core (WCAG 2.1 AA + best practices) on 13 public pages × light/dark → 0 violations after fixes (heading order, calendar dots role, event `dl` structure); Lighthouse a11y 100
+- [x] Mobile QA with real device emulation (390px): no horizontal overflow; header simplified on phones (search moved into menu); inputs 40px tall
+- [x] Performance: fixed `__name is not defined` inline-script error (wrangler `keep_names: false`), trimmed client i18n messages, variable Montserrat, no fade-in on LCP text. Lighthouse mobile (local workerd + gzip proxy): devtools throttling 99 on /, /news, /events; simulated throttling 85–97 (see Known bugs)
+- [x] `loading.tsx` / `error.tsx` for public and admin, `global-error.tsx`
+- [x] Tests: `bun test` — 43 tests (slug, form + admin schemas, rich-text XSS, csv, UB dates, ics, roles, PBKDF2, image sniffing, Sheets JWT, Server Action role guards + public form actions with mocks)
 
 ### Phase 9 — English
 
@@ -177,6 +177,10 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 | 2026-11-08 | Uploads go through a Route Handler (multipart), not a Server Action. | Server Action bodies are limited to 1MB by default; route handler gives explicit size/type control. |
 | 2026-11-08 | Images resized in the browser; no server-side transforms. | Free, works locally, no Cloudflare Images binding; also strips GPS metadata from children's photos. |
 
+| 2026-11-08 | `keep_names: false` in wrangler.jsonc. | esbuild's `__name` helper broke next-themes' serialized inline script in the browser. |
+| 2026-11-08 | Visual/a11y/perf QA tools (puppeteer-core, axe-core, lighthouse) are run from the session scratchpad, not added to the project. | Keep project deps lean; documented commands in README for future checks. |
+| 2026-11-08 | OG image is a static PNG generated from HTML (no `next/og` at runtime). | Avoids bundling satori/resvg wasm into the Worker (size limits). |
+
 ## Open questions (for the developer)
 
 - Logo files: please put `public/logos/school-130.png` and `public/logos/unicef.png` (placeholder boxes until then).
@@ -199,3 +203,6 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 
 - 404 pages: HTML shell is empty and the 404 content renders from the RSC payload on the client (same with `next start`, so it's Next 16 behavior, not Workers). Status code + `noindex` are correct. Revisit in Phase 8.
 - Build warns "middleware file convention is deprecated" — intentional (see Decisions).
+- Console 404s for `/logos/school-130.png` and `/logos/unicef.png` until the developer adds the files (placeholders render fine). Lowers Lighthouse best-practices to 96.
+- Lighthouse _simulated_ mobile score is 85 on content-heavy pages (/, /news, /members) mainly due to 6 web-font files (Montserrat + Nunito Sans × latin/cyrillic/cyrillic-ext — Mongolian Ө/Ү are in cyrillic-ext). Real-throttled runs score 99. Option if needed: `display: "optional"` for headings or self-subset fonts.
+- Local preview has no gzip/brotli; Cloudflare's edge compresses in production (HTML 138 KB → ~22 KB).

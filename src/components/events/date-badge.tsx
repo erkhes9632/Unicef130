@@ -9,7 +9,7 @@ export async function DateBadge({ date, className }: { date: string; className?:
   return (
     <div
       className={cn(
-        "flex w-16 shrink-0 flex-col items-center overflow-hidden rounded-2xl bg-card text-center ring-1 ring-border",
+        "flex w-16 shrink-0 flex-col items-center self-start overflow-hidden rounded-2xl bg-card text-center ring-1 ring-border",
         className,
       )}
     >

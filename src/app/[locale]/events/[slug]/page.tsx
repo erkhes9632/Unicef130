@@ -7,11 +7,11 @@ import { RichText } from "@/components/common/rich-text";
 import { ShareButtons } from "@/components/news/share-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/config/site";
-import { getPathname, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { getEventBySlug, isUpcoming } from "@/lib/data/events";
 import { formatDate, formatTimeRange } from "@/lib/dates/format";
+import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -20,15 +20,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const e = await getEventBySlug(locale, slug);
   if (!e) return {};
-  return {
+  return pageMetadata({
+    locale,
+    path: `/events/${e.slug}`,
     title: e.title,
     description: e.summary,
-    openGraph: {
-      title: e.title,
-      description: e.summary,
-      images: e.coverUrl ? [e.coverUrl] : undefined,
-    },
-  };
+    image: e.coverUrl,
+  });
 }
 
 export default async function EventDetailPage({ params }: PageProps<"/[locale]/events/[slug]">) {
@@ -40,10 +38,8 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
   const t = await getTranslations("Events");
   const start = new Date(e.startsAt);
   const time = formatTimeRange(locale, start, e.endsAt);
-  const url = new URL(
-    getPathname({ href: `/events/${e.slug}`, locale }),
-    siteConfig.url,
-  ).toString();
+  const siteUrl = await getSiteUrl();
+  const url = `${siteUrl}${localizedPath(locale, `/events/${e.slug}`)}`;
   const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}`;
   const past = !isUpcoming(e);
 
@@ -53,8 +49,27 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
     { icon: MapPin, label: t("location"), value: e.location },
   ];
 
+  const structured = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: e.title,
+    description: e.summary,
+    startDate: e.startsAt,
+    ...(e.endsAt ? { endDate: e.endsAt } : {}),
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: { "@type": "Place", name: e.location, address: e.location },
+    image:
+      e.coverUrl && !e.coverUrl.endsWith(".svg")
+        ? [`${siteUrl}${e.coverUrl}`]
+        : [`${siteUrl}/og-default.png`],
+    organizer: { "@type": "Organization", name: "130 UNICEF клуб", url: siteUrl },
+    url,
+  };
+
   return (
     <article className="container-page max-w-5xl py-8 sm:py-12">
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structured)} />
       <Button asChild variant="ghost" size="sm" className="mb-6 -ml-3">
         <Link href="/events">
           <ArrowLeft /> {t("backToList")}
@@ -82,14 +97,14 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
         <aside className="h-fit space-y-4 rounded-3xl bg-brand-purple-soft p-6 lg:sticky lg:top-24">
           <dl className="space-y-4">
             {facts.map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background text-brand-purple-strong">
-                  <Icon className="size-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <dt className="text-xs font-bold text-muted-foreground uppercase">{label}</dt>
-                  <dd className="font-semibold">{value}</dd>
-                </div>
+              <div key={label} className="grid grid-cols-[2.5rem_1fr] gap-x-3">
+                <dt className="contents">
+                  <span className="row-span-2 flex size-10 items-center justify-center rounded-xl bg-background text-brand-purple-strong">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">{label}</span>
+                </dt>
+                <dd className="font-semibold">{value}</dd>
               </div>
             ))}
           </dl>

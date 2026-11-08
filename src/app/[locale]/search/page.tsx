@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getPathname } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { pageMetadata } from "@/lib/seo";
 import { searchEvents } from "@/lib/data/events";
 import { searchNews } from "@/lib/data/news";
 
@@ -18,7 +19,7 @@ export async function generateMetadata({
 }: PageProps<"/[locale]/search">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Search" });
-  return { title: t("metaTitle"), robots: { index: false } };
+  return pageMetadata({ locale, path: "/search", title: t("metaTitle"), noIndex: true });
 }
 
 export default async function SearchPage({ params, searchParams }: PageProps<"/[locale]/search">) {
