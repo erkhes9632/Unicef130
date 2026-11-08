@@ -14,7 +14,9 @@
     "backHome": "Back to home",
     "skipToContent": "Skip to main content",
     "logoPlaceholder": "Logo",
-    "search": "Search"
+    "search": "Search",
+    "readMore": "Read more",
+    "photoPlaceholder": "Photo coming soon"
   },
   "Nav": {
     "label": "Main navigation",
@@ -58,7 +60,299 @@
     "code": "404"
   },
   "Home": {
-    "placeholderTitle": "Together, for every child!",
-    "placeholderBody": "130 UNICEF Club — a student volunteer club helping children inside and outside our school."
+    "heroEyebrow": "Since 2025 · School No. 130",
+    "heroTitle": "Together, for every child!",
+    "heroBody": "We are the UNICEF club of School No. 130 — students who help children inside and outside our school, promote children's rights and do good together.",
+    "heroSecondary": "About us",
+    "statsTitle": "What we've achieved together",
+    "stats": {
+      "members": "Active members",
+      "events": "Events organised",
+      "volunteerHours": "Volunteer hours",
+      "childrenHelped": "Children reached"
+    },
+    "whatEyebrow": "What we do",
+    "whatTitle": "Inside school and beyond — wherever help is needed",
+    "pillars": {
+      "inside": {
+        "title": "Inside school",
+        "body": "Reading to younger pupils, mini-lessons on children's rights, celebrations."
+      },
+      "outside": {
+        "title": "Outside school",
+        "body": "Care centre visits, community volunteering and joint campaigns."
+      },
+      "rights": {
+        "title": "Children's rights",
+        "body": "Spreading the word that every child has the right to be protected, heard and to grow."
+      },
+      "charity": {
+        "title": "Donations & support",
+        "body": "Collecting warm clothes, books and school supplies for children in need."
+      }
+    },
+    "newsTitle": "Latest news",
+    "newsDescription": "News and stories from our club.",
+    "eventsTitle": "Upcoming events",
+    "eventsDescription": "Join us — helping hands are always needed.",
+    "noUpcoming": "No events planned yet. Stay tuned!",
+    "galleryTitle": "Gallery",
+    "galleryDescription": "Warm moments we've shared together.",
+    "connectTitle": "Stronger together",
+    "connectBody": "We work with our school, parents and partner organisations. Follow us on social media.",
+    "partnersTitle": "Partners",
+    "partnerPlaceholder": "Partner",
+    "ctaTitle": "You can be part of the change too",
+    "ctaBody": "Join the club and take part in helping children.",
+    "ctaSupport": "Other ways to support"
+  },
+  "About": {
+    "metaTitle": "About",
+    "eyebrow": "About us",
+    "title": "A club of students who want to help children",
+    "intro": "The 130 UNICEF club was founded in 2025 on the initiative of active students of School No. 130. It is a volunteer club that follows UNICEF's values.",
+    "storyTitle": "Our story",
+    "story1": "A few friends started with a simple question: \"How can we help children?\" In 2025, with the support of our teachers, we officially founded the club.",
+    "story2": "Today we do many things together — from reading to younger pupils to visiting care centres and organising donation drives.",
+    "foundedLabel": "Founded",
+    "missionTitle": "Mission",
+    "mission": "To help children inside and outside our school, promote children's rights and build a caring community through volunteering.",
+    "valuesTitle": "Our values",
+    "values": {
+      "care": {
+        "title": "Care",
+        "body": "We love and respect every child."
+      },
+      "equality": {
+        "title": "Equality",
+        "body": "We never discriminate against anyone."
+      },
+      "teamwork": {
+        "title": "Teamwork",
+        "body": "Together we achieve more."
+      },
+      "trust": {
+        "title": "Trust & responsibility",
+        "body": "We keep our promises and work transparently."
+      }
+    },
+    "doTitle": "What we do",
+    "insideTitle": "Inside school",
+    "inside": [
+      "'Reading Hour' for younger pupils",
+      "Mini-lessons and poster contests on children's rights",
+      "Children's Day and World Children's Day events",
+      "Helping new students settle in"
+    ],
+    "outsideTitle": "Outside school",
+    "outside": [
+      "Visiting children's care centres",
+      "'Warm Winter' clothing drive",
+      "Book and school supply donations",
+      "Community volunteering"
+    ],
+    "leadershipTitle": "Club leadership",
+    "leadershipDescription": "The team that organises the club's work.",
+    "allMembers": "See all members"
+  },
+  "News": {
+    "metaTitle": "News",
+    "eyebrow": "News",
+    "title": "News & activities",
+    "description": "Club news, projects and stories.",
+    "allCategories": "All",
+    "categories": {
+      "activity": "Activities",
+      "volunteering": "Volunteering",
+      "rights": "Children's rights",
+      "charity": "Donations",
+      "announcement": "Announcements"
+    },
+    "filterLabel": "Filter by category",
+    "empty": "No news in this category yet.",
+    "readMore": "Read",
+    "tags": "Tags",
+    "related": "More news",
+    "backToList": "All news"
+  },
+  "Events": {
+    "metaTitle": "Events",
+    "eyebrow": "Events",
+    "title": "Events calendar",
+    "description": "Upcoming and past events.",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "listView": "List",
+    "calendarView": "Calendar",
+    "emptyUpcoming": "No events planned yet. Stay tuned!",
+    "emptyPast": "No past events.",
+    "emptyMonth": "No events this month.",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "date": "Date",
+    "time": "Time",
+    "location": "Location",
+    "openMap": "View on map",
+    "addToCalendar": "Add to calendar",
+    "pastBadge": "Past event",
+    "backToList": "All events",
+    "eventsOnDay": "{count, plural, one {# event} other {# events}}"
+  },
+  "Members": {
+    "metaTitle": "Members",
+    "eyebrow": "Our team",
+    "title": "Club members",
+    "description": "Active students from different classes who want to help children.",
+    "leadership": "Leadership",
+    "members": "Members",
+    "classLabel": "Class: {className}",
+    "count": "{count, plural, one {# member} other {# members}}",
+    "joinTitle": "Want to join our team?",
+    "joinBody": "Students from any class can join the club."
+  },
+  "Gallery": {
+    "metaTitle": "Gallery",
+    "eyebrow": "Gallery",
+    "title": "Photo albums",
+    "description": "Photos from our events and volunteering.",
+    "photos": "{count, plural, one {# photo} other {# photos}}",
+    "empty": "No albums yet.",
+    "backToAlbums": "All albums",
+    "openImage": "Open image: {alt}",
+    "close": "Close",
+    "previous": "Previous image",
+    "next": "Next image",
+    "counter": "{current} / {total}"
+  },
+  "Join": {
+    "metaTitle": "Join",
+    "eyebrow": "Become a member",
+    "title": "Join the club!",
+    "description": "Fill in the form below and we'll get back to you soon.",
+    "whyTitle": "Why join?",
+    "why": [
+      "Make a real difference for children",
+      "Make new friends",
+      "Grow your leadership and teamwork skills",
+      "Gain volunteering experience"
+    ],
+    "privacyTitle": "Your privacy",
+    "privacy": "We only collect what the club needs for registration. We never share your data with third parties."
+  },
+  "Contact": {
+    "metaTitle": "Contact",
+    "eyebrow": "Contact",
+    "title": "Get in touch",
+    "description": "Questions, ideas or partnership requests? Write to us.",
+    "address": "Address",
+    "email": "Email",
+    "phone": "Phone",
+    "hours": "Hours",
+    "social": "Social media",
+    "noSocial": "Social links coming soon.",
+    "mapTitle": "Location",
+    "mapPlaceholder": "Map coming soon",
+    "formTitle": "Send a message"
+  },
+  "Support": {
+    "metaTitle": "Support",
+    "eyebrow": "Support",
+    "title": "How can you support us?",
+    "description": "Even a small act of help can make a big difference in a child's life.",
+    "ways": {
+      "volunteer": {
+        "title": "Volunteer",
+        "body": "Help at events, read to children, help with organising."
+      },
+      "donateItems": {
+        "title": "Donate items",
+        "body": "Warm clothes, books, school supplies, toys — clean and in good condition."
+      },
+      "partner": {
+        "title": "Partner with us",
+        "body": "Organisations and businesses can start joint campaigns and projects."
+      },
+      "share": {
+        "title": "Spread the word",
+        "body": "Share our campaigns with your friends and family."
+      }
+    },
+    "donateTitle": "Financial donations",
+    "donateBody": "Financial donations are accepted only according to official school procedures.",
+    "donateButton": "Donate",
+    "donateUnavailable": "Donation details coming soon. For now, please support us with items or volunteering.",
+    "contactCta": "Contact us"
+  },
+  "Search": {
+    "metaTitle": "Search",
+    "title": "Search",
+    "description": "Search news and events.",
+    "placeholder": "What are you looking for?",
+    "submit": "Search",
+    "results": "“{query}” — {count, plural, one {# result} other {# results}}",
+    "noResults": "Nothing found for “{query}”.",
+    "hint": "For example: donation, children's rights, reading",
+    "news": "News",
+    "events": "Events"
+  },
+  "Share": {
+    "title": "Share",
+    "facebook": "Share on Facebook",
+    "copy": "Copy link",
+    "copied": "Link copied!",
+    "native": "Share"
+  },
+  "Pagination": {
+    "label": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page}"
+  },
+  "Forms": {
+    "fullName": "Full name",
+    "fullNamePlaceholder": "e.g. Anujin Bat",
+    "className": "Class",
+    "classNamePlaceholder": "e.g. 10A",
+    "phone": "Phone number",
+    "phonePlaceholder": "8-digit number",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "optional": "(optional)",
+    "reason": "Why do you want to join the club?",
+    "reasonPlaceholder": "Tell us a little about yourself",
+    "helpWith": "How would you like to help?",
+    "helpOptions": {
+      "events": "Organising events",
+      "reading": "Helping younger pupils",
+      "charity": "Donation drives",
+      "media": "Photo, video, social media",
+      "design": "Drawing & design",
+      "other": "Other"
+    },
+    "consent": "I agree that this information may be used for club registration. (If under 18, my parent/guardian has been informed.)",
+    "name": "Name",
+    "subject": "Subject",
+    "message": "Message",
+    "messagePlaceholder": "Your message...",
+    "submit": "Send",
+    "submitting": "Sending...",
+    "joinSuccessTitle": "Thank you! We've received your application.",
+    "joinSuccessBody": "The club leaders will contact you soon.",
+    "contactSuccessTitle": "Message sent!",
+    "contactSuccessBody": "We'll reply as soon as we can.",
+    "sendAnother": "Send another",
+    "genericError": "Something went wrong. Please try again.",
+    "captchaError": "Please complete the security check.",
+    "errors": {
+      "required": "This field is required",
+      "tooShort": "Too short",
+      "tooLong": "Too long",
+      "email": "Invalid email address",
+      "phone": "Invalid phone number",
+      "className": "Please enter a valid class (e.g. 10A)",
+      "consent": "You must agree to continue",
+      "helpWith": "Please choose at least one"
+    }
   }
 }

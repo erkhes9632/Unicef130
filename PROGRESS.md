@@ -2,10 +2,11 @@
 
 ## Next step
 
-**Phase 2 — Public pages (static)**: create mock data in `src/lib/mock/*` and build the homepage,
-then the remaining pages in checklist order.
+**Phase 3 — Database**: install drizzle-orm + drizzle-kit, write the schema in `src/db/schema.ts`
+(match types in `src/lib/types.ts`), generate migrations into `drizzle/migrations`, apply with
+`wrangler d1 migrations apply DB --local`, then a seed script that reuses `src/lib/mock/*`.
 
-**Current phase:** Phase 2 (Phases 0–1 done)
+**Current phase:** Phase 3 (Phases 0–2 done)
 
 ---
 
@@ -35,18 +36,19 @@ then the remaining pages in checklist order.
 - [x] Base components: Section/SectionHeading/Eyebrow, PageHero, DecorativeShapes, EmptyState, shadcn ui set
 - [x] 404 pages (`[locale]/not-found.tsx` via catch-all, root `not-found.tsx`)
 
-### Phase 2 — Public pages (static, mock data in `src/lib/mock/*`)
+### Phase 2 — Public pages (static, mock data in `src/lib/mock/*`) ✅
 
-- [ ] `/` home
-- [ ] `/about`
-- [ ] `/news`, `/news/[slug]`
-- [ ] `/events`, `/events/[slug]`
-- [ ] `/members`
-- [ ] `/gallery`, `/gallery/[album]`
-- [ ] `/join` (UI only)
-- [ ] `/contact` (UI only)
-- [ ] `/support`
-- [ ] Search, 404 page
+- [x] Types (`src/lib/types.ts`), mock data (`src/lib/mock/*`), data layer (`src/lib/data/*`, locale-resolved, D1-ready signatures)
+- [x] `/` home (hero with both logos, stats, what we do, latest news, upcoming events, gallery preview, partners/social, CTA)
+- [x] `/about` (story, mission, values, inside/outside, leadership)
+- [x] `/news` (category chips, ?page pagination), `/news/[slug]` (cover, safe rich text, tags, share, related)
+- [x] `/events` (list upcoming/past + month calendar via ?view=calendar&month=YYYY-MM), `/events/[slug]` (+ .ics at `/api/events/[slug]/ics`)
+- [x] `/members` (leadership + members, initials avatars, photos only with consent)
+- [x] `/gallery`, `/gallery/[album]` (masonry grid + lightbox with keyboard/swipe)
+- [x] `/join` form (RHF + zod, server re-validation; storage stub until Phase 6)
+- [x] `/contact` (info, socials, Google Maps embed allow-list, contact form)
+- [x] `/support` (ways to help, configurable donation link)
+- [x] `/search?q=` (news + events), 404 page
 
 ### Phase 3 — Database
 
@@ -129,6 +131,12 @@ then the remaining pages in checklist order.
 | 2026-11-08 | Logos rendered by `LogoImage` with automatic placeholder box when the file 404s. | Developer adds the files later; no code change needed. |
 | 2026-11-08 | Not trusted: `@parcel/watcher`, `@swc/core` postinstalls (next-intl extractor deps). | Not needed for our usage. |
 
+| 2026-11-08 | Own Mongolian date formatter (`src/lib/dates/format.ts`), no `Intl` for `mn`. | workerd's ICU has no Mongolian data → `Intl` silently fell back to English on Workers (Node was fine). |
+| 2026-11-08 | Rich text rendered by an allow-list React renderer (`components/common/rich-text.tsx`), never `dangerouslySetInnerHTML`; URL allow-list (http/https/mailto/tel/relative). | Safe rendering of admin-authored Tiptap JSON. |
+| 2026-11-08 | Join form: phone required, email optional (minors may not have email); helpWith is a multi-select of fixed options. | Collect only what's needed. |
+| 2026-11-08 | Filters/pagination/calendar navigation use plain `?query` links and GET forms. | Works without JS, cache-friendly, simple on phones. |
+| 2026-11-08 | Cover placeholders = brand gradient + category icon; gallery placeholders = generated abstract SVGs in `public/placeholders/`. | No real photos yet; no external image hosts. |
+
 ## Open questions (for the developer)
 
 - Logo files: please put `public/logos/school-130.png` and `public/logos/unicef.png` (placeholder boxes until then).
@@ -140,6 +148,11 @@ then the remaining pages in checklist order.
 - `src/config/site.ts`: contact (address, email, phone, map embed, office hours), social links, homepage stats, donation link — will be editable in admin (Phase 5).
 - Logo files `public/logos/school-130.png`, `public/logos/unicef.png` (placeholder boxes until added).
 - Footer disclaimer wording about UNICEF affiliation (`Footer.disclaimer` in messages).
+- Sample news/events/members/albums in `src/lib/mock/*` (also used as seed data) — replace via admin.
+- Member names in mock data are placeholders (Phase 3 seed) — real names/roles/classes needed.
+- Homepage partners section: 3 placeholder boxes (real partner names/logo files).
+- Event locations ("хүүхдийн асрамжийн төв") — exact places.
+- About page story/mission/values text (messages `About.*`) — confirm wording.
 
 ## Known bugs
 
