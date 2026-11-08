@@ -4,6 +4,7 @@
  * create the first admin with `bun run admin:create` (Phase 4).
  *
  *   bun run db:migrate:local && bun run db:seed:local
+ *   bun scripts/seed.ts --print-sql > seed.sql   (SQL only, nothing executed)
  */
 import {
   fallbackContact,
@@ -124,6 +125,12 @@ const settingsRows: Record<string, unknown> = {
 };
 for (const [key, value] of Object.entries(settingsRows)) {
   statements.push(insert("settings", { key, value: JSON.stringify(value) }));
+}
+
+if (Bun.argv.includes("--print-sql")) {
+  // Prints the SQL instead of running it (the developer may apply it to production manually).
+  console.log(statements.join("\n"));
+  process.exit(0);
 }
 
 console.log(`Seeding local D1 with ${statements.length} statements...`);

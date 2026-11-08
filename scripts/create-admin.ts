@@ -83,8 +83,11 @@ if (values.reset) {
 }
 
 if (values["print-sql"]) {
-  // For the developer's production setup (DEPLOY_CHECKLIST.md). Not executed.
+  // For the developer's production setup (DEPLOY_CHECKLIST.md). Not executed here.
+  // SQL → stdout (redirect to a file); the generated password → stderr (shown in the terminal).
   console.log(statements.join("\n"));
+  if (!values.password)
+    console.error(`🔑 Generated password for ${email} (shown once): ${password}`);
   process.exit(0);
 }
 

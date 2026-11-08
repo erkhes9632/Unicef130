@@ -45,4 +45,15 @@
       "bucket_name": "unicef-club-130-opennext-cache", // TODO(deploy): create this bucket
     },
   ],
+  // Non-secret production settings. Locally, .dev.vars overrides these.
+  // TODO(deploy): fill in before deploying (see DEPLOY_CHECKLIST.md).
+  // "vars": {
+  //   "SITE_URL": "https://unicef130.example.mn",
+  //   "BETTER_AUTH_URL": "https://unicef130.example.mn",
+  //   "BETTER_AUTH_TRUSTED_ORIGINS": "https://unicef130.example.mn",
+  //   "TURNSTILE_SITE_KEY": "0x4AAAAAAA...",
+  //   "GOOGLE_SHEET_TAB": "Applications",
+  // },
+  // Custom domain (alternatively add it in the Cloudflare dashboard):
+  // "routes": [{ "pattern": "unicef130.example.mn", "custom_domain": true }],
 }

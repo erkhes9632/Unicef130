@@ -58,7 +58,8 @@ bun run dev           # next dev (bindings emulated via initOpenNextCloudflareFo
 bun run lint          # eslint
 bun run typecheck     # next typegen && tsc --noEmit
 bun run format        # prettier --write .
-bun run check         # lint + typecheck + format:check
+bun run check         # lint + typecheck + format:check + bun test
+bun run test          # bun test (tests/)
 bun run build         # next build
 bun run cf:build      # OpenNext Worker bundle (.open-next/)
 bun run preview       # cf:build + local workerd preview (LOCAL ONLY — allowed)
@@ -84,3 +85,9 @@ Before marking a phase done: `bun run lint && bun run typecheck && bun run build
 - Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`…), one per completed task,
   with the attribution line. Update PROGRESS.md in the same commit.
 - `next.config.ts`: `cacheComponents` is intentionally **off** (hangs on workerd, see PROGRESS.md).
+- Dates: never use `Intl` for Mongolian (workerd has no `mn` data) — use `src/lib/dates/format.ts`.
+- Pages read data only through `src/lib/data/*` (locale-resolved). Admin writes go through Server
+  Actions in `src/app/admin/(panel)/*/actions.ts` that start with `requireRole()`.
+- Don't add `loading.tsx` to public `[locale]` routes (breaks 404 status codes).
+- Visual/a11y/perf checks: run puppeteer-core / axe-core / lighthouse from a scratch folder against
+  `bun run preview`; don't add them as project dependencies.

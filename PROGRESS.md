@@ -2,11 +2,14 @@
 
 ## Next step
 
-**Phase 10 — Deploy-ready & handover (NO deploy)**: verify production build (`bun run build` +
-`bun run cf:build`), write README.md (Mongolian) and DEPLOY_CHECKLIST.md with the commands the
-developer runs (D1/R2 create, secrets, migrations, deploy, custom domain, first admin), handover notes.
+**All phases (0–10) are done.** The project is deploy-ready but **not deployed** (by design).
+Remaining work is for the developer:
 
-**Current phase:** Phase 10 (Phases 0–9 done)
+1. Add real content / files listed under **TODO(content)** (logos first).
+2. Follow **DEPLOY_CHECKLIST.md** to create D1/R2, set secrets/vars and deploy.
+3. Optional improvements: see "Known bugs" (404 shell, simulated Lighthouse on font-heavy pages).
+
+**Current phase:** Done — maintenance mode.
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -119,11 +122,15 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - [x] English display of classes ("10А" → "10A", "Багш" → "Teacher"), gallery alt texts from the English album title, Mongolian-only tags hidden on `/en`
 - [x] Automated scan: no Cyrillic text left on `/en/*` pages
 
-### Phase 10 — Deploy-ready & handover (NO actual deploy)
+### Phase 10 — Deploy-ready & handover (NO actual deploy) ✅
 
-- [ ] Production build passes
-- [ ] README.md (Mongolian): local run, D1/R2/secrets creation commands, migrations, deploy, custom domain, first admin, adding news, handover
-- [ ] DEPLOY_CHECKLIST.md
+- [x] Production build passes (`bun run check`, `bun run build`, `bun run cf:build`); handler ≈ 2.0 MB gzip (Workers Free limit 3 MB)
+- [x] Final smoke test on local workerd: all public routes 200, unknown routes 404, admin protected
+- [x] Fixed regression: public `loading.tsx` made `notFound()` return 200 (streaming) → removed
+- [x] `wrangler.jsonc`: commented production `vars` + custom-domain `routes` templates (`TODO(deploy)`)
+- [x] `scripts/create-admin.ts --print-sql` (password on stderr) and `scripts/seed.ts --print-sql` for the developer's production setup
+- [x] README.md (Mongolian): local run, commands, deploy summary, admin usage (users, news), privacy rules for minors, handover checklist, maintenance
+- [x] DEPLOY_CHECKLIST.md: login → D1/R2 → migrations → vars → secrets (Turnstile, Google) → deploy → custom domain → first admin → content → final checks
 
 ---
 
@@ -185,6 +192,8 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 | 2026-11-08 | Visual/a11y/perf QA tools (puppeteer-core, axe-core, lighthouse) are run from the session scratchpad, not added to the project. | Keep project deps lean; documented commands in README for future checks. |
 | 2026-11-08 | OG image is a static PNG generated from HTML (no `next/og` at runtime). | Avoids bundling satori/resvg wasm into the Worker (size limits). |
 
+| 2026-11-08 | No `loading.tsx` for public `[locale]` routes. | With streaming, `notFound()` after the shell is flushed returns HTTP 200 instead of 404. SSR is fast enough without it. Admin keeps its loading state. |
+
 ## Open questions (for the developer)
 
 - Logo files: please put `public/logos/school-130.png` and `public/logos/unicef.png` (placeholder boxes until then).
@@ -207,6 +216,7 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 
 - 404 pages: HTML shell is empty and the 404 content renders from the RSC payload on the client (same with `next start`, so it's Next 16 behavior, not Workers). Status code + `noindex` are correct. Revisit in Phase 8.
 - Build warns "middleware file convention is deprecated" — intentional (see Decisions).
+- Admin `loading.tsx` streams, so an unknown admin record id (`/admin/news/<bad-id>`) renders the 404 UI with HTTP 200 (admin only, noindex) — harmless.
 - Console 404s for `/logos/school-130.png` and `/logos/unicef.png` until the developer adds the files (placeholders render fine). Lowers Lighthouse best-practices to 96.
 - Lighthouse _simulated_ mobile score is 85 on content-heavy pages (/, /news, /members) mainly due to 6 web-font files (Montserrat + Nunito Sans × latin/cyrillic/cyrillic-ext — Mongolian Ө/Ү are in cyrillic-ext). Real-throttled runs score 99. Option if needed: `display: "optional"` for headings or self-subset fonts.
 - Local preview has no gzip/brotli; Cloudflare's edge compresses in production (HTML 138 KB → ~22 KB).
