@@ -1,0 +1,12 @@
+# Copy to .dev.vars (gitignored) for local development.
+# In production use: bunx wrangler secret put <NAME>
+NEXTJS_ENV=development
+
+# Added in later phases:
+# BETTER_AUTH_SECRET=
+# BETTER_AUTH_URL=http://localhost:3000
+# TURNSTILE_SECRET_KEY=
+# NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+# GOOGLE_SERVICE_ACCOUNT_EMAIL=
+# GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=
+# GOOGLE_SHEET_ID=

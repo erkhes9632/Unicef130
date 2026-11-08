@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "unicef-club-130",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-04",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  // Self-reference service binding required by the OpenNext caching layer.
+  // The service name must match "name" above. See https://opennext.js.org/cloudflare/caching
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "unicef-club-130",
+    },
+  ],
+  // LOCAL ONLY for now: the IDs below are placeholders. Local dev/preview uses Miniflare
+  // emulation (stored in .wrangler/state), so no real Cloudflare resources are needed.
+  // The developer replaces the placeholders before deploying — see DEPLOY_CHECKLIST.md.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "unicef-club-130-db",
+      "database_id": "00000000-0000-0000-0000-000000000000", // TODO(deploy): real D1 id
+      "migrations_dir": "drizzle/migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      // Uploaded images (news covers, gallery, member photos)
+      "binding": "MEDIA",
+      "bucket_name": "unicef-club-130-media", // TODO(deploy): create this bucket
+    },
+    {
+      // OpenNext incremental cache (ISR / fetch cache)
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "unicef-club-130-opennext-cache", // TODO(deploy): create this bucket
+    },
+  ],
+}
