@@ -162,7 +162,7 @@ export function NewsForm({
           </AdminField>
         </FormSection>
         <FormSection title="Нүүр зураг">
-          <ImageField id="coverUrl" name="coverUrl" defaultValue={initial?.coverUrl} />
+          <ImageField id="coverUrl" name="coverUrl" defaultValue={initial?.coverUrl} kind="news" />
           {e.coverUrl?.map((m) => (
             <p key={m} className="text-sm text-destructive">
               {m}

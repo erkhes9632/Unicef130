@@ -8,6 +8,7 @@ import { logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
 import { requireRole } from "@/lib/auth/session";
+import { deleteMediaUrls } from "@/lib/media/server";
 import { memberInputSchema } from "@/lib/validation/admin";
 
 export async function saveMember(
@@ -33,12 +34,19 @@ export async function saveMember(
     const input = parsed.data;
     const db = await getDb();
     if (id) {
+      const [prev] = await db
+        .select({ photoUrl: members.photoUrl })
+        .from(members)
+        .where(eq(members.id, id))
+        .limit(1);
       const res = await db
         .update(members)
         .set(input)
         .where(eq(members.id, id))
         .returning({ id: members.id });
       if (!res.length) return { ok: false, message: "Гишүүн олдсонгүй." };
+      if (prev?.photoUrl && prev.photoUrl !== input.photoUrl)
+        await deleteMediaUrls([prev.photoUrl]);
       await logActivity(user, "member.update", {
         type: "member",
         id,
@@ -66,8 +74,9 @@ export async function deleteMember(id: string): Promise<ActionState> {
     const [row] = await db
       .delete(members)
       .where(eq(members.id, id))
-      .returning({ name: members.name });
+      .returning({ name: members.name, photoUrl: members.photoUrl });
     if (!row) return { ok: false, message: "Гишүүн олдсонгүй." };
+    await deleteMediaUrls([row.photoUrl]);
     await logActivity(user, "member.delete", {
       type: "member",
       id,

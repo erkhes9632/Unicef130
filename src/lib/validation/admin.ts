@@ -145,3 +145,26 @@ export const userCreateSchema = z.object({
   role: z.enum(["admin", "editor"]),
   password: z.union([z.literal(""), passwordSchema]),
 });
+
+export const albumInputSchema = z.object({
+  title: req(200),
+  titleEn: opt(200),
+  slug,
+  description: z.string().trim().max(1000, { error: "Хамгийн ихдээ 1000 тэмдэгт." }),
+  descriptionEn: opt(1000),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Огноо буруу байна." }),
+  published: z.boolean(),
+});
+
+export const albumImagesSchema = z
+  .array(
+    z.object({
+      url: z.string().max(300),
+      thumbUrl: z.string().max(300),
+      width: z.number().int().min(1).max(10_000),
+      height: z.number().int().min(1).max(10_000),
+      alt: z.string().trim().max(200),
+    }),
+  )
+  .min(1)
+  .max(50);

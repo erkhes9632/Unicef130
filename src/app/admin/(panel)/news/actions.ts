@@ -8,6 +8,7 @@ import { logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
 import { requireRole } from "@/lib/auth/session";
+import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { newsInputSchema } from "@/lib/validation/admin";
@@ -62,12 +63,19 @@ export async function saveNews(
     const values = { ...input, slug, publishedAt };
 
     if (id) {
+      const [prev] = await db
+        .select({ coverUrl: news.coverUrl })
+        .from(news)
+        .where(eq(news.id, id))
+        .limit(1);
       const res = await db
         .update(news)
         .set(values)
         .where(eq(news.id, id))
         .returning({ id: news.id });
       if (!res.length) return { ok: false, message: "Мэдээ олдсонгүй." };
+      if (prev?.coverUrl && prev.coverUrl !== input.coverUrl)
+        await deleteMediaUrls([prev.coverUrl]);
       await logActivity(user, "news.update", {
         type: "news",
         id,
@@ -96,8 +104,12 @@ export async function deleteNews(id: string): Promise<ActionState> {
   try {
     const user = await requireRole("editor");
     const db = await getDb();
-    const [row] = await db.delete(news).where(eq(news.id, id)).returning({ title: news.title });
+    const [row] = await db
+      .delete(news)
+      .where(eq(news.id, id))
+      .returning({ title: news.title, coverUrl: news.coverUrl });
     if (!row) return { ok: false, message: "Мэдээ олдсонгүй." };
+    await deleteMediaUrls([row.coverUrl]);
     await logActivity(user, "news.delete", {
       type: "news",
       id,

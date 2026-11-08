@@ -2,12 +2,12 @@
 
 ## Next step
 
-**Phase 7 — Media**: R2 upload route (auth + type/size validation, keys under `news/`, `events/`,
-`members/`, `gallery/`), `/media/[...key]` serving route with caching, client-side resize/compress
-(WebP, max 1920px + 640px thumb) before upload, replace `ImageField` URL input with uploader,
-gallery admin (albums CRUD, multi-upload, reorder, delete incl. R2 cleanup).
+**Phase 8 — Quality**: SEO (per-page metadata + alternates/hreflang, OG image route,
+`sitemap.ts`, `robots.ts`, JSON-LD Organization/NewsArticle/Event), accessibility pass, performance
+check (Lighthouse mobile if Chrome is available), `loading.tsx`/`error.tsx`, tests with `bun test`
+(validation, slug, csv, dates, password, sanitize, sheets JWT, action guards).
 
-**Current phase:** Phase 7 (Phases 0–6 done)
+**Current phase:** Phase 8 (Phases 0–7 done)
 
 Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 `admin@example.com` / `LocalTest-Pass-123` (admin), `editor@example.com` / `LocalEditor-Pass-123` (editor).
@@ -93,10 +93,15 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 - [x] Admin contact messages: filter, mark read/unread, delete (admin only)
 - [x] Verified on local workerd: valid join → stored + sheets skipped log; missing token → captcha; invalid → field errors; contact stored; CSV export OK; anon export 401; JWT signature verified with a local RSA key
 
-### Phase 7 — Media
+### Phase 7 — Media ✅
 
-- [ ] R2 uploads (size/type validation), image delivery strategy for Workers
-- [ ] Gallery albums admin (multi-upload, reorder, delete) + public lightbox
+- [x] `POST /api/admin/upload` (editor+, same-origin check, 5MB limit, magic-byte type sniffing, keys `<kind>/<yyyy>/<mm>/<uuid>[-thumb].<ext>`) → R2 `MEDIA`
+- [x] `GET /media/[...key]` (R2 → immutable cache, ETag/304, nosniff, path validation)
+- [x] Browser-side resize/re-encode (`src/lib/media/client.ts`: WebP w/ JPEG fallback, 1920px full + 640px thumb, strips EXIF/GPS)
+- [x] `ImageField` uploader for news/events/members; old R2 objects deleted when replaced or when the record is deleted
+- [x] Gallery admin: albums CRUD, multi-upload with progress, alt text, reorder (up/down), set cover, delete image/album (+R2 cleanup)
+- [x] Public gallery already uses the lightbox (Phase 2) with thumbs/full URLs from D1
+- [x] Verified on local workerd: upload OK + byte-identical fetch, 304 with ETag, fake image rejected, bad kind 400, anon 401, bad origin 403, traversal 404, replaced cover removed from R2
 
 ### Phase 8 — Quality
 
@@ -168,6 +173,9 @@ Local test accounts (LOCAL D1 only, created with `bun run admin:create`):
 | 2026-11-08 | Turnstile site key read from env at request time (`TURNSTILE_SITE_KEY`), not `NEXT_PUBLIC_*`. | Change keys with `wrangler secret/vars` without rebuilding. |
 | 2026-11-08 | Sheets sync is fire-and-forget (`ctx.waitUntil`) with a retry button in admin. | The applicant never waits for / fails because of Google. |
 | 2026-11-08 | Deleting applications/messages is admin-only. | Personal data of minors. |
+
+| 2026-11-08 | Uploads go through a Route Handler (multipart), not a Server Action. | Server Action bodies are limited to 1MB by default; route handler gives explicit size/type control. |
+| 2026-11-08 | Images resized in the browser; no server-side transforms. | Free, works locally, no Cloudflare Images binding; also strips GPS metadata from children's photos. |
 
 ## Open questions (for the developer)
 

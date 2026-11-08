@@ -116,7 +116,12 @@ export function MemberForm({
           title="Зураг"
           description="Насанд хүрээгүй хүүхдийн зургийг зөвхөн зөвшөөрөлтэй үед нийтэлнэ."
         >
-          <ImageField id="photoUrl" name="photoUrl" defaultValue={initial?.photoUrl} />
+          <ImageField
+            id="photoUrl"
+            name="photoUrl"
+            defaultValue={initial?.photoUrl}
+            kind="members"
+          />
           <div className="flex items-start gap-2">
             <Checkbox
               id="showPhoto"

@@ -148,7 +148,12 @@ export function EventForm({
           <SubmitButton className="w-full" />
         </FormSection>
         <FormSection title="Нүүр зураг">
-          <ImageField id="coverUrl" name="coverUrl" defaultValue={initial?.coverUrl} />
+          <ImageField
+            id="coverUrl"
+            name="coverUrl"
+            defaultValue={initial?.coverUrl}
+            kind="events"
+          />
         </FormSection>
       </div>
     </form>
