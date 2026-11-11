@@ -189,3 +189,4 @@ db:migrate:local` → (production) `bunx wrangler d1 migrations apply DB --remot
   [PROGRESS.md](./PROGRESS.md).
 - Код, тайлбар, commit message — англиар. Сайтын текст — монголоор (+ англи орчуулга).
 - Commit бүрийн өмнө: `bun run check`.
+# Uniceff130
