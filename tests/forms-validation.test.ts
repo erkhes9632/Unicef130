@@ -9,7 +9,7 @@ import {
 const validJoin = {
   fullName: "Батын Анужин",
   className: "10А",
-  phone: "9911 2233",
+  phone: "8811 2233",
   email: "",
   reason: "Хүүхдүүдэд туслахыг хүсэж байна.",
   helpWith: ["reading"],
@@ -35,17 +35,17 @@ describe("join form schema", () => {
   test("requires consent and at least one help option", () => {
     expect(joinFormSchema.safeParse({ ...validJoin, consent: false }).success).toBe(false);
     expect(joinFormSchema.safeParse({ ...validJoin, helpWith: [] }).success).toBe(false);
-    expect(joinFormSchema.safeParse({ ...validJoin, helpWith: ["hacking"] }).success).toBe(false);
+    expect(joinFormSchema.safeParse({ ...validJoin, helpWith: ["<script>"] }).success).toBe(false);
   });
   test("accepts common class/phone formats", () => {
     for (const c of ["10А", "10 а", "9-Б", "11A", "8"])
       expect(joinFormSchema.safeParse({ ...validJoin, className: c }).success).toBe(true);
-    for (const p of ["99112233", "+976 9911 2233", "976-9911-2233", "9911-2233"])
+    for (const p of ["88112233", "+976 8811 2233", "976-8811-2233", "8811-2233"])
       expect(joinFormSchema.safeParse({ ...validJoin, phone: p }).success).toBe(true);
   });
   test("normalizers", () => {
-    expect(normalizePhone("9911 2233")).toBe("+97699112233");
-    expect(normalizePhone("+976-9911-2233")).toBe("+97699112233");
+    expect(normalizePhone("8811 2233")).toBe("+97688112233");
+    expect(normalizePhone("+976-8811-2233")).toBe("+97688112233");
     expect(normalizeClassName("10 а")).toBe("10А");
     expect(normalizeClassName("9-б")).toBe("9Б");
   });

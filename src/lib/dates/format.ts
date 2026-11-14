@@ -88,3 +88,34 @@ export function fromIsoDate(isoDate: string) {
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
+
+/**
+ * Date-only range for all-day events (no times):
+ * mn "2025 оны 11-р сарын 17 – 12-р сарын 19", en "November 17 – December 19, 2025".
+ */
+export function formatDateRange(locale: Locale, start: Date | string, end?: Date | string | null) {
+  const a = ub(start);
+  const b = end ? ub(end) : null;
+  if (!b || (a.year === b.year && a.month === b.month && a.day === b.day)) {
+    return formatDate(locale, start, "long");
+  }
+  if (locale === "mn") {
+    return a.year === b.year
+      ? `${a.year} оны ${a.month}-р сарын ${a.day} – ${b.month}-р сарын ${b.day}`
+      : `${formatDate(locale, start, "long")} – ${formatDate(locale, end!, "long")}`;
+  }
+  const md = (d: Date | string) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Ulaanbaatar",
+    }).format(new Date(d));
+  return a.year === b.year
+    ? `${md(start)} – ${md(end!)}, ${b.year}`
+    : `${formatDate(locale, start, "long")} – ${formatDate(locale, end!, "long")}`;
+}
+
+/** "855,000₮" */
+export function formatMnt(value: number) {
+  return `${formatNumber(value)}₮`;
+}

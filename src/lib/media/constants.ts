@@ -1,5 +1,5 @@
 /** Shared (client + server) media limits. */
-export const MEDIA_KINDS = ["news", "events", "members", "gallery"] as const;
+export const MEDIA_KINDS = ["news", "events", "members", "gallery", "site"] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // after client-side compression

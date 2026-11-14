@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   CalendarDays,
   Images,
   Inbox,
@@ -8,6 +9,7 @@ import {
   type LucideIcon,
   Mail,
   Newspaper,
+  FileText,
   Settings,
   UserCog,
   Users,
@@ -26,6 +28,8 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/gallery", label: "Зургийн цомог", icon: Images },
   { href: "/admin/applications", label: "Өргөдлүүд", icon: Inbox },
   { href: "/admin/messages", label: "Зурвасууд", icon: Mail },
+  { href: "/admin/impact", label: "Жилийн үр дүн", icon: BarChart3, adminOnly: true },
+  { href: "/admin/pages/about", label: "Бидний тухай хуудас", icon: FileText, adminOnly: true },
   { href: "/admin/settings", label: "Сайтын тохиргоо", icon: Settings, adminOnly: true },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UserCog, adminOnly: true },
 ];

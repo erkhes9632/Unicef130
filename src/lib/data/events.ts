@@ -1,9 +1,20 @@
-import { and, asc, desc, eq, gte, lt, or, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lt, or } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
-import type { RichTextDoc } from "@/lib/types";
+import { normalizeSdgs } from "@/lib/sdg";
+import { clubDirections, type ClubDirection, type RichTextDoc } from "@/lib/types";
 import { pick } from "./localize";
+
+/** Report numbers for an activity (all optional; unknown values are null/empty). */
+export type ActivityFacts = {
+  /** As written in the report ("137", "50+", "~500", "School community"). */
+  inPerson: string | null;
+  online: number | null;
+  donationAmount: number | null;
+  partners: string[];
+  beneficiaries: string[];
+};
 
 export type EventItem = {
   id: string;
@@ -15,11 +26,16 @@ export type EventItem = {
   location: string;
   startsAt: string;
   endsAt: string | null;
+  allDay: boolean;
+  direction: ClubDirection | null;
+  schoolYear: string | null;
+  sdgs: number[];
+  facts: ActivityFacts;
 };
 
 type Row = typeof events.$inferSelect;
 
-function toItem(locale: Locale, e: Row): EventItem {
+export function eventToItem(locale: Locale, e: Row): EventItem {
   return {
     id: e.id,
     slug: e.slug,
@@ -30,8 +46,22 @@ function toItem(locale: Locale, e: Row): EventItem {
     location: pick(locale, e.location, e.locationEn),
     startsAt: e.startsAt.toISOString(),
     endsAt: e.endsAt ? e.endsAt.toISOString() : null,
+    allDay: e.allDay,
+    direction: (clubDirections as readonly string[]).includes(e.direction ?? "")
+      ? (e.direction as ClubDirection)
+      : null,
+    schoolYear: e.schoolYear,
+    sdgs: normalizeSdgs(e.sdgs),
+    facts: {
+      inPerson: pick(locale, e.reachInPerson, e.reachInPersonEn) || null,
+      online: e.reachOnline,
+      donationAmount: e.donationAmount && e.donationAmount > 0 ? e.donationAmount : null,
+      partners: e.partners ?? [],
+      beneficiaries: e.beneficiaries ?? [],
+    },
   };
 }
+const toItem = eventToItem;
 
 /** An event counts as upcoming until it ends (or until its start if it has no end time). */
 export function isUpcoming(e: Pick<EventItem, "startsAt" | "endsAt">, now = Date.now()) {
@@ -116,4 +146,36 @@ export async function searchEvents(locale: Locale, query: string, limit = 20) {
     )
     .slice(0, limit)
     .map((r) => toItem(locale, r));
+}
+
+/** All published activities of a school year, oldest first (impact timeline, About page). */
+export async function listYearActivities(locale: Locale, schoolYear: string) {
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.published, true), eq(events.schoolYear, schoolYear)))
+    .orderBy(asc(events.startsAt));
+  return rows.map((r) => toItem(locale, r));
+}
+
+export async function getEventById(locale: Locale, id: string) {
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.published, true), eq(events.id, id)))
+    .limit(1);
+  return row ? toItem(locale, row) : null;
+}
+
+/** Published activities that belong to one of the club's directions, newest first. */
+export async function listDirectionActivities(locale: Locale) {
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.published, true), isNotNull(events.direction)))
+    .orderBy(desc(events.startsAt));
+  return rows.map((r) => toItem(locale, r));
 }

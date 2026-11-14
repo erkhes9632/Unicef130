@@ -3,7 +3,8 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { applications } from "@/db/schema";
-import { applicationStatusLabel, helpOptionLabel } from "@/lib/admin/labels";
+import { applicationStatusLabel, helpOptionLabels } from "@/lib/admin/labels";
+import { getSiteSettings } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
 import { appendSheetRow, sheetsConfigFromEnv } from "@/lib/integrations/google-sheets";
 
@@ -32,13 +33,12 @@ export async function syncApplicationToSheets(id: string): Promise<SyncResult> {
   try {
     const { env } = await getCloudflareContext({ async: true });
     const cfg = sheetsConfigFromEnv(env);
-    if (!cfg) {
-      console.info("[sheets] Google Sheets not configured — skipping sync for application", id);
-      return "skipped";
-    }
+    // Sheets sync is optional: without the Google env vars it is skipped silently.
+    if (!cfg) return "skipped";
     const db = await getDb();
     const [app] = await db.select().from(applications).where(eq(applications.id, id)).limit(1);
     if (!app) return "not_found";
+    const helpOptionLabel = helpOptionLabels((await getSiteSettings()).helpOptions);
     try {
       await appendSheetRow(cfg, [
         `${formatDate("mn", app.createdAt, "long")} ${formatDate("mn", app.createdAt, "time")}`,

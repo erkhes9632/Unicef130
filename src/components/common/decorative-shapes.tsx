@@ -23,7 +23,7 @@ export function DecorativeShapes({
           <div className="absolute bottom-0 left-1/3 size-56 rounded-full bg-brand-gold/15 blur-3xl" />
           <svg
             viewBox="0 0 120 120"
-            className="absolute top-16 right-[8%] hidden size-20 animate-float-soft text-brand-gold md:block"
+            className="absolute top-6 right-[3%] hidden size-14 animate-float-soft text-brand-gold opacity-60 lg:block"
           >
             <path
               fill="currentColor"
@@ -33,13 +33,13 @@ export function DecorativeShapes({
           </svg>
           <svg
             viewBox="0 0 100 100"
-            className="absolute right-[4%] bottom-10 hidden size-16 animate-float-soft text-brand-green [animation-delay:-3s] md:block"
+            className="absolute right-[2%] bottom-6 hidden size-12 animate-float-soft text-brand-green opacity-50 [animation-delay:-3s] lg:block"
           >
             <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="12" />
           </svg>
           <svg
             viewBox="0 0 100 100"
-            className="absolute top-1/2 left-[45%] hidden size-10 animate-float-soft text-brand-blue [animation-delay:-6s] lg:block"
+            className="absolute bottom-8 left-[46%] hidden size-8 animate-float-soft text-brand-blue opacity-40 [animation-delay:-6s] xl:block"
           >
             <rect x="15" y="15" width="70" height="70" rx="20" fill="currentColor" opacity="0.7" />
           </svg>

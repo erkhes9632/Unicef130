@@ -47,3 +47,14 @@ next-env.d.ts
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# local AI-tooling / working notes (kept locally, not published)
+CLAUDE.md
+AGENTS.md
+PROGRESS.md
+.claude/
+DEPLOY_PROMPT.md
+CLAUDE_CODE_PROMPT.md
+
+# private club data (member names, hours) and generated production seed SQL
+private/

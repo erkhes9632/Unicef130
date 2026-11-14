@@ -57,6 +57,7 @@ export default async function EditNewsPage({
           contentEn: row.contentEn,
           status: row.status,
           publishedAt: toUbInputValue(row.publishedAt),
+          sdgs: row.sdgs,
         }}
       />
     </>

@@ -6,8 +6,8 @@ import { z } from "zod";
  * Users are mostly minors: collect only what the club needs.
  */
 
-export const helpOptions = ["events", "reading", "charity", "media", "design", "other"] as const;
-export type HelpOption = (typeof helpOptions)[number];
+/** Help-option keys; the list itself is editable in admin (see src/lib/settings/types.ts). */
+export const helpOptionKey = z.string().regex(/^[a-z0-9-]{1,40}$/, { error: "helpWith" });
 
 const trimmed = (min: number, max: number) =>
   z
@@ -40,7 +40,7 @@ export const joinFormSchema = z.object({
     .max(254, { error: "tooLong" })
     .refine((v) => v === "" || z.email().safeParse(v).success, { error: "email" }),
   reason: trimmed(10, 1000),
-  helpWith: z.array(z.enum(helpOptions)).min(1, { error: "helpWith" }).max(helpOptions.length),
+  helpWith: z.array(helpOptionKey).min(1, { error: "helpWith" }).max(20, { error: "helpWith" }),
   consent: z.literal(true, { error: "consent" }),
 });
 export type JoinFormValues = z.input<typeof joinFormSchema>;

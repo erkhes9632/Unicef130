@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const staticPaths = [
   "/",
   "/about",
+  "/impact",
   "/news",
   "/events",
   "/members",

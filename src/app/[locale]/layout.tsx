@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { SiteHeader } from "@/components/layout/site-header";
 import { routing } from "@/i18n/routing";
+import { getBranding } from "@/lib/branding";
 import { getSiteSettings } from "@/lib/data/settings";
 import { getSiteUrl, jsonLd } from "@/lib/seo";
 
@@ -39,10 +40,11 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
   const t = await getTranslations("Common");
-  const [siteUrl, settings, messages] = await Promise.all([
+  const [siteUrl, settings, messages, branding] = await Promise.all([
     getSiteUrl(),
     getSiteSettings(),
     getMessages(),
+    getBranding(locale),
   ]);
   // Only ship the namespaces that client components use (keeps the HTML/RSC payload small).
   const clientMessages = Object.fromEntries(
@@ -51,14 +53,14 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "130 UNICEF клуб",
-    alternateName: "130 UNICEF Club",
+    name: settings.club.name || "130 UNICEF клуб",
+    alternateName: settings.club.nameEn || "130 UNICEF Club",
     url: siteUrl,
-    logo: `${siteUrl}/logos/school-130.png`,
-    foundingDate: "2025",
+    ...(branding.schoolLogo ? { logo: new URL(branding.schoolLogo, siteUrl).toString() } : {}),
+    ...(settings.club.foundedYear ? { foundingDate: String(settings.club.foundedYear) } : {}),
     parentOrganization: { "@type": "EducationalOrganization", name: "130-р сургууль" },
     ...(settings.contact.email ? { email: settings.contact.email } : {}),
-    sameAs: settings.socials.filter((s) => s.url).map((s) => s.url),
+    sameAs: settings.socials.map((s) => s.url),
   };
 
   return (

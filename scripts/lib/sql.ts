@@ -1,6 +1,6 @@
 /**
- * Helpers for local-only maintenance scripts (Bun). They build SQL and run it against the
- * LOCAL D1 via wrangler. There is intentionally no --remote support here (see CLAUDE.md).
+ * Helpers for local maintenance scripts (Bun). They build SQL and run it against the
+ * LOCAL D1 via wrangler. Production writes go through scripts/create-admin.ts only.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -13,13 +13,14 @@ export type RichTextNode = {
 };
 export type RichTextDoc = { type: "doc"; content?: RichTextNode[] };
 
-export const newsCategories = [
-  "activity",
-  "volunteering",
-  "rights",
-  "charity",
-  "announcement",
-] as const;
+/**
+ * News categories follow the club's three directions (+ announcements):
+ * activity = Нөлөөлөл (advocacy), education = Боловсрол, charity = Хандив (fundraising).
+ * Events use the same keys in `events.direction`.
+ */
+export const newsCategories = ["activity", "education", "charity", "announcement"] as const;
+export const clubDirections = ["activity", "education", "charity"] as const;
+export type ClubDirection = (typeof clubDirections)[number];
 export type NewsCategory = (typeof newsCategories)[number];
 
 export type NewsPost = {

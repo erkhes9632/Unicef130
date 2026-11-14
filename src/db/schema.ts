@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import {
+  type AnySQLiteColumn,
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import type { RichTextDoc } from "@/lib/types";
 
 /**
@@ -117,6 +124,15 @@ export const news = sqliteTable(
       .default("draft"),
     publishedAt: integer("published_at", { mode: "timestamp_ms" }),
     authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    /** UN Sustainable Development Goals (1–17) the post relates to. */
+    sdgs: text("sdgs", { mode: "json" })
+      .$type<number[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    /** The activity (event) this post reports on, if any. */
+    eventId: text("event_id").references((): AnySQLiteColumn => events.id, {
+      onDelete: "set null",
+    }),
     ...timestamps,
   },
   (t) => [
@@ -141,10 +157,41 @@ export const events = sqliteTable(
     locationEn: text("location_en"),
     startsAt: integer("starts_at", { mode: "timestamp_ms" }).notNull(),
     endsAt: integer("ends_at", { mode: "timestamp_ms" }),
+    /** Date-only event (no known time of day): times are never shown. */
+    allDay: integer("all_day", { mode: "boolean" }).notNull().default(false),
     published: integer("published", { mode: "boolean" }).notNull().default(false),
+    // Activity report fields (yearly impact report). All optional.
+    /** Club direction: activity (Нөлөөлөл) | education | charity — same keys as news categories. */
+    direction: text("direction"),
+    /** e.g. "2025-2026" */
+    schoolYear: text("school_year"),
+    /** As written in the report, e.g. "137", "50+", "~500", "Сургуулийн хүрээлэл". */
+    reachInPerson: text("reach_in_person"),
+    reachInPersonEn: text("reach_in_person_en"),
+    reachOnline: integer("reach_online"),
+    /** Money raised, in MNT. */
+    donationAmount: integer("donation_amount"),
+    partners: text("partners", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    beneficiaries: text("beneficiaries", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    sdgs: text("sdgs", { mode: "json" })
+      .$type<number[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    /** Admin-only note (e.g. data issues in the source report). Never shown publicly. */
+    adminNote: text("admin_note").notNull().default(""),
     ...timestamps,
   },
-  (t) => [uniqueIndex("events_slug_idx").on(t.slug), index("events_starts_at_idx").on(t.startsAt)],
+  (t) => [
+    uniqueIndex("events_slug_idx").on(t.slug),
+    index("events_starts_at_idx").on(t.startsAt),
+    index("events_year_idx").on(t.schoolYear),
+  ],
 );
 
 export const members = sqliteTable(
@@ -164,6 +211,11 @@ export const members = sqliteTable(
     showPhoto: integer("show_photo", { mode: "boolean" }).notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
+    /** Members are mostly minors: names are listed publicly only after consent. */
+    showPublicly: integer("show_publicly", { mode: "boolean" }).notNull().default(false),
+    /** Volunteer hours (admin only; used for the aggregate stat, never shown per person). */
+    volunteerHours: integer("volunteer_hours"),
+    schoolYear: text("school_year"),
     ...timestamps,
   },
   (t) => [index("members_order_idx").on(t.group, t.sortOrder)],
@@ -244,6 +296,34 @@ export const contactMessages = sqliteTable(
     createdAt: timestamps.createdAt,
   },
   (t) => [index("contact_messages_created_idx").on(t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Yearly impact report
+// ---------------------------------------------------------------------------
+
+export const impactDirections = ["activity", "education", "charity", "total"] as const;
+export type ImpactDirection = (typeof impactDirections)[number];
+
+/** Official yearly numbers per club direction (one row per school year + direction). */
+export const impactStats = sqliteTable(
+  "impact_stats",
+  {
+    id: id(),
+    schoolYear: text("school_year").notNull(),
+    direction: text("direction", { enum: impactDirections }).notNull(),
+    activities: integer("activities").notNull().default(0),
+    inPerson: integer("in_person").notNull().default(0),
+    /** Display form, e.g. "300+" (falls back to the number). */
+    inPersonLabel: text("in_person_label").notNull().default(""),
+    online: integer("online").notNull().default(0),
+    total: integer("total").notNull().default(0),
+    donationAmount: integer("donation_amount").notNull().default(0),
+    /** Admin-only notes (e.g. differences with the listed activities). */
+    notes: text("notes").notNull().default(""),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("impact_year_direction_idx").on(t.schoolYear, t.direction)],
 );
 
 // ---------------------------------------------------------------------------

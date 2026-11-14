@@ -89,8 +89,8 @@ export const mockMembers: Member[] = [
   },
   {
     id: "m-8",
-    name: "Н. Солонго",
-    nameEn: "N. Solongo",
+    name: "Н. Цэнгэл",
+    nameEn: "N. Tsengel",
     role: "Гишүүн",
     roleEn: "Member",
     className: "9А",

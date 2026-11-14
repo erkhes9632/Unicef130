@@ -2,6 +2,7 @@ import { CalendarDays, CalendarX2, List } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/common/empty-state";
+import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
 import { EventCard } from "@/components/events/event-card";
@@ -114,7 +115,7 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
             ))}
           </div>
         ) : (
-          <EmptyState
+          <JoinEmptyState
             icon={CalendarX2}
             title={scope === "upcoming" ? t("emptyUpcoming") : t("emptyPast")}
           />

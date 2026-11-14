@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { CoverImage, categoryTone } from "@/components/common/cover-image";
+import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cover-image";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
 import type { NewsItem } from "@/lib/data/news";
@@ -16,7 +16,8 @@ export async function NewsCard({ item, priority }: { item: NewsItem; priority?: 
           src={item.coverUrl}
           alt={item.title}
           tone={categoryTone[item.category]}
-          icon={item.category}
+          icon={coverIconFor(item.category)}
+          sdgs={item.sdgs}
           priority={priority}
           className="transition-transform duration-500 group-hover:scale-105"
         />

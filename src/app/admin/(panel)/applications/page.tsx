@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { applications, applicationStatuses, type ApplicationStatus } from "@/db/schema";
-import { applicationStatusLabel, helpOptionLabel } from "@/lib/admin/labels";
+import { applicationStatusLabel, helpOptionLabels } from "@/lib/admin/labels";
+import { getSiteSettings } from "@/lib/data/settings";
 import { isSheetsConfigured } from "@/lib/applications/sheets-sync";
 import { requireUser } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
@@ -49,6 +50,7 @@ export default async function AdminApplicationsPage({
       .groupBy(applications.status),
     isSheetsConfigured(),
   ]);
+  const helpOptionLabel = helpOptionLabels((await getSiteSettings()).helpOptions);
   const countBy = Object.fromEntries(counts.map((c) => [c.status, c.n])) as Record<string, number>;
   const total = counts.reduce((a, c) => a + c.n, 0);
   const tabs = [

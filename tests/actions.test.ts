@@ -107,6 +107,8 @@ beforeEach(() => {
 const settingsForm = () => {
   const f = new FormData();
   f.set("contact.address", "Хаяг");
+  f.set("club.foundedYear", "2025");
+  f.set("helpOptions", JSON.stringify([{ key: "events", label: "Арга хэмжээ", labelEn: "" }]));
   return f;
 };
 
@@ -157,7 +159,7 @@ describe("public form actions", () => {
   const join = {
     fullName: "Батын Анужин",
     className: "10 а",
-    phone: "9911 2233",
+    phone: "8811 2233",
     email: "",
     reason: "Хүүхдүүдэд туслахыг хүсэж байна.",
     helpWith: ["reading"],
@@ -171,6 +173,20 @@ describe("public form actions", () => {
     expect(dbCalls).toHaveLength(0);
   });
 
+  test("join: help option not offered in settings → rejected, nothing stored", async () => {
+    const res = await submitJoinApplication({ ...join, helpWith: ["not-offered"] });
+    expect(res).toMatchObject({ ok: false, error: "validation" });
+    expect(dbCalls).not.toContain("insert");
+  });
+
+  test("admin settings: malformed list JSON is rejected (nothing wiped)", async () => {
+    currentRole = "admin";
+    const f = settingsForm();
+    f.set("partners", "{not json");
+    expect((await saveSettings({}, f)).ok).toBe(false);
+    expect(dbCalls).not.toContain("insert");
+  });
+
   test("join: failed Turnstile → captcha error, nothing stored", async () => {
     turnstileOk = false;
     expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "captcha" });
@@ -180,7 +196,7 @@ describe("public form actions", () => {
   test("join: valid → stored with normalized phone/class and no extra fields", async () => {
     const res = await submitJoinApplication({ ...join, isAdmin: true, status: "accepted" });
     expect(res).toEqual({ ok: true });
-    expect(insertedValues).toMatchObject({ phone: "+97699112233", className: "10А", email: null });
+    expect(insertedValues).toMatchObject({ phone: "+97688112233", className: "10А", email: null });
     expect(insertedValues).not.toHaveProperty("status");
     expect(insertedValues).not.toHaveProperty("isAdmin");
   });

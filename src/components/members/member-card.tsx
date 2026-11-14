@@ -53,9 +53,11 @@ export async function MemberCard({
       <div className="space-y-1">
         <p className={cn("font-bold", large && "text-lg")}>{member.name}</p>
         <p className="text-sm font-semibold text-brand-cyan-strong">{member.role}</p>
-        <p className="text-xs text-muted-foreground">
-          {t("classLabel", { className: member.className })}
-        </p>
+        {member.className && !/^(багш|teacher)$/i.test(member.className) && (
+          <p className="text-xs text-muted-foreground">
+            {t("classLabel", { className: member.className })}
+          </p>
+        )}
       </div>
     </li>
   );

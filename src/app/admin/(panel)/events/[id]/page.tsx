@@ -58,6 +58,17 @@ export default async function EditEventPage({
           content: row.content,
           contentEn: row.contentEn,
           published: row.published,
+          allDay: row.allDay,
+          direction: row.direction,
+          schoolYear: row.schoolYear,
+          reachInPerson: row.reachInPerson,
+          reachInPersonEn: row.reachInPersonEn,
+          reachOnline: row.reachOnline,
+          donationAmount: row.donationAmount,
+          partners: row.partners,
+          beneficiaries: row.beneficiaries,
+          sdgs: row.sdgs,
+          adminNote: row.adminNote,
         }}
       />
     </>

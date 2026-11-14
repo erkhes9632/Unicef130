@@ -8,6 +8,20 @@
       "when": 1794124287289,
       "tag": "0000_lush_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794626498483,
+      "tag": "0001_site_settings_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794628179609,
+      "tag": "0002_activity_report",
+      "breakpoints": true
     }
   ]
 }

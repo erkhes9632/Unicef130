@@ -100,7 +100,13 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
           />
         )}
       </FormField>
-      <Turnstile key={widgetKey} siteKey={turnstileSiteKey} onToken={setToken} action="contact" />
+      <Turnstile
+        key={widgetKey}
+        siteKey={turnstileSiteKey}
+        onToken={setToken}
+        onError={() => setServerError(t("turnstileLoadError"))}
+        action="contact"
+      />
 
       {serverError && (
         <p

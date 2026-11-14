@@ -2,7 +2,7 @@
   "Metadata": {
     "title": "130 UNICEF Club — School No. 130",
     "titleTemplate": "%s | 130 UNICEF Club",
-    "description": "The UNICEF club of School No. 130 in Ulaanbaatar: students helping children inside and outside school, promoting children's rights and organising volunteer activities."
+    "description": "The UNICEF Club of School No. 130 is part of the UNICEF Club Mongolia network: a student club organising volunteer activities in three directions — advocacy, education and fundraising."
   },
   "Common": {
     "brandPair": "School No. 130 × UNICEF",
@@ -13,12 +13,12 @@
     "viewAll": "View all",
     "backHome": "Back to home",
     "skipToContent": "Skip to main content",
-    "logoPlaceholder": "Logo",
     "search": "Search",
     "readMore": "Read more",
-    "photoPlaceholder": "Photo coming soon",
     "schoolLogoAlt": "School No. 130 logo",
-    "unicefLogoAlt": "UNICEF logo"
+    "unicefLogoAlt": "UNICEF logo",
+    "website": "Website",
+    "emptyDescription": "Join the club and do good together."
   },
   "Nav": {
     "label": "Main navigation",
@@ -33,7 +33,8 @@
     "join": "Join",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "menu": "Menu"
+    "menu": "Menu",
+    "impact": "Impact"
   },
   "Theme": {
     "toggle": "Toggle color mode",
@@ -47,7 +48,7 @@
     "en": "English"
   },
   "Footer": {
-    "about": "A UNICEF-inspired student club helping children inside and outside our school. Founded in 2025.",
+    "about": "A student club of School No. 130 and part of the UNICEF Club Mongolia network. Founded in the 2025–2026 school year.",
     "explore": "Explore",
     "getInvolved": "Get involved",
     "contact": "Contact",
@@ -62,100 +63,57 @@
     "code": "404"
   },
   "Home": {
-    "heroEyebrow": "Since 2025 · School No. 130",
+    "heroEyebrow": "Since {year} · School No. 130",
+    "heroEyebrowNoYear": "School No. 130",
     "heroTitle": "Together, for every child!",
-    "heroBody": "We are the UNICEF club of School No. 130 — students who help children inside and outside our school, promote children's rights and do good together.",
+    "heroBody": "We are the student club of School No. 130, part of the UNICEF Club Mongolia network. We organise volunteer activities in three directions: advocacy, education and fundraising.",
     "heroSecondary": "About us",
     "statsTitle": "What we've achieved together",
     "stats": {
       "members": "Active members",
-      "events": "Events organised",
-      "volunteerHours": "Volunteer hours",
-      "childrenHelped": "Children reached"
+      "events": "Events organised"
     },
     "whatEyebrow": "What we do",
-    "whatTitle": "Inside school and beyond — wherever help is needed",
-    "pillars": {
-      "inside": {
-        "title": "Inside school",
-        "body": "Reading to younger pupils, mini-lessons on children's rights, celebrations."
-      },
-      "outside": {
-        "title": "Outside school",
-        "body": "Care centre visits, community volunteering and joint campaigns."
-      },
-      "rights": {
-        "title": "Children's rights",
-        "body": "Spreading the word that every child has the right to be protected, heard and to grow."
-      },
-      "charity": {
-        "title": "Donations & support",
-        "body": "Collecting warm clothes, books and school supplies for children in need."
-      }
-    },
+    "whatTitle": "Our three directions",
     "newsTitle": "Latest news",
     "newsDescription": "News and stories from our club.",
     "eventsTitle": "Upcoming events",
     "eventsDescription": "Join us — helping hands are always needed.",
-    "noUpcoming": "No events planned yet. Stay tuned!",
     "galleryTitle": "Gallery",
     "galleryDescription": "Warm moments we've shared together.",
     "connectTitle": "Stronger together",
-    "connectBody": "We work with our school, parents and partner organisations. Follow us on social media.",
+    "connectBody": "We work together with partner organisations.",
+    "connectBodyNoPartners": "We work together with our school community.",
+    "connectFollow": "Follow us on social media.",
     "partnersTitle": "Partners",
-    "partnerPlaceholder": "Partner",
     "ctaTitle": "You can be part of the change too",
     "ctaBody": "Join the club and take part in helping children.",
-    "ctaSupport": "Other ways to support"
+    "ctaSupport": "Other ways to support",
+    "beneficiary": "Donation recipient",
+    "impactEyebrow": "Impact",
+    "impactTitle": "Our {year} results",
+    "impactCta": "See the results"
   },
   "About": {
     "metaTitle": "About",
     "eyebrow": "About us",
     "title": "A club of students who want to help children",
-    "intro": "The 130 UNICEF club was founded in 2025 on the initiative of active students of School No. 130. It is a volunteer club that follows UNICEF's values.",
     "storyTitle": "Our story",
-    "story1": "A few friends started with a simple question: \"How can we help children?\" In 2025, with the support of our teachers, we officially founded the club.",
-    "story2": "Today we do many things together — from reading to younger pupils to visiting care centres and organising donation drives.",
     "foundedLabel": "Founded",
     "missionTitle": "Mission",
-    "mission": "To help children inside and outside our school, promote children's rights and build a caring community through volunteering.",
     "valuesTitle": "Our values",
-    "values": {
-      "care": {
-        "title": "Care",
-        "body": "We love and respect every child."
-      },
-      "equality": {
-        "title": "Equality",
-        "body": "We never discriminate against anyone."
-      },
-      "teamwork": {
-        "title": "Teamwork",
-        "body": "Together we achieve more."
-      },
-      "trust": {
-        "title": "Trust & responsibility",
-        "body": "We keep our promises and work transparently."
-      }
-    },
     "doTitle": "What we do",
     "insideTitle": "Inside school",
-    "inside": [
-      "'Reading Hour' for younger pupils",
-      "Mini-lessons and poster contests on children's rights",
-      "Children's Day and World Children's Day events",
-      "Helping new students settle in"
-    ],
     "outsideTitle": "Outside school",
-    "outside": [
-      "Visiting children's care centres",
-      "'Warm Winter' clothing drive",
-      "Book and school supply donations",
-      "Community volunteering"
-    ],
     "leadershipTitle": "Club leadership",
     "leadershipDescription": "The team that organises the club's work.",
-    "allMembers": "See all members"
+    "allMembers": "See all members",
+    "directions": {
+      "activity": "Donation drives, preparing gifts and planting trees — activities that reach the wider community.",
+      "education": "Club meetings, working in teams and mentoring sessions — learning and growing together.",
+      "charity": "Charity sales and fundraising at tournaments."
+    },
+    "directionAll": "All {direction} posts"
   },
   "News": {
     "metaTitle": "News",
@@ -164,10 +122,9 @@
     "description": "Club news, projects and stories.",
     "allCategories": "All",
     "categories": {
-      "activity": "Activities",
-      "volunteering": "Volunteering",
-      "rights": "Children's rights",
-      "charity": "Donations",
+      "activity": "Advocacy",
+      "education": "Education",
+      "charity": "Fundraising",
       "announcement": "Announcements"
     },
     "filterLabel": "Filter by category",
@@ -175,7 +132,9 @@
     "readMore": "Read",
     "tags": "Tags",
     "related": "More news",
-    "backToList": "All news"
+    "backToList": "All news",
+    "emptyAll": "No news published yet.",
+    "clearFilter": "Clear filter"
   },
   "Events": {
     "metaTitle": "Events",
@@ -186,8 +145,8 @@
     "past": "Past",
     "listView": "List",
     "calendarView": "Calendar",
-    "emptyUpcoming": "No events planned yet. Stay tuned!",
-    "emptyPast": "No past events.",
+    "emptyUpcoming": "No upcoming events right now.",
+    "emptyPast": "No past events yet.",
     "emptyMonth": "No events this month.",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
@@ -211,7 +170,9 @@
     "classLabel": "Class: {className}",
     "count": "{count, plural, one {# member} other {# members}}",
     "joinTitle": "Want to join our team?",
-    "joinBody": "Students from any class can join the club."
+    "joinBody": "Students from any class can join the club.",
+    "empty": "The member list is empty for now.",
+    "hiddenNote": "To protect members' privacy, other members' names are not published."
   },
   "Gallery": {
     "metaTitle": "Gallery",
@@ -219,7 +180,7 @@
     "title": "Photo albums",
     "description": "Photos from our events and volunteering.",
     "photos": "{count, plural, one {# photo} other {# photos}}",
-    "empty": "No albums yet.",
+    "empty": "No photo albums yet.",
     "backToAlbums": "All albums",
     "openImage": "Open image: {alt}",
     "close": "Close",
@@ -252,9 +213,7 @@
     "phone": "Phone",
     "hours": "Hours",
     "social": "Social media",
-    "noSocial": "Social links coming soon.",
     "mapTitle": "Location",
-    "mapPlaceholder": "Map coming soon",
     "formTitle": "Send a message"
   },
   "Support": {
@@ -283,7 +242,6 @@
     "donateTitle": "Financial donations",
     "donateBody": "Financial donations are accepted only according to official school procedures.",
     "donateButton": "Donate",
-    "donateUnavailable": "Donation details coming soon. For now, please support us with items or volunteering.",
     "contactCta": "Contact us"
   },
   "Search": {
@@ -319,19 +277,11 @@
     "phone": "Phone number",
     "phonePlaceholder": "8-digit number",
     "email": "Email",
-    "emailPlaceholder": "name@example.com",
+    "emailPlaceholder": "Your email address",
     "optional": "(optional)",
     "reason": "Why do you want to join the club?",
     "reasonPlaceholder": "Tell us a little about yourself",
     "helpWith": "How would you like to help?",
-    "helpOptions": {
-      "events": "Organising events",
-      "reading": "Helping younger pupils",
-      "charity": "Donation drives",
-      "media": "Photo, video, social media",
-      "design": "Drawing & design",
-      "other": "Other"
-    },
     "consent": "I agree that this information may be used for club registration. (If under 18, my parent/guardian has been informed.)",
     "name": "Name",
     "subject": "Subject",
@@ -340,12 +290,12 @@
     "submit": "Send",
     "submitting": "Sending...",
     "joinSuccessTitle": "Thank you! We've received your application.",
-    "joinSuccessBody": "The club leaders will contact you soon.",
+    "joinSuccessBody": "What happens next:",
     "contactSuccessTitle": "Message sent!",
     "contactSuccessBody": "We'll reply as soon as we can.",
     "sendAnother": "Send another",
     "genericError": "Something went wrong. Please try again.",
-    "captchaError": "Please complete the security check.",
+    "captchaError": "Please complete the security check. If you cannot see it, reload the page.",
     "errors": {
       "required": "This field is required",
       "tooShort": "Too short",
@@ -355,12 +305,57 @@
       "className": "Please enter a valid class (e.g. 10A)",
       "consent": "You must agree to continue",
       "helpWith": "Please choose at least one"
-    }
+    },
+    "joinNextSteps": [
+      "The club leaders will read your application.",
+      "They will contact you using the phone number (or email) you gave.",
+      "Meanwhile, have a look at the club's news and events."
+    ],
+    "joinSeeEvents": "See events",
+    "joinSeeNews": "Read news",
+    "turnstileLoadError": "The security check couldn't load. Check your connection and reload the page."
   },
   "Errors": {
     "title": "Sorry, something went wrong",
     "body": "There was a problem loading this page. Please try again.",
     "retry": "Try again",
     "loading": "Loading..."
+  },
+  "Activity": {
+    "factsTitle": "Key figures",
+    "inPerson": "Reached in person",
+    "online": "Reached online",
+    "donation": "Funds raised",
+    "partners": "Partners",
+    "beneficiaries": "Donation recipient",
+    "sdgTitle": "Sustainable Development Goals (SDGs)",
+    "seeEvent": "Activity details",
+    "readStory": "Read the story"
+  },
+  "Impact": {
+    "metaTitle": "Impact",
+    "eyebrow": "Impact",
+    "title": "{year} results",
+    "description": "Figures from the club's yearly report: activities, people reached and funds raised.",
+    "noData": "No report figures yet.",
+    "yearLabel": "School year",
+    "totalsTitle": "Key figures",
+    "directionsTitle": "By direction",
+    "directionsDescription": "Official figures from the report.",
+    "direction": "Direction",
+    "activities": "Activities",
+    "inPerson": "In person",
+    "online": "Online",
+    "reachTotal": "Total reach",
+    "donation": "Funds raised",
+    "total": "Total",
+    "chartInPerson": "People reached in person",
+    "chartOnline": "People reached online",
+    "timelineTitle": "Activity timeline",
+    "sdgTitle": "Sustainable Development Goals",
+    "sdgDescription": "The club's activities relate to these goals.",
+    "sdgActivities": "{count, plural, one {# activity} other {# activities}}",
+    "autoMembers": "Active members",
+    "autoActivities": "Activities organised"
   }
 }

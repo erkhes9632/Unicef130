@@ -16,13 +16,28 @@ export function ImageField({
   name,
   defaultValue,
   kind,
+  fit = "cover",
+  maxEdge = FULL_MAX_EDGE,
+  onChange,
+  label = "Зураг",
 }: {
   id: string;
-  name: string;
+  /** Hidden input name; omit when the parent stores the value itself (via onChange). */
+  name?: string;
   defaultValue?: string | null;
   kind: MediaKind;
+  /** "contain" for logos (no cropping in the preview). */
+  fit?: "cover" | "contain";
+  maxEdge?: number;
+  onChange?: (url: string) => void;
+  /** Used in button labels for screen readers when several pickers are on one page. */
+  label?: string;
 }) {
-  const [url, setUrl] = useState(defaultValue ?? "");
+  const [url, setUrlState] = useState(defaultValue ?? "");
+  const setUrl = (v: string) => {
+    setUrlState(v);
+    onChange?.(v);
+  };
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const hintId = useId();
@@ -31,7 +46,7 @@ export function ImageField({
     if (!file) return;
     setBusy(true);
     try {
-      const { blob } = await processImage(file, FULL_MAX_EDGE);
+      const { blob } = await processImage(file, maxEdge);
       setUrl(await uploadImage(blob, kind));
       toast.success("Зураг хуулагдлаа. Хадгалахаа мартуузай.");
     } catch (err) {
@@ -44,10 +59,20 @@ export function ImageField({
 
   return (
     <div className="space-y-2">
-      <div className="flex aspect-[16/9] w-full max-w-sm items-center justify-center overflow-hidden rounded-xl border bg-muted">
+      <div
+        className={
+          fit === "contain"
+            ? "flex aspect-square w-32 items-center justify-center overflow-hidden rounded-xl border bg-muted p-2"
+            : "flex aspect-[16/9] w-full max-w-sm items-center justify-center overflow-hidden rounded-xl border bg-muted"
+        }
+      >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element -- admin preview
-          <img src={url} alt="" className="size-full object-cover" />
+          <img
+            src={url}
+            alt=""
+            className={fit === "contain" ? "size-full object-contain" : "size-full object-cover"}
+          />
         ) : (
           <ImageOff className="size-8 text-muted-foreground" aria-hidden="true" />
         )}
@@ -70,18 +95,18 @@ export function ImageField({
         >
           {busy ? <Loader2 className="animate-spin" /> : <ImageUp />}
           {url ? "Зураг солих" : "Зураг сонгох"}
+          <span className="sr-only">: {label}</span>
         </Button>
         {url && (
           <Button type="button" variant="ghost" disabled={busy} onClick={() => setUrl("")}>
-            <X /> Арилгах
+            <X /> Арилгах<span className="sr-only">: {label}</span>
           </Button>
         )}
       </div>
       <p id={hintId} className="text-xs text-muted-foreground">
-        JPG, PNG, WebP. Автоматаар {FULL_MAX_EDGE}px хүртэл багасгаж, байршлын (GPS) мэдээллийг
-        арилгана.
+        JPG, PNG, WebP. Автоматаар {maxEdge}px хүртэл багасгаж, байршлын (GPS) мэдээллийг арилгана.
       </p>
-      <input type="hidden" name={name} value={url} />
+      {name && <input type="hidden" name={name} value={url} />}
     </div>
   );
 }

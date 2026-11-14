@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { JoinForm } from "@/components/forms/join-form";
 import { PageHero } from "@/components/common/page-hero";
 import { resolveLocale } from "@/i18n/locale";
+import { pick } from "@/lib/data/localize";
+import { getSiteSettings } from "@/lib/data/settings";
 import { pageMetadata } from "@/lib/seo";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
 
@@ -19,17 +21,24 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/join">):
 }
 
 export default async function JoinPage({ params }: PageProps<"/[locale]/join">) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations("Join");
   const why = t.raw("why") as string[];
-  const turnstileSiteKey = await getTurnstileSiteKey();
+  const [turnstileSiteKey, settings] = await Promise.all([
+    getTurnstileSiteKey(),
+    getSiteSettings(),
+  ]);
+  const helpOptions = settings.helpOptions.map((o) => ({
+    key: o.key,
+    label: pick(locale, o.label, o.labelEn),
+  }));
 
   return (
     <>
       <PageHero eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <div className="container-page grid gap-8 py-10 sm:py-14 lg:grid-cols-[1fr_22rem]">
         <div className="rounded-[2rem] bg-card p-5 ring-1 ring-border sm:p-8">
-          <JoinForm turnstileSiteKey={turnstileSiteKey} />
+          <JoinForm turnstileSiteKey={turnstileSiteKey} helpOptions={helpOptions} />
         </div>
         <aside className="space-y-4">
           <div className="rounded-3xl bg-brand-cyan-soft p-6">

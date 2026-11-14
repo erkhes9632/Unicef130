@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { applications, contactMessages } from "@/db/schema";
 import { runInBackground, syncApplicationToSheets } from "@/lib/applications/sheets-sync";
 import { notifyNewApplication, notifyNewContactMessage } from "@/lib/integrations/notifications";
+import { getSiteSettings } from "@/lib/data/settings";
 import { verifyTurnstile } from "@/lib/integrations/turnstile";
 import {
   contactFormSchema,
@@ -46,7 +47,13 @@ export async function submitJoinApplication(input: unknown): Promise<FormActionR
   if (!(await verifyTurnstile(parsed.data.turnstileToken, await clientIp()))) {
     return { ok: false, error: "captcha" };
   }
-  const d = parsed.data;
+  // Only options currently offered in admin settings are accepted.
+  const { helpOptions } = await getSiteSettings();
+  const allowed = new Set(helpOptions.map((o) => o.key));
+  if (!parsed.data.helpWith.every((h) => allowed.has(h))) {
+    return { ok: false, error: "validation", fieldErrors: { helpWith: ["helpWith"] } };
+  }
+  const d = { ...parsed.data, helpWith: [...new Set(parsed.data.helpWith)] };
   try {
     const db = await getDb();
     const [row] = await db

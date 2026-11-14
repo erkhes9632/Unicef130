@@ -4,7 +4,7 @@ import { storeImage, UploadError } from "@/lib/media/server";
 
 /**
  * Image upload for the admin panel (editor+). Accepts multipart/form-data:
- *   file: image (already resized/compressed in the browser), kind: news|events|members|gallery,
+ *   file: image (already resized/compressed in the browser), kind: news|events|members|gallery|site,
  *   variant?: full|thumb
  */
 export async function POST(request: Request) {

@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
@@ -29,6 +29,8 @@ export async function saveMember(
       photoUrl: fd.str(data, "photoUrl"),
       showPhoto: fd.bool(data, "showPhoto"),
       active: fd.bool(data, "active"),
+      showPublicly: fd.bool(data, "showPublicly"),
+      volunteerHours: fd.str(data, "volunteerHours") === "" ? null : fd.int(data, "volunteerHours"),
     });
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -84,6 +86,34 @@ export async function deleteMember(id: string): Promise<ActionState> {
     });
     revalidatePublic();
     return { ok: true, message: "Гишүүн устгагдлаа." };
+  } catch (err) {
+    return actionError(err);
+  }
+}
+
+/** Bulk show/hide members on the public site (after consent has been collected). */
+export async function setMembersPublic(_prev: ActionState, data: FormData): Promise<ActionState> {
+  try {
+    const user = await requireRole("admin");
+    const ids = data.getAll("ids").filter((v): v is string => typeof v === "string" && !!v);
+    const show = fd.str(data, "show") === "1";
+    if (ids.length === 0) return { ok: false, message: "Гишүүн сонгоно уу." };
+    if (ids.length > 500) return { ok: false, message: "Хэт олон гишүүн сонгосон байна." };
+    const db = await getDb();
+    const res = await db
+      .update(members)
+      .set({ showPublicly: show })
+      .where(inArray(members.id, ids))
+      .returning({ id: members.id });
+    await logActivity(user, "member.update", {
+      type: "member",
+      summary: `${res.length} гишүүнийг ${show ? "нийтэд харуулав" : "нийтээс нуув"}`,
+    });
+    revalidatePublic();
+    return {
+      ok: true,
+      message: `${res.length} гишүүнийг ${show ? "нийтэд харуулахаар" : "нуухаар"} тохирууллаа.`,
+    };
   } catch (err) {
     return actionError(err);
   }

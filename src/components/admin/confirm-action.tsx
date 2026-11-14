@@ -38,6 +38,7 @@ export function ConfirmAction({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
             aria-label={confirmLabel}
@@ -54,9 +55,12 @@ export function ConfirmAction({
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Болих</Button>
+            <Button type="button" variant="outline">
+              Болих
+            </Button>
           </DialogClose>
           <Button
+            type="button"
             variant="destructive"
             disabled={pending}
             onClick={() =>

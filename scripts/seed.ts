@@ -1,17 +1,11 @@
 /**
- * Seeds the LOCAL D1 database with sample Mongolian content (from src/lib/mock/*) and default
- * site settings. Safe to re-run: content tables are cleared first. Users are NOT touched —
- * create the first admin with `bun run admin:create` (Phase 4).
+ * Seeds the LOCAL D1 database with sample content (from src/lib/mock/*) for development.
+ * Safe to re-run: content tables are cleared first. Site settings and users are NOT touched —
+ * fill settings in admin, create a local admin with `bun run admin:create:local`.
+ * Never run this against production.
  *
  *   bun run db:migrate:local && bun run db:seed:local
- *   bun scripts/seed.ts --print-sql > seed.sql   (SQL only, nothing executed)
  */
-import {
-  fallbackContact,
-  fallbackDonationUrl,
-  fallbackSocials,
-  fallbackStats,
-} from "@/config/site";
 import { mockEvents } from "@/lib/mock/events";
 import { mockAlbums } from "@/lib/mock/gallery";
 import { mockMembers } from "@/lib/mock/members";
@@ -26,7 +20,6 @@ const statements: string[] = [
   'DELETE FROM "news";',
   'DELETE FROM "events";',
   'DELETE FROM "members";',
-  'DELETE FROM "settings";',
 ];
 
 for (const n of mockNews) {
@@ -117,18 +110,8 @@ for (const a of mockAlbums) {
   }
 }
 
-const settingsRows: Record<string, unknown> = {
-  contact: fallbackContact,
-  socials: fallbackSocials,
-  stats: fallbackStats,
-  donationUrl: fallbackDonationUrl,
-};
-for (const [key, value] of Object.entries(settingsRows)) {
-  statements.push(insert("settings", { key, value: JSON.stringify(value) }));
-}
-
 if (Bun.argv.includes("--print-sql")) {
-  // Prints the SQL instead of running it (the developer may apply it to production manually).
+  // Prints the SQL instead of running it (for inspection).
   console.log(statements.join("\n"));
   process.exit(0);
 }

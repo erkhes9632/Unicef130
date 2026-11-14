@@ -11,6 +11,7 @@ import { requireRole } from "@/lib/auth/session";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { slugify, uniqueSlug } from "@/lib/slug";
+import { parseSdgList } from "@/lib/sdg";
 import { newsInputSchema } from "@/lib/validation/admin";
 import { isEmptyDoc } from "@/lib/validation/rich-text";
 
@@ -33,6 +34,7 @@ function parseForm(data: FormData) {
     contentEn: contentEn && !isEmptyDoc(contentEn as never) ? contentEn : null,
     status: fd.str(data, "status") === "published" ? "published" : "draft",
     publishedAt: parseUbInputValue(fd.str(data, "publishedAt")),
+    sdgs: parseSdgList(fd.str(data, "sdgs")),
   });
 }
 

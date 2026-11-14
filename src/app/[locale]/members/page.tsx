@@ -1,5 +1,7 @@
+import { Users } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
 import { MemberCard } from "@/components/members/member-card";
@@ -25,7 +27,8 @@ export async function generateMetadata({
 export default async function MembersPage({ params }: PageProps<"/[locale]/members">) {
   const locale = await resolveLocale(params);
   const t = await getTranslations();
-  const { leadership, members } = await listMembers(locale);
+  const { leadership, members, hiddenCount } = await listMembers(locale);
+  const isEmpty = leadership.length === 0 && members.length === 0;
 
   return (
     <>
@@ -58,15 +61,27 @@ export default async function MembersPage({ params }: PageProps<"/[locale]/membe
           </ul>
         </Section>
       )}
-      <Section>
-        <div className="flex flex-col items-center gap-4 rounded-[2rem] bg-brand-green-soft p-8 text-center sm:p-12">
-          <h2 className="text-2xl font-extrabold sm:text-3xl">{t("Members.joinTitle")}</h2>
-          <p className="text-muted-foreground">{t("Members.joinBody")}</p>
-          <Button asChild size="lg">
-            <Link href="/join">{t("Common.joinCta")}</Link>
-          </Button>
-        </div>
-      </Section>
+      {!isEmpty && hiddenCount > 0 && (
+        <p className="container-page -mt-4 pb-6 text-center text-sm text-muted-foreground">
+          {t("Members.hiddenNote")}
+        </p>
+      )}
+      {isEmpty && (
+        <Section className="pt-8 sm:pt-10">
+          <JoinEmptyState icon={Users} title={t("Members.empty")} />
+        </Section>
+      )}
+      {!isEmpty && (
+        <Section>
+          <div className="flex flex-col items-center gap-4 rounded-[2rem] bg-brand-green-soft p-8 text-center sm:p-12">
+            <h2 className="text-2xl font-extrabold sm:text-3xl">{t("Members.joinTitle")}</h2>
+            <p className="text-muted-foreground">{t("Members.joinBody")}</p>
+            <Button asChild size="lg">
+              <Link href="/join">{t("Common.joinCta")}</Link>
+            </Button>
+          </div>
+        </Section>
+      )}
     </>
   );
 }

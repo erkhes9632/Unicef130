@@ -1,36 +1,50 @@
 import {
+  BellRing,
   CalendarHeart,
+  GraduationCap,
   HandHeart,
-  Heart,
   type LucideIcon,
   Megaphone,
-  Scale,
-  Sparkles,
   Users,
 } from "lucide-react";
+import { SDGS } from "@/lib/sdg";
 import { cn } from "@/lib/utils";
 
 const tones = {
-  cyan: "from-brand-cyan/80 to-brand-blue/70",
-  purple: "from-brand-purple/80 to-brand-blue/60",
-  green: "from-brand-green/80 to-brand-cyan/60",
-  gold: "from-brand-gold/85 to-brand-green/60",
-  blue: "from-brand-blue/80 to-brand-purple/60",
+  cyan: "from-brand-cyan/85 to-brand-blue/75",
+  purple: "from-brand-purple/85 to-brand-blue/65",
+  green: "from-brand-green/85 to-brand-cyan/65",
+  gold: "from-brand-gold/90 to-brand-purple/55",
+  blue: "from-brand-blue/85 to-brand-purple/65",
 } as const;
 export type CoverTone = keyof typeof tones;
 
 export const coverIcons = {
-  activity: Sparkles,
-  volunteering: HandHeart,
-  rights: Scale,
-  charity: Heart,
-  announcement: Megaphone,
+  activity: Megaphone,
+  education: GraduationCap,
+  charity: HandHeart,
+  announcement: BellRing,
   event: CalendarHeart,
   members: Users,
 } satisfies Record<string, LucideIcon>;
+export type CoverIcon = keyof typeof coverIcons;
+
+/** Tone per news category / club direction. */
+export const categoryTone: Record<string, CoverTone> = {
+  activity: "cyan",
+  education: "purple",
+  charity: "gold",
+  announcement: "blue",
+};
+
+/** Icon key for a category/direction (unknown → generic event icon). */
+export function coverIconFor(key: string | null | undefined): CoverIcon {
+  return key && key in coverIcons ? (key as CoverIcon) : "event";
+}
 
 /**
- * Cover image with a friendly gradient placeholder (brand colors + icon) when no photo exists.
+ * Cover image. Until a real photo is uploaded, a designed placeholder is shown: club colors per
+ * direction, the direction icon and the related SDG numbers in their official colors.
  * Always fills its parent; the parent sets the aspect ratio.
  */
 export function CoverImage({
@@ -38,13 +52,15 @@ export function CoverImage({
   alt,
   tone = "cyan",
   icon = "activity",
+  sdgs = [],
   className,
   priority = false,
 }: {
   src: string | null;
   alt: string;
   tone?: CoverTone;
-  icon?: keyof typeof coverIcons;
+  icon?: CoverIcon;
+  sdgs?: number[];
   className?: string;
   priority?: boolean;
 }) {
@@ -62,6 +78,7 @@ export function CoverImage({
     );
   }
   const Icon = coverIcons[icon];
+  const goals = sdgs.filter((n) => SDGS[n]).slice(0, 4);
   return (
     <div
       role="img"
@@ -74,25 +91,39 @@ export function CoverImage({
     >
       <span
         aria-hidden="true"
-        className="absolute -top-6 -left-6 size-24 rounded-full bg-white/20"
+        className="absolute -top-[12%] -left-[8%] aspect-square w-[38%] rounded-full bg-white/20"
       />
       <span
         aria-hidden="true"
-        className="absolute -right-8 -bottom-10 size-32 rounded-full bg-white/15"
+        className="absolute -right-[10%] -bottom-[22%] aspect-square w-[48%] rounded-full bg-white/15"
       />
-      <Icon
+      <span
         aria-hidden="true"
-        className="relative size-12 text-white drop-shadow-sm"
-        strokeWidth={1.75}
+        className="absolute top-[18%] right-[14%] aspect-square w-[9%] rotate-12 rounded-[30%] bg-white/25"
       />
+      <span
+        aria-hidden="true"
+        className="relative flex aspect-square w-[22%] max-w-36 min-w-14 items-center justify-center rounded-[30%] bg-white/25 ring-1 ring-white/40 backdrop-blur-sm"
+      >
+        <Icon className="size-1/2 text-white drop-shadow-sm" strokeWidth={1.75} />
+      </span>
+      {goals.length > 0 && (
+        <span aria-hidden="true" className="absolute bottom-[7%] left-[5%] flex gap-1.5">
+          {goals.map((n) => (
+            <span
+              key={n}
+              style={{ backgroundColor: SDGS[n]!.color }}
+              className={cn(
+                "flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 font-heading text-xs leading-none font-extrabold shadow-sm ring-2 ring-white/70",
+                SDGS[n]!.text === "light" ? "text-white" : "text-brand-night",
+              )}
+            >
+              <span className="mr-0.5 text-[0.6rem] opacity-80">SDG</span>
+              {n}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   );
 }
-
-export const categoryTone: Record<string, CoverTone> = {
-  activity: "cyan",
-  volunteering: "green",
-  rights: "purple",
-  charity: "gold",
-  announcement: "blue",
-};

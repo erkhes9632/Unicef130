@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, Loader2, Newspaper } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { helpOptions, joinFormSchema, type JoinFormValues } from "@/lib/validation/forms";
+import { Link } from "@/i18n/navigation";
+import { joinFormSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { cn } from "@/lib/utils";
 import { Turnstile } from "./turnstile";
 import { FormField, translateError } from "./form-field";
@@ -25,7 +26,14 @@ const defaultValues: JoinFormValues = {
   consent: false as unknown as true,
 };
 
-export function JoinForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
+export function JoinForm({
+  turnstileSiteKey,
+  helpOptions,
+}: {
+  turnstileSiteKey: string;
+  /** Locale-resolved options from admin settings. */
+  helpOptions: { key: string; label: string }[];
+}) {
   const t = useTranslations("Forms");
   const [done, setDone] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -62,17 +70,41 @@ export function JoinForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   });
 
   if (done) {
+    const steps = t.raw("joinNextSteps") as string[];
     return (
       <div
         role="status"
-        className="flex flex-col items-center gap-4 rounded-3xl bg-brand-green-soft p-8 text-center"
+        tabIndex={-1}
+        ref={(el) => el?.focus()}
+        className="flex flex-col items-center gap-5 rounded-3xl bg-brand-green-soft p-6 text-center outline-none sm:p-10"
       >
-        <CheckCircle2 className="size-12 text-brand-green-strong" aria-hidden="true" />
+        <CheckCircle2 className="size-14 text-brand-green-strong" aria-hidden="true" />
         <h2 className="text-2xl font-extrabold">{t("joinSuccessTitle")}</h2>
-        <p className="text-muted-foreground">{t("joinSuccessBody")}</p>
-        <Button variant="outline" onClick={() => setDone(false)}>
-          {t("sendAnother")}
-        </Button>
+        <div className="w-full max-w-md text-left">
+          <p className="mb-3 font-semibold">{t("joinSuccessBody")}</p>
+          <ol className="space-y-3">
+            {steps.map((step, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background font-bold text-brand-green-strong ring-1 ring-border">
+                  {i + 1}
+                </span>
+                <span className="pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild>
+            <Link href="/events">
+              <CalendarDays /> {t("joinSeeEvents")}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="bg-background">
+            <Link href="/news">
+              <Newspaper /> {t("joinSeeNews")}
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -137,7 +169,7 @@ export function JoinForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
           name="helpWith"
           render={({ field }) => (
             <div className="grid gap-2 sm:grid-cols-2">
-              {helpOptions.map((opt) => {
+              {helpOptions.map(({ key: opt, label }) => {
                 const checked = field.value.includes(opt);
                 return (
                   <label
@@ -155,7 +187,7 @@ export function JoinForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
                         )
                       }
                     />
-                    {t(`helpOptions.${opt}`)}
+                    {label}
                   </label>
                 );
               })}
@@ -197,7 +229,13 @@ export function JoinForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
         )}
       />
 
-      <Turnstile key={widgetKey} siteKey={turnstileSiteKey} onToken={setToken} action="join" />
+      <Turnstile
+        key={widgetKey}
+        siteKey={turnstileSiteKey}
+        onToken={setToken}
+        onError={() => setServerError(t("turnstileLoadError"))}
+        action="join"
+      />
 
       {serverError && (
         <p

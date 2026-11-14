@@ -1,9 +1,10 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { applications, applicationStatuses, type ApplicationStatus } from "@/db/schema";
-import { applicationStatusLabel, helpOptionLabel } from "@/lib/admin/labels";
+import { applicationStatusLabel, helpOptionLabels } from "@/lib/admin/labels";
 import { getCurrentUser } from "@/lib/auth/session";
 import { toCsv } from "@/lib/csv";
+import { getSiteSettings } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
 
 /** CSV export of join applications (UTF-8 with BOM so Excel shows Cyrillic correctly). */
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
     .from(applications)
     .where(status ? eq(applications.status, status) : undefined)
     .orderBy(desc(applications.createdAt));
+  const helpOptionLabel = helpOptionLabels((await getSiteSettings()).helpOptions);
 
   const csv = toCsv([
     [

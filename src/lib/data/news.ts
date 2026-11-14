@@ -1,7 +1,8 @@
-import { and, count, desc, eq, isNotNull, lte, ne } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
+import { normalizeSdgs } from "@/lib/sdg";
 import { newsCategories, type NewsCategory, type RichTextDoc } from "@/lib/types";
 import { pick } from "./localize";
 
@@ -15,6 +16,8 @@ export type NewsItem = {
   category: NewsCategory;
   tags: string[];
   publishedAt: string;
+  sdgs: number[];
+  eventId: string | null;
 };
 
 export const NEWS_PAGE_SIZE = 6;
@@ -34,6 +37,8 @@ function toItem(locale: Locale, r: Row): NewsItem {
       : "activity",
     tags: r.tags ?? [],
     publishedAt: (r.publishedAt ?? r.createdAt).toISOString(),
+    sdgs: normalizeSdgs(r.sdgs),
+    eventId: r.eventId,
   };
 }
 
@@ -46,14 +51,21 @@ export async function listNews({
   page = 1,
   pageSize = NEWS_PAGE_SIZE,
   category,
+  sdg,
 }: {
   locale: Locale;
   page?: number;
   pageSize?: number;
   category?: NewsCategory;
+  /** Only posts tagged with this SDG (1–17). */
+  sdg?: number;
 }) {
   const db = await getDb();
-  const where = category ? and(visible(), eq(news.category, category)) : visible();
+  const where = and(
+    visible(),
+    category ? eq(news.category, category) : undefined,
+    sdg ? sql`exists (select 1 from json_each(${news.sdgs}) where value = ${sdg})` : undefined,
+  );
   const [{ total } = { total: 0 }] = await db.select({ total: count() }).from(news).where(where);
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const current = Math.min(Math.max(1, page), pageCount);
@@ -128,4 +140,15 @@ export async function searchNews(locale: Locale, query: string, limit = 20) {
     )
     .slice(0, limit)
     .map(({ item }) => item);
+}
+
+/** Slugs of the published posts that report on the given events (eventId → slug). */
+export async function getNewsSlugsForEvents(eventIds: string[]) {
+  if (eventIds.length === 0) return new Map<string, string>();
+  const db = await getDb();
+  const rows = await db
+    .select({ eventId: news.eventId, slug: news.slug })
+    .from(news)
+    .where(and(visible(), inArray(news.eventId, eventIds)));
+  return new Map(rows.filter((r) => r.eventId).map((r) => [r.eventId!, r.slug]));
 }

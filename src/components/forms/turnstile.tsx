@@ -40,18 +40,23 @@ function loadScript() {
 export function Turnstile({
   siteKey,
   onToken,
+  onError,
   action,
 }: {
   siteKey: string;
   onToken: (token: string) => void;
+  /** Script failed to load or the challenge errored (shown as a friendly message). */
+  onError?: () => void;
   action?: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => {
     onTokenRef.current = onToken;
+    onErrorRef.current = onError;
   });
 
   useEffect(() => {
@@ -65,10 +70,16 @@ export function Turnstile({
           theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
           callback: (t: string) => onTokenRef.current(t),
           "expired-callback": () => onTokenRef.current(""),
-          "error-callback": () => onTokenRef.current(""),
+          "error-callback": () => {
+            onTokenRef.current("");
+            onErrorRef.current?.();
+          },
         });
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        onErrorRef.current?.();
+      });
     return () => {
       cancelled = true;
       if (widgetId.current && window.turnstile) window.turnstile.remove(widgetId.current);

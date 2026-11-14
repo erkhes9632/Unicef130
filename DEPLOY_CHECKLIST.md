@@ -1,164 +1,126 @@
-# DEPLOY_CHECKLIST — Production руу гаргах алхмууд
+# DEPLOY_CHECKLIST — Production тохиргоо
 
-> Энэ жагсаалтын командуудыг **хөгжүүлэгч өөрөө** ажиллуулна. Төслийн код (AI туслах ч мөн)
-> хэзээ ч deploy, `--remote`, `wrangler secret put` зэргийг автоматаар ажиллуулдаггүй.
->
-> Бүх командыг төслийн хавтаснаас (`unicef-club-130/`) ажиллуулна. Багцын менежер нь **Bun**.
+Production: **https://unicef-club-130.erkhes-labs.workers.dev** (Cloudflare Workers, гараар deploy).
 
-Тэмдэглэгээ: ☐ = хийх, ✅ = хийсэн. `<...>` хэсгийг өөрийн утгаар солино.
+Бүх командыг төслийн хавтаснаас ажиллуулна. Багцын менежер нь **Bun**. Дараагийн deploy, migration,
+secret, лог, домэйний заавар: [README.md → Production](./README.md#production-cloudflare-workers).
+
+Тэмдэглэгээ: ☐ = хийх, ✅ = хийсэн.
 
 ---
 
 ## 0. Урьдчилсан бэлтгэл
 
-- ☐ Cloudflare бүртгэл (клубын/сургуулийн нэр дээр, хэд хэдэн хүн хандах эрхтэй байхаар).
-- ☐ Домэйн нэр шийдсэн (жишээ нь `unicef130.mn`). Домэйн Cloudflare дээр (DNS) байх ёстой.
-- ☐ Локал дээр бүх шалгалт ногоон:
+- ✅ Cloudflare бүртгэлд wrangler нэвтэрсэн (`bunx wrangler whoami`).
+- ✅ Локал шалгалт ногоон: `bun install`, `bun run check`, `bun run build`, `bun run cf:build`.
+- ☐ Cloudflare бүртгэлд 2 дахь хүнийг (хариуцсан багш) **Member** болгон нэмэх.
+- ☐ Лого файлууд: `public/logos/school-130.png`, `public/logos/unicef.png`.
+- ☐ Домэйн нэр (одоохондоо `*.workers.dev` ашиглана).
+
+## 1. Нөөцүүд
+
+- ✅ D1 `unicef-club-130-db` (APAC) үүсгэж, `database_id`-г `wrangler.jsonc`-д тавьсан.
+- ✅ R2 `unicef-club-130-media` (зураг) ба `unicef-club-130-opennext-cache` (APAC).
+- ✅ Migration `0000_lush_namorita.sql` production дээр ажилласан
+  (`bun run db:migrate:remote`). Хүснэгтүүд хоосон — жишээ контент, тест хэрэглэгч **байхгүй**.
+  Сайтын тохиргоо хоосон үед `src/config/site.ts`-ийн fallback утга харагдана.
+
+## 2. Тохиргоо (`wrangler.jsonc` → `"vars"`)
+
+- ✅ `SITE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS` = workers.dev URL.
+- ✅ `GOOGLE_SHEET_TAB` = `Applications`.
+- ☐ `TURNSTILE_SITE_KEY` — Turnstile widget үүсгэсний дараа (доорх 3-р алхам).
+
+## 3. Нууц утгууд
+
+- ✅ `BETTER_AUTH_SECRET` — шинээр үүсгэж шууд дамжуулсан (локалынхаас өөр).
+- ☐ `TURNSTILE_SECRET_KEY`:
+  1. Dashboard → **Turnstile** → **Add widget**.
+  2. Widget name: `unicef-club-130`; Hostname: `unicef-club-130.erkhes-labs.workers.dev`.
+  3. Widget mode: **Managed** → Create.
+  4. **Site key**-г `wrangler.jsonc` → `TURNSTILE_SITE_KEY`-д бичнэ (нийтэд ил утга).
+  5. **Secret key**: `bunx wrangler secret put TURNSTILE_SECRET_KEY` → терминал асуухад оруулна.
+  6. `bun run deploy`.
+- ➖ Google Sheets (`GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`,
+  `GOOGLE_SHEET_ID`) — одоохондоо ашиглахгүй. Байхгүй үед өргөдөл D1-д хадгалагдаж, sync чимээгүй
+  алгасагдана. Дараа нь хэрэгтэй бол доорх "Google Sheets" хэсгийг үзнэ.
+
+## 4. Deploy
+
+- ✅ `bun run deploy` → `https://unicef-club-130.erkhes-labs.workers.dev`.
+- ✅ Автомат deploy (Workers Builds, GitHub Actions) **тохируулаагүй** — зориуд гараар.
+- ☐ **Plan:** Workers Free нь хүсэлт бүрт 10 ms CPU хязгаартай. Нэвтрэлт (PBKDF2) эсвэл хүнд
+  хуудсууд Error 1102 өгвөл **Workers Paid** ($5/сар) руу шилжинэ.
+
+## 5. Эхний админ
+
+- ☐ Өөрийн терминал дээр:
   ```bash
-  bun install
-  bun run check        # lint + typecheck + format + test
-  bun run build        # Next.js production build
-  bun run cf:build     # Cloudflare Worker bundle (.open-next/)
+  bun run admin:create -- o.erkhes2009@gmail.com --name "Админ"
   ```
-- ☐ Лого файлууд байрандаа: `public/logos/school-130.png`, `public/logos/unicef.png`.
-- ☐ (Заавал биш) `public/og-default.png`-г логотой болгож дахин үүсгэх (README → "OG зураг").
+  Нууц үгийг 2 удаа нуугдмал асууна (≥ 12 тэмдэгт).
+- ☐ `/admin/login`-оор нэвтэрч шалгана. Бусад редакторыг Админ → Хэрэглэгчид-ээс нэмнэ.
 
-## 1. Cloudflare-д нэвтрэх
+## 6. Smoke test
 
-```bash
-bunx wrangler login
-bunx wrangler whoami      # зөв бүртгэл (account) сонгогдсоныг шалгана
-```
+- ✅ Бүх нийтийн хуудас (mn + en) 200, `sitemap.xml`, `robots.txt` зөв домэйнтэй.
+- ✅ Байхгүй хуудас 404, 500 алдаа байхгүй.
+- ✅ Нэвтрээгүй үед `/admin` → `/admin/login` (307).
+- ☐ Нэвтэрсний дараа: мэдээ үүсгэх/устгах, зураг upload/устгах (R2).
+- ☐ Гишүүнчлэлийн өргөдөл ба холбоо барих зурвас илгээх → админд харагдана → устгана.
+- ☐ `bunx wrangler tail` дээр алдаа гараагүй.
 
-## 2. D1 өгөгдлийн сан үүсгэх
+## 7. Сайтын тохиргооны шинэчлэл (migration 0001)
 
-```bash
-bunx wrangler d1 create unicef-club-130-db
-```
+- ☐ Шинэ migration-ийг production дээр ажиллуулна (хоосон анхны мөрүүд, admin-ийн хадгалсан утгыг
+  дарж бичихгүй):
+  ```bash
+  bunx wrangler d1 migrations list DB --remote     # 0001_site_settings_defaults харагдана
+  bun run db:migrate:remote                        # = wrangler d1 migrations apply DB --remote
+  bun run deploy
+  ```
 
-- ☐ Гарсан `database_id`-г `wrangler.jsonc` → `d1_databases[0].database_id`-д тавина
-  (`00000000-0000-0000-0000-000000000000`-г солино).
+## 7b. 2025–2026 оны тайлан (migration 0002 + seed)
 
-## 3. R2 bucket-ууд үүсгэх
+- ☐ Migration (0001 ба 0002 хоёуланг нь ажиллуулна), дараа нь deploy, дараа нь seed:
+  ```bash
+  bunx wrangler d1 migrations list DB --remote     # 0001, 0002 харагдана
+  bun run db:migrate:remote
+  bun run deploy
+  bunx wrangler d1 execute DB --remote --file private/seed-report-2025-2026.sql
+  ```
+- ☐ `/impact`, `/about`, `/members`, `/news` дээр шалгана. Админ → Жилийн үр дүн дээрх шар
+  тэмдэглэлүүдийг (тайлангийн зөрүү) уншина.
 
-```bash
-bunx wrangler r2 bucket create unicef-club-130-media
-bunx wrangler r2 bucket create unicef-club-130-opennext-cache
-```
+## 8. Контент (deploy-ийн дараа админаас бөглөнө)
 
-- ☐ Нэр өөр бол `wrangler.jsonc` → `r2_buckets`-ийг тааруулна.
+Бөглөөгүй бол тухайн хэсэг сайт дээр харагдахгүй (зохиомол утга гарахгүй).
 
-## 4. Migration-ийг production D1 дээр ажиллуулах
-
-```bash
-bunx wrangler d1 migrations apply DB --remote
-```
-
-## 5. Production тохиргоо (vars) — `wrangler.jsonc`
-
-`wrangler.jsonc`-ийн доод хэсэгт байгаа `"vars"` блокийн тайлбарыг (`//`) авч, утгуудыг бөглөнө:
-
-| Нэр                           | Жишээ                                           | Тайлбар                                       |
-| ----------------------------- | ----------------------------------------------- | --------------------------------------------- |
-| `SITE_URL`                    | `https://unicef130.mn`                          | SEO, sitemap, хуваалцах холбоос               |
-| `BETTER_AUTH_URL`             | `https://unicef130.mn`                          | Нэвтрэх систем                                |
-| `BETTER_AUTH_TRUSTED_ORIGINS` | `https://unicef130.mn,https://www.unicef130.mn` | Таслалаар                                     |
-| `TURNSTILE_SITE_KEY`          | `0x4AAAA...`                                    | Turnstile widget-ийн **site key** (нийтэд ил) |
-| `GOOGLE_SHEET_TAB`            | `Applications`                                  | Google Sheet-ийн tab нэр                      |
-
-## 6. Нууц утгууд (secrets)
-
-```bash
-# 1) Нэвтрэх системийн нууц (шинээр үүсгэнэ, локалын .dev.vars-ийнхыг БҮҮ ашигла)
-openssl rand -base64 32
-bunx wrangler secret put BETTER_AUTH_SECRET
-
-# 2) Cloudflare Turnstile (Dashboard → Turnstile → Add widget → домэйнээ нэмнэ)
-bunx wrangler secret put TURNSTILE_SECRET_KEY
-
-# 3) Google Sheets (заавал биш — тохируулахгүй бол өргөдөл зөвхөн admin дээр хадгалагдана)
-bunx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
-bunx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY   # JSON доторх "private_key" утга бүхлээр
-bunx wrangler secret put GOOGLE_SHEET_ID                       # Sheet URL-ийн /d/<ID>/ хэсэг
-```
-
-> ⚠️ Turnstile тохируулаагүй бол сайт Cloudflare-ийн **туршилтын** түлхүүрийг ашиглана — энэ нь
-> spam хамгаалалтгүй гэсэн үг. Production-д заавал тохируулна.
-
-### Google Sheets бэлтгэх (нэг удаа)
-
-1. ☐ Google Cloud Console → шинэ project → **Google Sheets API**-г идэвхжүүлнэ.
-2. ☐ IAM → Service Accounts → шинэ service account → **Keys → Add key → JSON** татна.
-3. ☐ Google Sheet үүсгээд, service account-ын и-мэйлд **Editor** эрхээр share хийнэ.
-4. ☐ Tab-ын нэрийг `Applications` болгож, 1-р мөрөнд гарчгууд бичнэ:
-   `Огноо | Овог нэр | Анги | Утас | И-мэйл | Шалтгаан | Туслах чиглэл | Төлөв | ID`
-5. ☐ JSON файлыг хаа нэгтээ хадгалахгүй, secret болгож оруулсны дараа устгана.
-
-## 7. Deploy хийх
-
-```bash
-bun run deploy          # = opennextjs-cloudflare build && opennextjs-cloudflare deploy
-```
-
-- ☐ Bundle хэмжээ: handler ≈ 7.8 MB uncompressed. Cloudflare-ийн хязгаар 64 MiB uncompressed (Free ба
-  Paid аль алинд; 2026-10-29-ний docs). Асуудалгүй.
-- ☐ **Plan:** Workers Free нь хүсэлт бүрт **10 ms CPU** хязгаартай. Next.js SSR + нэвтрэлт (PBKDF2) энэ
-  хязгаараас хэтэрч болзошгүй (Error 1102). **Workers Paid ($5/сар, 30 сек CPU)** ашиглахыг зөвлөнө —
-  PRODUCTION_REPORT.md → 9-р хэсэг.
-- ☐ Deploy-ийн дараа `https://unicef-club-130.<account>.workers.dev` нээгдэж байгааг шалгана.
-
-## 8. Custom domain холбох
-
-Аль нэг аргаар:
-
-- Dashboard: Workers & Pages → `unicef-club-130` → Settings → Domains & Routes → **Add → Custom
-  domain** → `unicef130.mn` (мөн `www.`).
-- Эсвэл `wrangler.jsonc` дахь `"routes"` мөрийн тайлбарыг авч дахин `bun run deploy`.
-
-- ☐ Turnstile widget-ийн Hostname жагсаалтад домэйнээ нэмсэн эсэх.
-- ☐ `SITE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS` нь шинэ домэйнтэй таарч байгаа эсэх.
-
-## 9. Эхний админ үүсгэх
-
-```bash
-# SQL файл үүсгэнэ (нууц үг терминалд нэг удаа харагдана — хадгалж ав!)
-bun scripts/create-admin.ts --email <admin@example.com> --name "<Нэр>" --print-sql > admin.sql
-bunx wrangler d1 execute DB --remote --file admin.sql
-rm admin.sql
-```
-
-- ☐ `https://<домэйн>/admin/login` руу нэвтэрч, нууц үгээ шалгана.
-- ☐ Админ → Хэрэглэгчид хэсгээс бусад редакторуудыг нэмнэ.
-
-## 10. Контент
-
-- ☐ (Заавал биш) Жишээ контент оруулах: `bun scripts/seed.ts --print-sql > seed.sql` →
-  `bunx wrangler d1 execute DB --remote --file seed.sql` → `rm seed.sql`.
-  Жишээ контент ашиглахгүй бол энэ алхмыг алгасна.
-  ⚠️ `seed.sql` нь мэдээ, арга хэмжээ, гишүүд, цомог, тохиргоог **устгаад** дахин бичдэг — зөвхөн
-  хоосон, шинэ өгөгдлийн сан дээр ажиллуулна.
-- ☐ Админ → **Сайтын тохиргоо**: хаяг (мн/en), утас, и-мэйл, цагийн хуваарь, Google Maps embed,
-  сошиал хаягууд, нүүр хуудасны тоо, хандивын холбоос.
-- ☐ Гишүүд, мэдээ, арга хэмжээ, зургийн цомгоо оруулна (хүүхдийн зургийг зөвшөөрөлтэй).
-- ☐ PROGRESS.md → "TODO(content)" жагсаалтыг дуусгана.
-
-## 11. Эцсийн шалгалт
-
-- ☐ `/`, `/en`, `/news`, `/events`, `/join`, `/contact` нээгдэж байна.
-- ☐ Гишүүнчлэлийн маягт илгээж үзэх → Админ → Өргөдлүүд дээр харагдана → (тохируулсан бол) Google
-  Sheet-д мөр нэмэгдэнэ.
-- ☐ Холбоо барих маягт → Админ → Зурвасууд.
-- ☐ Админаас зураг upload хийж үзэх (R2).
-- ☐ `https://<домэйн>/sitemap.xml`, `/robots.txt` зөв домэйнтэй.
+- ☐ **Сайтын тохиргоо → Лого ба нүүр зураг**: сургуулийн лого, UNICEF лого, (заавал биш) клубын
+  хамтын зураг + тайлбар. Эсвэл `public/logos/`-д файл нэмээд `bun run brand:assets` → deploy
+  (OG зураг, favicon шинэчлэгдэнэ).
+- ☐ **Холбоо барих**: хаяг (мн/en), и-мэйл, утас, цагийн хуваарь, газрын зураг.
+- ☐ **Сошиал хаягууд**: Facebook, Instagram, TikTok, YouTube, бусад.
+- ☐ **Тоон үзүүлэлт**: зөвхөн бодит тоо (эсвэл гишүүд/арга хэмжээг автоматаар тоолох).
+- ☐ **Хамтрагчид**: нэр, лого, холбоос.
+- ☐ **Хандивын мэдээлэл**: сургуулийн албан ёсны журмаар зөвшөөрөгдсөн бол.
+- ☐ **Бидний тухай хуудас**: түүх ба хийдэг ажлын текстийг засаж «Сайт дээр харуулах»-г чагтлах.
+- ☐ **Гишүүд**: удирдлага ба зөвлөх багшийг «Удирдлага» бүлэгт (хүүхдийн зургийг зөвшөөрөлтэй).
+- ☐ Мэдээ, арга хэмжээ, зургийн цомог.
+- ☐ Custom домэйн → README-ийн "Custom домэйн холбох".
 - ☐ Google Search Console-д sitemap бүртгүүлэх (заавал биш).
-- ☐ Cloudflare Dashboard → Workers → Logs (observability) дээр алдаа байхгүй.
 
-## Дараагийн deploy-ууд
+## Google Sheets (заавал биш, дараа нь)
 
-```bash
-git pull                      # хамгийн сүүлийн код
-bun install
-bun run check
-bunx wrangler d1 migrations apply DB --remote   # шинэ migration байвал
-bun run deploy
-```
+1. Google Cloud Console → шинэ project → **Google Sheets API**-г идэвхжүүлнэ.
+2. IAM → Service Accounts → шинэ service account → **Keys → Add key → JSON** татна.
+3. Google Sheet үүсгээд service account-ын и-мэйлд **Editor** эрхээр share хийнэ.
+4. Tab-ын нэрийг `Applications` болгож, 1-р мөрөнд:
+   `Огноо | Овог нэр | Анги | Утас | И-мэйл | Шалтгаан | Туслах чиглэл | Төлөв | ID`
+5. Secret-үүдийг оруулна (утгыг терминал асууна):
+   ```bash
+   bunx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
+   bunx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY   # JSON-ийн "private_key" бүхлээр
+   bunx wrangler secret put GOOGLE_SHEET_ID
+   ```
+6. JSON файлыг устгана. Админ → Өргөдлүүд дээр "Sheets-д илгээх" товч идэвхжинэ.

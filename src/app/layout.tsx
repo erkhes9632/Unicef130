@@ -12,7 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(await getSiteUrl()),
     applicationName: siteConfig.name,
-    icons: { icon: "/favicon.ico" },
   };
 }
 

@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
     <>
       <AdminPageHeader
         title="Сайтын тохиргоо"
-        description="Холбоо барих, сошиал, нүүр хуудасны тоо, хандивын холбоос"
+        description="Клубын мэдээлэл, лого, холбоо барих, сошиал, тоон үзүүлэлт, хамтрагчид, хандив, маягтын сонголтууд"
       />
       <SettingsForm action={saveSettings} initial={initial} />
     </>

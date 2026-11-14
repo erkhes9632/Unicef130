@@ -11,7 +11,7 @@ describe("csv", () => {
     expect(csvCell('a "b", c')).toBe('"a ""b"", c"');
     expect(csvCell("=HYPERLINK(1)")).toBe("'=HYPERLINK(1)");
     expect(csvCell("@cmd")).toBe("'@cmd");
-    expect(csvCell("+97699112233")).toBe("+97699112233");
+    expect(csvCell("+97688112233")).toBe("+97688112233");
     expect(csvCell(null)).toBe("");
     expect(toCsv([["а", "б"]]).startsWith("﻿а,б\r\n")).toBe(true);
   });

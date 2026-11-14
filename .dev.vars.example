@@ -1,17 +1,22 @@
 # Copy to .dev.vars (gitignored) for local development:  cp .dev.vars.example .dev.vars
-# In production the developer sets secrets with: bunx wrangler secret put <NAME>   (see DEPLOY_CHECKLIST.md)
+# Production secrets: bunx wrangler secret put <NAME>   (see README.md)
 NEXTJS_ENV=development
 
 # Better Auth — generate with: openssl rand -base64 32
 BETTER_AUTH_SECRET=
+# Local overrides of the production "vars" in wrangler.jsonc. Keep them empty locally:
+# empty SITE_URL/BETTER_AUTH_URL = inferred from the request, empty TURNSTILE_SITE_KEY = test key.
+SITE_URL=
+BETTER_AUTH_URL=
+TURNSTILE_SITE_KEY=
+
 # Comma-separated origins allowed to call /api/auth (dev server + local preview).
 BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8787,http://localhost:8799
 
 # Cloudflare Turnstile (optional locally). Empty → Cloudflare test keys (always pass).
-# TURNSTILE_SITE_KEY=
 # TURNSTILE_SECRET_KEY=
 
-# Google Sheets sync for join applications (optional). Empty → sync skipped with a log line.
+# Google Sheets sync for join applications (optional). Empty → sync skipped silently.
 # Private key: paste the "private_key" value from the service-account JSON (keep the \n escapes).
 # GOOGLE_SERVICE_ACCOUNT_EMAIL=club-sheets@your-project.iam.gserviceaccount.com
 # GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"

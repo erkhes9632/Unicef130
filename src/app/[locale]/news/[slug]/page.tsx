@@ -2,7 +2,9 @@ import { ArrowLeft, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { CoverImage, categoryTone } from "@/components/common/cover-image";
+import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cover-image";
+import { ActivityFacts } from "@/components/impact/activity-facts";
+import { SdgBadges } from "@/components/impact/sdg-badges";
 import { RichText } from "@/components/common/rich-text";
 import { Section, SectionHeading } from "@/components/common/section";
 import { NewsCard } from "@/components/news/news-card";
@@ -11,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { getEventById } from "@/lib/data/events";
 import { getNewsBySlug, getRelatedNews } from "@/lib/data/news";
 import { formatDate } from "@/lib/dates/format";
 import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
@@ -40,7 +43,11 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
   if (!item) notFound();
 
   const t = await getTranslations("News");
-  const related = await getRelatedNews(locale, item, 3);
+  const ta = await getTranslations("Activity");
+  const [related, event] = await Promise.all([
+    getRelatedNews(locale, item, 3),
+    item.eventId ? getEventById(locale, item.eventId) : Promise.resolve(null),
+  ]);
   const siteUrl = await getSiteUrl();
   const url = `${siteUrl}${localizedPath(locale, `/news/${item.slug}`)}`;
 
@@ -90,14 +97,31 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
               src={item.coverUrl}
               alt={item.title}
               tone={categoryTone[item.category]}
-              icon={item.category}
+              icon={coverIconFor(item.category)}
+              sdgs={item.sdgs}
               priority
             />
           </div>
         </div>
 
-        <div className="container-page max-w-3xl py-10 sm:py-14">
+        <div className="container-page max-w-3xl space-y-8 py-10 sm:py-14">
           <RichText doc={item.content} />
+          {event && <ActivityFacts facts={event.facts} />}
+          {item.sdgs.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
+                {ta("sdgTitle")}
+              </h2>
+              <SdgBadges sdgs={item.sdgs} />
+            </div>
+          )}
+          {event && (
+            <Button asChild variant="outline">
+              <Link href={`/events/${event.slug}`}>
+                <CalendarDays /> {ta("seeEvent")}
+              </Link>
+            </Button>
+          )}
 
           {/* Tags are entered in Mongolian only, so they are shown on the Mongolian site. */}
           {locale === "mn" && item.tags.length > 0 && (

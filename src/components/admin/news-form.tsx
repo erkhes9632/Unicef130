@@ -24,6 +24,7 @@ export type NewsFormValues = {
   contentEn: RichTextDoc | null;
   status: "draft" | "published";
   publishedAt: string; // datetime-local (UB)
+  sdgs: number[];
 };
 
 export function NewsForm({
@@ -159,6 +160,9 @@ export function NewsForm({
             errors={e.tags}
           >
             <Input id="tags" name="tags" defaultValue={initial?.tags.join(", ")} />
+          </AdminField>
+          <AdminField label="SDG дугаарууд" htmlFor="sdgs" hint="Жишээ: 1, 10" errors={e.sdgs}>
+            <Input id="sdgs" name="sdgs" defaultValue={initial?.sdgs.join(", ") ?? ""} />
           </AdminField>
         </FormSection>
         <FormSection title="Нүүр зураг">

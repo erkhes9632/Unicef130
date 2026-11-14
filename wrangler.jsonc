@@ -22,14 +22,12 @@
       "service": "unicef-club-130",
     },
   ],
-  // LOCAL ONLY for now: the IDs below are placeholders. Local dev/preview uses Miniflare
-  // emulation (stored in .wrangler/state), so no real Cloudflare resources are needed.
-  // The developer replaces the placeholders before deploying — see DEPLOY_CHECKLIST.md.
+  // Production resources (APAC). Local dev/preview uses Miniflare emulation (.wrangler/state).
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "unicef-club-130-db",
-      "database_id": "00000000-0000-0000-0000-000000000000", // TODO(deploy): real D1 id
+      "database_id": "7f1e5d21-0b3e-4518-93ba-cc30194263ea",
       "migrations_dir": "drizzle/migrations",
     },
   ],
@@ -37,23 +35,24 @@
     {
       // Uploaded images (news covers, gallery, member photos)
       "binding": "MEDIA",
-      "bucket_name": "unicef-club-130-media", // TODO(deploy): create this bucket
+      "bucket_name": "unicef-club-130-media",
     },
     {
       // OpenNext incremental cache (ISR / fetch cache)
       "binding": "NEXT_INC_CACHE_R2_BUCKET",
-      "bucket_name": "unicef-club-130-opennext-cache", // TODO(deploy): create this bucket
+      "bucket_name": "unicef-club-130-opennext-cache",
     },
   ],
-  // Non-secret production settings. Locally, .dev.vars overrides these.
-  // TODO(deploy): fill in before deploying (see DEPLOY_CHECKLIST.md).
-  // "vars": {
-  //   "SITE_URL": "https://unicef130.example.mn",
-  //   "BETTER_AUTH_URL": "https://unicef130.example.mn",
-  //   "BETTER_AUTH_TRUSTED_ORIGINS": "https://unicef130.example.mn",
-  //   "TURNSTILE_SITE_KEY": "0x4AAAAAAA...",
-  //   "GOOGLE_SHEET_TAB": "Applications",
-  // },
-  // Custom domain (alternatively add it in the Cloudflare dashboard):
+  // Non-secret production settings. Locally, .dev.vars overrides these (see .dev.vars.example).
+  // Secrets (BETTER_AUTH_SECRET, TURNSTILE_SECRET_KEY, GOOGLE_*) are set with `wrangler secret put`.
+  "vars": {
+    "SITE_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
+    "BETTER_AUTH_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
+    "BETTER_AUTH_TRUSTED_ORIGINS": "https://unicef-club-130.erkhes-labs.workers.dev",
+    // Public Turnstile site key (not a secret). TODO(deploy): set after creating the widget.
+    "TURNSTILE_SITE_KEY": "",
+    "GOOGLE_SHEET_TAB": "Applications",
+  },
+  // Custom domain later: add it in the dashboard, or uncomment and redeploy (see README).
   // "routes": [{ "pattern": "unicef130.example.mn", "custom_domain": true }],
 }

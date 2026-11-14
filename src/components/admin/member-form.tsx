@@ -19,6 +19,8 @@ export type MemberFormValues = {
   photoUrl: string | null;
   showPhoto: boolean;
   active: boolean;
+  showPublicly: boolean;
+  volunteerHours: number | null;
 };
 
 export function MemberForm({
@@ -42,15 +44,13 @@ export function MemberForm({
             <AdminField
               label="Анги"
               htmlFor="className"
-              required
               errors={e.className}
-              hint="10А, Багш гэх мэт"
+              hint="10А, Багш гэх мэт. Мэдэхгүй бол хоосон."
             >
               <Input
                 id="className"
                 name="className"
                 defaultValue={initial?.className}
-                required
                 maxLength={20}
               />
             </AdminField>
@@ -87,8 +87,36 @@ export function MemberForm({
           </div>
           <div className="flex items-center gap-2">
             <Checkbox id="active" name="active" defaultChecked={initial?.active ?? true} />
-            <Label htmlFor="active">Идэвхтэй (сайт дээр харагдана)</Label>
+            <Label htmlFor="active">Идэвхтэй гишүүн</Label>
           </div>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="showPublicly"
+              name="showPublicly"
+              defaultChecked={initial?.showPublicly ?? false}
+              className="mt-0.5"
+            />
+            <Label htmlFor="showPublicly" className="leading-snug">
+              Нэрийг сайт дээр харуулах (насанд хүрээгүй бол эцэг эх/асран хамгаалагчийн зөвшөөрөл
+              авсан)
+            </Label>
+          </div>
+          <AdminField
+            label="Сайн дурын цаг"
+            htmlFor="volunteerHours"
+            hint="Зөвхөн админд харагдана; нийт цагийг тооцоход ашиглана. Сайт дээр хувь хүнийх харагдахгүй."
+            errors={e.volunteerHours}
+          >
+            <Input
+              id="volunteerHours"
+              name="volunteerHours"
+              type="number"
+              min={0}
+              max={100000}
+              defaultValue={initial?.volunteerHours ?? ""}
+              className="max-w-32"
+            />
+          </AdminField>
         </FormSection>
         <FormSection title="English (заавал биш)">
           <div className="grid gap-4 sm:grid-cols-2">

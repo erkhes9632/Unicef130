@@ -11,6 +11,8 @@ import { requireRole } from "@/lib/auth/session";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { slugify, uniqueSlug } from "@/lib/slug";
+import { parseSdgList } from "@/lib/sdg";
+import { clubDirections } from "@/lib/types";
 import { eventInputSchema } from "@/lib/validation/admin";
 import { isEmptyDoc } from "@/lib/validation/rich-text";
 
@@ -30,8 +32,33 @@ function parseForm(data: FormData) {
     content: fd.json(data, "content"),
     contentEn: contentEn && !isEmptyDoc(contentEn as never) ? contentEn : null,
     published: fd.bool(data, "published"),
+    allDay: fd.bool(data, "allDay"),
+    direction: (clubDirections as readonly string[]).includes(fd.str(data, "direction"))
+      ? fd.str(data, "direction")
+      : null,
+    schoolYear: fd.str(data, "schoolYear"),
+    reachInPerson: fd.str(data, "reachInPerson"),
+    reachInPersonEn: fd.str(data, "reachInPersonEn"),
+    reachOnline: optInt(fd.str(data, "reachOnline")),
+    donationAmount: optInt(fd.str(data, "donationAmount")),
+    partners: list(fd.str(data, "partners")),
+    beneficiaries: list(fd.str(data, "beneficiaries")),
+    sdgs: parseSdgList(fd.str(data, "sdgs")),
+    adminNote: fd.str(data, "adminNote"),
   });
 }
+
+/** "1,000" / "1 000" → 1000; empty → null; anything else → NaN (rejected by zod). */
+function optInt(v: string) {
+  if (v === "") return null;
+  const clean = v.replace(/[\s,₮]/g, "");
+  return /^\d+$/.test(clean) ? Number(clean) : Number.NaN;
+}
+const list = (v: string) =>
+  v
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 export async function saveEvent(
   id: string | null,

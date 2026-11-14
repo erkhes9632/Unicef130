@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { getEventBySlug, isUpcoming } from "@/lib/data/events";
-import { formatDate, formatTimeRange } from "@/lib/dates/format";
+import { formatDate, formatDateRange, formatTimeRange } from "@/lib/dates/format";
+import { getNewsSlugsForEvents } from "@/lib/data/news";
+import { ActivityFacts } from "@/components/impact/activity-facts";
+import { SdgBadges } from "@/components/impact/sdg-badges";
+import { categoryTone, coverIconFor } from "@/components/common/cover-image";
 import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -36,18 +40,27 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
   if (!e) notFound();
 
   const t = await getTranslations("Events");
+  const ta = await getTranslations("Activity");
   const start = new Date(e.startsAt);
-  const time = formatTimeRange(locale, start, e.endsAt);
+  const time = e.allDay ? null : formatTimeRange(locale, start, e.endsAt);
+  const newsSlug = (await getNewsSlugsForEvents([e.id])).get(e.id);
   const siteUrl = await getSiteUrl();
   const url = `${siteUrl}${localizedPath(locale, `/events/${e.slug}`)}`;
   const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}`;
   const past = !isUpcoming(e);
 
   const facts = [
-    { icon: CalendarDays, label: t("date"), value: formatDate(locale, start, "full") },
+    {
+      icon: CalendarDays,
+      label: t("date"),
+      value:
+        e.allDay && e.endsAt
+          ? formatDateRange(locale, start, e.endsAt)
+          : formatDate(locale, start, e.allDay ? "long" : "full"),
+    },
     { icon: Clock, label: t("time"), value: time },
     { icon: MapPin, label: t("location"), value: e.location },
-  ];
+  ].filter((f): f is { icon: typeof Clock; label: string; value: string } => !!f.value);
 
   const structured = {
     "@context": "https://schema.org",
@@ -58,7 +71,9 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
     ...(e.endsAt ? { endDate: e.endsAt } : {}),
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    location: { "@type": "Place", name: e.location, address: e.location },
+    ...(e.location
+      ? { location: { "@type": "Place", name: e.location, address: e.location } }
+      : {}),
     image:
       e.coverUrl && !e.coverUrl.endsWith(".svg")
         ? [`${siteUrl}${e.coverUrl}`]
@@ -86,9 +101,25 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
           <h1 className="text-3xl leading-tight font-extrabold sm:text-5xl">{e.title}</h1>
           <p className="text-lg text-muted-foreground">{e.summary}</p>
           <div className="aspect-[16/9] overflow-hidden rounded-[2rem]">
-            <CoverImage src={e.coverUrl} alt={e.title} tone="purple" icon="event" priority />
+            <CoverImage
+              src={e.coverUrl}
+              alt={e.title}
+              tone={e.direction ? categoryTone[e.direction] : "purple"}
+              icon={coverIconFor(e.direction)}
+              sdgs={e.sdgs}
+              priority
+            />
           </div>
           <RichText doc={e.content} />
+          <ActivityFacts facts={e.facts} />
+          {e.sdgs.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
+                {ta("sdgTitle")}
+              </h2>
+              <SdgBadges sdgs={e.sdgs} />
+            </div>
+          )}
           <div className="border-t pt-6">
             <ShareButtons url={url} title={e.title} />
           </div>
@@ -109,11 +140,18 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
             ))}
           </dl>
           <div className="flex flex-col gap-2 pt-2">
-            <Button asChild variant="outline" className="bg-background">
-              <a href={mapHref} target="_blank" rel="noopener noreferrer">
-                <MapPin /> {t("openMap")}
-              </a>
-            </Button>
+            {newsSlug && (
+              <Button asChild>
+                <Link href={`/news/${newsSlug}`}>{ta("readStory")}</Link>
+              </Button>
+            )}
+            {e.location && (
+              <Button asChild variant="outline" className="bg-background">
+                <a href={mapHref} target="_blank" rel="noopener noreferrer">
+                  <MapPin /> {t("openMap")}
+                </a>
+              </Button>
+            )}
             {!past && (
               <Button asChild>
                 <a href={`/api/events/${e.slug}/ics?lang=${locale}`} download>

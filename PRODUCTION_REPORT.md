@@ -183,7 +183,7 @@ Admin UI зөвхөн Монгол хэлтэй (spec §5). Бүх admin хуу�
 - `scripts/seed.ts --print-sql` гаралт: 55 statement, `user`/`account`/`session`/`verification` хүснэгтэд **0** INSERT. Зөвхөн albums, events, images, members, news, settings хүснэгтүүдэд бичнэ.
 - `admin@example.com`, `editor@example.com` бүртгэлүүд зөвхөн **local** D1 файлд (`.wrangler/state/…`) байгаа. Энэ хавтас gitignore-д орсон бөгөөд production D1 нь хоосноос эхэлнэ.
 - Seed-д орох цорын ганц `example.com` хаяг нь тохиргооны placeholder и-мэйл `unicef.club130@example.com` (🧪). Admin → Тохиргооноос солино.
-- Тест нууц үгүүд зөвхөн `PROGRESS.md`-д "LOCAL D1 only" гэж бичигдсэн. Production-д ямар ч утгагүй.
+- Локал тест бүртгэлүүд зөвхөн локал D1-д байдаг. Production-д ямар ч утгагүй.
 
 ### Эхний админ үүсгэх (DEPLOY_CHECKLIST.md §9)
 
@@ -330,4 +330,4 @@ Admin (1366px), **17/17 PASS**:
 - Sheets sync амжилтгүй урсгалыг хуурамч service account-аар туршсан.
 - Бүх байхгүй route → 404.
 
-Script-үүд нь session-ий scratchpad-д байгаа тул төсөлд ороогүй (P3 #13).
+Script-үүд төслийн dependency-д ороогүй (P3 #13).

@@ -4,7 +4,7 @@ import "server-only";
  * Appends rows to a Google Sheet with a service account, using only fetch + Web Crypto
  * (Workers-compatible; no googleapis package).
  *
- * Config (all optional — when missing, sync is skipped with a log line):
+ * Config (all optional — when missing, sync is skipped silently):
  *   GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY (PEM, "\n" escapes ok),
  *   GOOGLE_SHEET_ID, GOOGLE_SHEET_TAB (default "Applications").
  * Share the sheet with the service account e-mail (Editor).
