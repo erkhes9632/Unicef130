@@ -1,59 +1,93 @@
 /**
- * Server Action guard tests: role checks run on the server regardless of the UI, and public
- * forms re-validate + verify Turnstile before touching the database.
+ * Server Action tests: role checks run on the server regardless of the UI, account actions keep
+ * their guards (self / last admin / typed confirmation), and the application lifecycle works
+ * end to end (submit → one per period → approve → member; reject; change of decision).
+ * Clerk and D1 are faked; the actions' own logic is what runs.
  */
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import type { SQL } from "drizzle-orm";
 
-type Role = "admin" | "editor" | "reviewer" | null;
-let currentRole: Role = null;
-let turnstileOk = true;
-const dbCalls: string[] = [];
-let insertedValues: unknown = null;
-/** Every `.values()` / `.where()` argument, in call order (for multi-step actions). */
-const valuesLog: unknown[] = [];
-const whereLog: unknown[] = [];
+type Role = "admin" | "member" | null;
+type Me = {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  twoFactorEnabled: boolean;
+  applyBlocked: boolean;
+};
+let me: Me | null = null;
+const signInAs = (role: Role, extra: Partial<Me> = {}) => {
+  me = {
+    id: "me",
+    email: "me@gmail.com",
+    name: "Me",
+    role,
+    twoFactorEnabled: false,
+    applyBlocked: false,
+    ...extra,
+  };
+};
 
 class AuthError extends Error {
   constructor(public readonly code: "unauthenticated" | "forbidden") {
     super(code);
   }
 }
-
-const me = () => ({
-  id: "me",
-  name: "Me",
-  email: "me@x.mn",
-  role: currentRole ?? ("reviewer" as const),
-  twoFactorEnabled: true,
-  sessionId: "s1",
-});
-// The real permission table decides; only the session lookup is faked.
-const { can } = await import("@/lib/auth/roles");
 mock.module("@/lib/auth/session", () => ({
   AuthError,
-  getCurrentUser: async () => (currentRole ? me() : null),
-  requireUser: async () => me(),
-  requireSession: async () => {
-    if (!currentRole) throw new AuthError("unauthenticated");
-    return me();
+  getCurrentUser: async () => me,
+  refreshUserFromClerk: async () => null,
+  requireAdmin: async () => me,
+  requireMember: async () => me,
+  assertSignedIn: async () => {
+    if (!me) throw new AuthError("unauthenticated");
+    return me;
   },
-  requirePermission: async (permission: Parameters<typeof can>[1]) => {
-    if (!currentRole) throw new AuthError("unauthenticated");
-    if (!can(currentRole, permission)) throw new AuthError("forbidden");
-    return me();
+  assertMember: async () => {
+    if (!me) throw new AuthError("unauthenticated");
+    if (!me.role) throw new AuthError("forbidden");
+    return me;
+  },
+  assertAdmin: async () => {
+    if (!me) throw new AuthError("unauthenticated");
+    if (me.role !== "admin") throw new AuthError("forbidden");
+    return me;
   },
 }));
-mock.module("@/lib/seo", () => ({ getSiteUrl: async () => "https://club.test" }));
-mock.module("@/lib/integrations/email", () => ({
-  isEmailConfigured: async () => false,
-  sendEmail: async () => false,
+
+/** Clerk writes and account clean-up, recorded in call order. */
+const clerkLog: string[] = [];
+let adminCount = 2;
+mock.module("@/lib/users/clerk-admin", () => ({
+  setRole: async (_db: unknown, id: string, role: Role) => void clerkLog.push(`role:${id}:${role}`),
+  setBanned: async (_db: unknown, id: string, banned: boolean) =>
+    void clerkLog.push(`ban:${id}:${banned}`),
+  deleteClerkUser: async (id: string) => void clerkLog.push(`clerk-delete:${id}`),
+  countActiveAdmins: async () => adminCount,
+}));
+mock.module("@/lib/users/delete", () => ({
+  removeUserData: async (_db: unknown, id: string, actor: { id: string } | null) =>
+    void clerkLog.push(`remove:${id}:${actor?.id ?? "none"}`),
+}));
+const accounts = new Map<
+  string,
+  { id: string; email: string; role: Role; banned: boolean; name: string }
+>();
+mock.module("@/lib/users/sync", () => ({
+  findUser: async (_db: unknown, id: string) => accounts.get(id) ?? null,
+  upsertUser: async () => null,
+  mirrorFromClerk: () => null,
 }));
 
-/** Results for the next awaited queries (first in, first out); empty → the default row. */
-const queuedResults: unknown[][] = [];
+let turnstileOk = true;
+const dbCalls: string[] = [];
+let insertedValues: unknown = null;
+const valuesLog: unknown[] = [];
+const setLog: unknown[] = [];
+/** Results for the next awaited queries (first in, first out); an Error rejects. */
+const queuedResults: unknown[] = [];
 
-/** Chainable fake Drizzle client: records method names, awaits to `[{ id: "new-id", ... }]`. */
+/** Chainable fake Drizzle client: records method names; awaits to the next queued result. */
 function chain(root = false): unknown {
   const target = () => {};
   return new Proxy(target, {
@@ -63,20 +97,11 @@ function chain(root = false): unknown {
         if (root) return undefined;
         if (queuedResults.length > 0) {
           const next = queuedResults.shift();
-          return (resolve: (v: unknown) => void) => resolve(next);
+          return (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
+            next instanceof Error ? reject(next) : resolve(next);
         }
         return (resolve: (v: unknown) => void) =>
-          resolve([
-            {
-              id: "new-id",
-              createdAt: new Date(),
-              fullName: "X",
-              title: "T",
-              n: 1,
-              email: "x@y.mn",
-              role: "editor",
-            },
-          ]);
+          resolve([{ id: "new-id", createdAt: new Date(), n: 0 }]);
       }
       return (...args: unknown[]) => {
         dbCalls.push(String(prop));
@@ -84,7 +109,7 @@ function chain(root = false): unknown {
           insertedValues = args[0];
           valuesLog.push(args[0]);
         }
-        if (prop === "where") whereLog.push(args[0]);
+        if (prop === "set") setLog.push(args[0]);
         return chain();
       };
     },
@@ -112,7 +137,7 @@ mock.module("@/lib/applications/sheets-sync", () => ({
   runInBackground: async (p: Promise<unknown>) => void (await p),
   isSheetsConfigured: async () => false,
 }));
-// Recruitment collaborators: the action's own layering is what these tests exercise.
+
 type Period = {
   id: string;
   opensAt: Date;
@@ -121,8 +146,6 @@ type Period = {
   whenFull: "close" | "waitlist";
   classes: string[];
   questions: never[];
-  ipLimitPer10Min: number;
-  ipLimitPerDay: number;
 };
 const openPeriod = (): Period => ({
   id: "p1",
@@ -132,28 +155,22 @@ const openPeriod = (): Period => ({
   whenFull: "waitlist",
   classes: ["10А", "10Б"],
   questions: [],
-  ipLimitPer10Min: 1,
-  ipLimitPerDay: 10,
 });
 let periods: Period[] = [];
 let taken = 0;
-let blocked = false;
-let fillMs: number | null = 60_000;
 let rateAllowed = true;
+const rateKeys: string[] = [];
 mock.module("@/lib/recruitment/data", () => ({
   listPeriods: async () => periods,
   countTaken: async () => taken,
-  isBlocked: async () => blocked,
-}));
-mock.module("@/lib/recruitment/form-token", () => ({
-  formAgeMs: async () => fillMs,
-  hashIp: async () => "iphash",
-  issueFormToken: async () => "token",
 }));
 mock.module("@/lib/rate-limit", () => ({
-  consumeRateLimit: async () => ({ allowed: rateAllowed, count: 1, retryAfterSec: 0 }),
+  consumeRateLimit: async (key: string) => {
+    rateKeys.push(key);
+    return { allowed: rateAllowed, count: 1, retryAfterSec: 0 };
+  },
+  hashIp: async () => "iphash",
 }));
-
 mock.module("@/lib/admin/activity", () => ({
   logActivity: async () => {},
   diffFields: () => undefined,
@@ -165,27 +182,28 @@ mock.module("@/lib/media/server", () => ({
 }));
 
 const { saveSettings } = await import("@/app/admin/(panel)/settings/actions");
-const { bulkDeleteSpam, deleteApplication, setApplicationStatus } =
+const { setApplicationStatus, saveDecisionMessage, setApplyBlocked } =
   await import("@/app/admin/(panel)/applications/actions");
-const { SQLiteSyncDialect } = await import("drizzle-orm/sqlite-core");
-const toSql = (where: unknown) => new SQLiteSyncDialect().sqlToQuery(where as SQL);
-const { setUserRole, setUserDisabled, inviteUser, createResetLink, revokeUserSessions } =
+const { changeUserRole, setUserBanned, deleteUserAccount, linkAccountToMember } =
   await import("@/app/admin/(panel)/users/actions");
 const { deleteNews } = await import("@/app/admin/(panel)/news/actions");
 const { submitJoinApplication, submitContactMessage } = await import("@/app/actions/forms");
-const { lookupApplicationStatus } = await import("@/app/actions/join-status");
+const { deleteMyAccount, signUpForEvent, cancelSignup } = await import("@/app/[locale]/me/actions");
 
 beforeEach(() => {
+  me = null;
   dbCalls.length = 0;
   queuedResults.length = 0;
   insertedValues = null;
   valuesLog.length = 0;
-  whereLog.length = 0;
+  setLog.length = 0;
+  clerkLog.length = 0;
+  rateKeys.length = 0;
+  accounts.clear();
+  adminCount = 2;
   turnstileOk = true;
   periods = [openPeriod()];
   taken = 0;
-  blocked = false;
-  fillMs = 60_000;
   rateAllowed = true;
 });
 
@@ -193,360 +211,378 @@ const settingsForm = () => {
   const f = new FormData();
   f.set("contact.address", "Хаяг");
   f.set("club.foundedYear", "2025");
+  f.set("membership.rejectedRetentionDays", "90");
   f.set("helpOptions", JSON.stringify([{ key: "events", label: "Арга хэмжээ", labelEn: "" }]));
   return f;
 };
 
 describe("admin action guards", () => {
-  test("anonymous user cannot run any admin action", async () => {
-    currentRole = null;
+  test("signed out: every admin action refuses before touching the database", async () => {
     expect((await saveSettings({}, settingsForm())).message).toBe("Дахин нэвтэрнэ үү.");
+    expect((await setApplicationStatus("a1", "accepted")).message).toBe("Дахин нэвтэрнэ үү.");
+    expect((await changeUserRole("u1", "make-admin")).message).toBe("Дахин нэвтэрнэ үү.");
     expect((await deleteNews("n1")).ok).toBe(false);
-    expect(dbCalls).toHaveLength(0);
+    expect(dbCalls).toEqual([]);
+    expect(clerkLog).toEqual([]);
   });
 
-  test("editor is blocked from admin-only actions", async () => {
-    currentRole = "editor";
-    for (const res of [
-      await saveSettings({}, settingsForm()),
-      await deleteApplication("a1"),
-      await setUserRole("u1", "admin"),
-      await setUserDisabled("u1", true),
-      await inviteUser({}, new FormData()),
-      await createResetLink("u1"),
-      await revokeUserSessions("u1"),
-    ]) {
-      expect(res.ok).toBe(false);
-      expect(res.message).toBe("Танд энэ үйлдлийг хийх эрх байхгүй.");
+  test("members and applicants are forbidden from admin actions", async () => {
+    for (const role of ["member", null] as const) {
+      signInAs(role);
+      const forbidden = "Танд энэ үйлдлийг хийх эрх байхгүй.";
+      expect((await saveSettings({}, settingsForm())).message).toBe(forbidden);
+      expect((await setApplicationStatus("a1", "accepted")).message).toBe(forbidden);
+      expect((await setUserBanned("u1", true)).message).toBe(forbidden);
+      expect((await deleteUserAccount("u1", "x@y.mn")).message).toBe(forbidden);
+      expect((await setApplyBlocked("u1", true)).message).toBe(forbidden);
     }
-    expect(dbCalls).toHaveLength(0);
+    expect(dbCalls).toEqual([]);
+    expect(clerkLog).toEqual([]);
   });
 
-  test("editor manages content but cannot touch applications", async () => {
-    currentRole = "editor";
-    expect((await deleteNews("n1")).ok).toBe(true);
-    dbCalls.length = 0;
-    const res = await setApplicationStatus("a1", "accepted");
-    expect(res.message).toBe("Танд энэ үйлдлийг хийх эрх байхгүй.");
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("reviewer handles applications only", async () => {
-    currentRole = "reviewer";
-    queuedResults.push(
-      [{ id: "a1" }], // exists
-      [{ id: "a1", status: "new", flags: [] }], // rows before the change
-      [], // status update
-      [{ id: "a1", memberId: null, periodId: null, fullName: "Бат Болд", className: "10А" }],
-      [{ id: "m1" }], // member insert … returning
-    );
-    expect((await setApplicationStatus("a1", "accepted")).ok).toBe(true);
-    dbCalls.length = 0;
-    for (const res of [
-      await deleteNews("n1"),
-      await deleteApplication("a1"),
-      await saveSettings({}, settingsForm()),
-    ]) {
-      expect(res.message).toBe("Танд энэ үйлдлийг хийх эрх байхгүй.");
-    }
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("invite returns a one-time link and stores only the token hash", async () => {
-    currentRole = "admin";
-    const f = new FormData();
-    f.set("email", "New.Person@Example.org");
-    f.set("role", "reviewer");
-    const res = await inviteUser({}, f);
-    // The fake DB "finds" a user for every select, so the duplicate guard answers here…
-    expect(res.ok).toBe(false);
-    expect(res.message).toBe("Энэ и-мэйлтэй хэрэглэгч аль хэдийн байна.");
-    // …and an invalid role never reaches the database.
-    dbCalls.length = 0;
-    f.set("role", "owner");
-    expect((await inviteUser({}, f)).ok).toBe(false);
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("invalid status is rejected before the database", async () => {
-    currentRole = "reviewer";
-    expect((await setApplicationStatus("a1", "hacked")).ok).toBe(false);
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("admin can save settings; cannot change own role or disable self", async () => {
-    currentRole = "admin";
+  test("admin can save settings; malformed list JSON is rejected (nothing wiped)", async () => {
+    signInAs("admin");
     expect((await saveSettings({}, settingsForm())).ok).toBe(true);
-    expect((await setUserRole("me", "editor")).message).toBe("Өөрийнхөө эрхийг өөрчлөх боломжгүй.");
-    expect((await setUserDisabled("me", true)).message).toBe("Өөрийгөө идэвхгүй болгох боломжгүй.");
-  });
-});
-
-describe("application workflow", () => {
-  test("accepted → one hidden member row named by memberDisplayName in the period's year", async () => {
-    currentRole = "reviewer";
-    queuedResults.push(
-      [{ id: "a1" }],
-      [{ id: "a1", status: "interview", flags: [] }],
-      [],
-      [{ id: "a1", memberId: null, periodId: "p1", fullName: "Батын Анужин", className: "10А" }],
-      [{ schoolYear: "2026-2027" }],
-      [{ id: "m1" }],
-    );
-    expect((await setApplicationStatus("a1", "accepted")).ok).toBe(true);
-    expect(valuesLog).toContainEqual(
-      expect.objectContaining({
-        name: "Б.Анужин",
-        className: "10А",
-        showPublicly: false,
-        showPhoto: false,
-        schoolYear: "2026-2027",
-      }),
-    );
-  });
-
-  test("accepting again does not create a second member", async () => {
-    currentRole = "admin";
-    queuedResults.push(
-      [{ id: "a1" }],
-      [{ id: "a1", status: "waitlist", flags: [] }],
-      [],
-      [{ id: "a1", memberId: "m1", periodId: "p1", fullName: "Батын Анужин", className: "10А" }],
-    );
-    expect((await setApplicationStatus("a1", "accepted")).ok).toBe(true);
-    expect(valuesLog.some((v) => (v as { name?: string }).name === "Б.Анужин")).toBe(false);
-  });
-
-  test("bulk delete removes only applications whose status is spam", async () => {
-    currentRole = "admin";
-    const f = new FormData();
-    for (const id of ["a1", "a2", "a3"]) f.append("ids", id);
-    queuedResults.push([{ id: "a2" }], [{ id: "a2" }], []);
-    const res = await bulkDeleteSpam({}, f);
-    expect(res).toMatchObject({ ok: true, message: "1 спам өргөдөл устгагдлаа." });
-    expect(toSql(whereLog[0])).toMatchObject({
-      sql: '("applications"."id" in (?, ?, ?) and "applications"."status" = ?)',
-      params: ["a1", "a2", "a3", "spam"],
-    });
-    // The delete targets only the spam ids returned by the guarded select.
-    expect(toSql(whereLog[1]).params).toEqual(["a2"]);
-  });
-
-  test("bulk delete with no spam among the selection deletes nothing", async () => {
-    currentRole = "admin";
-    const f = new FormData();
-    f.append("ids", "a1");
-    queuedResults.push([]);
-    expect((await bulkDeleteSpam({}, f)).ok).toBe(false);
-    expect(dbCalls).not.toContain("delete");
-  });
-
-  test("bulk delete is admin-only", async () => {
-    currentRole = "reviewer";
-    const f = new FormData();
-    f.append("ids", "a1");
-    expect((await bulkDeleteSpam({}, f)).message).toBe("Танд энэ үйлдлийг хийх эрх байхгүй.");
-    expect(dbCalls).toHaveLength(0);
-  });
-});
-
-describe("public form actions", () => {
-  const join = {
-    fullName: "Батын Анужин",
-    className: "10 а",
-    phone: "8811 2233",
-    email: "",
-    reason: "Хүүхдүүдэд туслахыг хүсэж байна.",
-    helpWith: ["reading"],
-    answers: {},
-    consent: true,
-    turnstileToken: "token",
-    website: "",
-    formToken: "signed",
-  };
-  /** settings rows → none; existing application → none; same reason → 0; same address → 0 */
-  const cleanDb = () => queuedResults.push([], [], [{ n: 0 }], [{ n: 0 }]);
-
-  test("join: valid → stored once with normalized fields, tracking code, no extra fields", async () => {
-    cleanDb();
-    const res = await submitJoinApplication({ ...join, isAdmin: true, status: "accepted" });
-    expect(res).toMatchObject({ ok: true, waitlisted: false });
-    expect(res.ok && res.trackingCode).toMatch(/^UC-[2-9A-HJKMNP-Z]{4}$/);
-    expect(insertedValues).toMatchObject({
-      phone: "+97688112233",
-      phoneNormalized: "88112233",
-      className: "10А",
-      email: null,
-      periodId: "p1",
-      status: "new",
-      ipHash: "iphash",
-      spamScore: 0,
-    });
-    expect(insertedValues).not.toHaveProperty("isAdmin");
-  });
-
-  test("join: honeypot filled → looks like success, nothing stored", async () => {
-    const res = await submitJoinApplication({ ...join, website: "http://spam.example" });
-    expect(res).toEqual({ ok: true, trackingCode: null, waitlisted: false });
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("join: forged/stale form token and too-fast submissions are rejected before the DB", async () => {
-    fillMs = null;
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "stale" });
-    fillMs = 1_500;
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "tooFast" });
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("join: failed Turnstile → captcha error, nothing stored", async () => {
-    turnstileOk = false;
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "captcha" });
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("join: no open period → closed", async () => {
-    periods = [];
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "closed" });
-    periods = [{ ...openPeriod(), closesAt: new Date(Date.now() - 1000) }];
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "closed" });
-    expect(dbCalls).not.toContain("insert");
-  });
-
-  test("join: invalid input / class not offered / unknown help option → validation", async () => {
-    for (const bad of [
-      { phone: "1" },
-      { consent: false },
-      { className: "9В" },
-      { fullName: "Anujin Bat" },
-      { helpWith: ["not-offered"] },
-    ]) {
-      queuedResults.push([]);
-      const res = await submitJoinApplication({ ...join, ...bad });
-      expect(res).toMatchObject({ ok: false, error: "validation" });
-    }
-    expect(dbCalls).not.toContain("insert");
-  });
-
-  test("join: blocked sender and exceeded address limits get the same neutral answer", async () => {
-    queuedResults.push([]);
-    blocked = true;
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "rate" });
-    blocked = false;
-    rateAllowed = false;
-    queuedResults.push([], []);
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "rate" });
-    expect(dbCalls).not.toContain("insert");
-  });
-
-  test("join: same phone in the same period → duplicate, nothing stored", async () => {
-    queuedResults.push([], [{ id: "existing" }]);
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "duplicate" });
-    expect(dbCalls).not.toContain("insert");
-  });
-
-  test("join: capacity reached → waitlist or full depending on the period", async () => {
-    periods = [{ ...openPeriod(), capacity: 30 }];
-    taken = 30;
-    cleanDb();
-    expect(await submitJoinApplication(join)).toMatchObject({ ok: true, waitlisted: true });
-    expect(insertedValues).toMatchObject({ status: "waitlist" });
-    periods = [{ ...openPeriod(), capacity: 30, whenFull: "close" }];
-    queuedResults.push([], []);
-    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "full" });
-  });
-
-  test("join: suspicious applications are stored as spam but answered like a success", async () => {
-    fillMs = 5_000; // fast fill (+30)
-    queuedResults.push([], [], [{ n: 3 }], [{ n: 0 }]); // same text as 3 others (+40)
-    const res = await submitJoinApplication(join);
-    expect(res).toMatchObject({ ok: true });
-    expect(insertedValues).toMatchObject({ status: "spam", spamScore: 70 });
-    expect((insertedValues as { spamFlags: string[] }).spamFlags).toEqual([
-      "fast_fill",
-      "repeated_text",
-    ]);
-  });
-
-  test("admin settings: malformed list JSON is rejected (nothing wiped)", async () => {
-    currentRole = "admin";
+    dbCalls.length = 0;
     const f = settingsForm();
     f.set("partners", "{not json");
     expect((await saveSettings({}, f)).ok).toBe(false);
     expect(dbCalls).not.toContain("insert");
   });
 
-  test("contact: lowercases email, requires Turnstile", async () => {
-    const msg = {
-      name: "Эцэг эх",
-      email: "Parent@Example.MN",
-      subject: "",
-      message: "Сайн байна уу, асуулт байна.",
-      turnstileToken: "t",
-    };
+  test("invalid status is rejected before the database", async () => {
+    signInAs("admin");
+    expect((await setApplicationStatus("a1", "spam")).ok).toBe(false);
+    expect(dbCalls).toEqual([]);
+  });
+});
+
+describe("account management", () => {
+  const account = (id: string, role: Role, email = `${id}@gmail.com`) =>
+    accounts.set(id, { id, role, email, banned: false, name: "Батын Анужин" });
+
+  test("an admin can't demote, ban or delete themselves", async () => {
+    signInAs("admin");
+    account("me", "admin", "me@gmail.com");
+    for (const res of [
+      await changeUserRole("me", "remove-role"),
+      await changeUserRole("me", "make-member"),
+      await setUserBanned("me", true),
+      await deleteUserAccount("me", "me@gmail.com"),
+    ])
+      expect(res).toEqual({
+        ok: false,
+        message: "Өөрийн бүртгэл дээр энэ үйлдлийг хийх боломжгүй.",
+      });
+    expect(clerkLog).toEqual([]);
+  });
+
+  test("the last admin can't be demoted, banned or deleted", async () => {
+    signInAs("admin");
+    account("a2", "admin");
+    adminCount = 1;
+    for (const res of [
+      await changeUserRole("a2", "remove-role"),
+      await setUserBanned("a2", true),
+      await deleteUserAccount("a2", "a2@gmail.com"),
+    ])
+      expect(res.message).toContain("Сүүлчийн админ");
+    expect(clerkLog).toEqual([]);
+  });
+
+  test("make member: creates a hidden member row and sets the role in Clerk + D1", async () => {
+    signInAs("admin");
+    account("u1", null);
+    queuedResults.push([], [], [{ id: "m-new" }]); // no linked member, no e-mail match, insert
+    expect((await changeUserRole("u1", "make-member")).ok).toBe(true);
+    expect(valuesLog[0]).toMatchObject({
+      userId: "u1",
+      showPublicly: false,
+      email: "u1@gmail.com",
+    });
+    expect(clerkLog).toEqual(["role:u1:member"]);
+  });
+
+  test("make member never links silently: an imported member with the e-mail blocks it", async () => {
+    signInAs("admin");
+    account("u1", null);
+    queuedResults.push([], [{ id: "imported" }]);
+    const res = await changeUserRole("u1", "make-member");
+    expect(res.ok).toBe(false);
+    expect(res.message).toContain("Гишүүнтэй холбох");
+    expect(clerkLog).toEqual([]);
+  });
+
+  test("link account → member: links the row and gives the member role", async () => {
+    signInAs("admin");
+    account("u1", null);
+    queuedResults.push([{ id: "imp", userId: null, anonymized: false }], [], []);
+    expect((await linkAccountToMember("u1", "imp")).ok).toBe(true);
+    expect(setLog[0]).toMatchObject({ userId: "u1", active: true });
+    expect(clerkLog).toEqual(["role:u1:member"]);
+  });
+
+  test("link refuses a member that belongs to another account", async () => {
+    signInAs("admin");
+    account("u1", null);
+    queuedResults.push([{ id: "imp", userId: "someone-else", anonymized: false }]);
+    expect((await linkAccountToMember("u1", "imp")).ok).toBe(false);
+    expect(clerkLog).toEqual([]);
+  });
+
+  test("ban / unban go to Clerk and D1", async () => {
+    signInAs("admin");
+    account("u1", "member");
+    expect((await setUserBanned("u1", true)).ok).toBe(true);
+    accounts.get("u1")!.banned = true;
+    expect((await setUserBanned("u1", false)).ok).toBe(true);
+    expect(clerkLog).toEqual(["ban:u1:true", "ban:u1:false"]);
+  });
+
+  test("delete needs the typed e-mail; Clerk goes first, then the D1 personal data", async () => {
+    signInAs("admin");
+    account("u1", "member", "kid@gmail.com");
+    expect((await deleteUserAccount("u1", "other@gmail.com")).ok).toBe(false);
+    expect(clerkLog).toEqual([]);
+    expect((await deleteUserAccount("u1", " Kid@Gmail.com ")).ok).toBe(true);
+    expect(clerkLog).toEqual(["clerk-delete:u1", "remove:u1:me"]);
+  });
+});
+
+describe("application lifecycle", () => {
+  const join = {
+    fullName: "Батын Анужин",
+    className: "10 а",
+    phone: "8811 2233",
+    reason: "Хүүхдүүдэд туслахыг хүсэж байна.",
+    helpWith: ["reading"],
+    answers: {},
+    consent: true,
+  };
+  /** settings rows → defaults; no application from this account in the period yet */
+  const cleanDb = () => queuedResults.push([], []);
+
+  test("signed-out, member and blocked accounts can't apply", async () => {
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "unauthenticated" });
+    signInAs("member");
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "member" });
+    signInAs(null, { applyBlocked: true });
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "blocked" });
+    expect(dbCalls).toEqual([]);
+  });
+
+  test("valid → stored once with the account id and e-mail, normalized fields", async () => {
+    signInAs(null, { id: "u1", email: "kid@gmail.com" });
+    cleanDb();
+    expect(await submitJoinApplication(join)).toEqual({ ok: true, waitlisted: false });
+    expect(insertedValues).toMatchObject({
+      userId: "u1",
+      periodId: "p1",
+      email: "kid@gmail.com",
+      fullName: "Батын Анужин",
+      className: "10А",
+      phone: "+97688112233",
+      status: "new",
+    });
+    expect(Object.keys(insertedValues as object).sort()).toEqual(
+      [
+        "answers",
+        "className",
+        "consentAt",
+        "email",
+        "fullName",
+        "helpWith",
+        "periodId",
+        "phone",
+        "reason",
+        "status",
+        "userId",
+      ].sort(),
+    );
+    expect(rateKeys).toEqual(["join:user:u1"]);
+  });
+
+  test("per-account rate limit, closed period and invalid input never insert", async () => {
+    signInAs(null);
+    rateAllowed = false;
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "rate" });
+    rateAllowed = true;
+    periods = [];
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "closed" });
+    periods = [openPeriod()];
+    const bad = await submitJoinApplication({ ...join, phone: "1234", className: "5Б" });
+    expect(bad).toMatchObject({ ok: false, error: "validation" });
+    expect(dbCalls).not.toContain("insert");
+  });
+
+  test("one application per account per period (and a racing duplicate)", async () => {
+    signInAs(null);
+    queuedResults.push([], [{ id: "existing" }]);
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "duplicate" });
+    expect(dbCalls).not.toContain("insert");
+    queuedResults.push([], [], new Error("UNIQUE constraint failed: applications.user_id"));
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "duplicate" });
+  });
+
+  test("capacity: waitlist or full depending on the period", async () => {
+    signInAs(null);
+    periods = [{ ...openPeriod(), capacity: 1 }];
+    taken = 1;
+    cleanDb();
+    expect(await submitJoinApplication(join)).toEqual({ ok: true, waitlisted: true });
+    expect(insertedValues).toMatchObject({ status: "waitlist" });
+    periods = [{ ...openPeriod(), capacity: 1, whenFull: "close" }];
+    insertedValues = null;
+    cleanDb();
+    expect(await submitJoinApplication(join)).toEqual({ ok: false, error: "full" });
+    expect(insertedValues).toBeNull();
+  });
+
+  const app = (extra: Record<string, unknown> = {}) => ({
+    id: "a1",
+    userId: "u1",
+    periodId: "p1",
+    status: "new",
+    memberId: null,
+    fullName: "Батын Анужин",
+    className: "10А",
+    email: "kid@gmail.com",
+    ...extra,
+  });
+
+  test("approve → member role + one hidden member row in the period's school year", async () => {
+    signInAs("admin");
+    queuedResults.push(
+      [app()], // the application
+      [], // status update
+      [{ role: null }], // the applicant's account
+      [], // no member linked to the account yet
+      [{ schoolYear: "2026-2027" }], // the period
+      [{ id: "m1" }], // insert member
+      [], // link member to the application
+    );
+    const res = await setApplicationStatus("a1", "accepted");
+    expect(res.ok).toBe(true);
+    expect(valuesLog[0]).toMatchObject({
+      name: "Б.Анужин",
+      showPublicly: false,
+      schoolYear: "2026-2027",
+      userId: "u1",
+    });
+    expect(setLog[0]).toMatchObject({ status: "accepted", decidedBy: "me" });
+    expect(clerkLog).toEqual(["role:u1:member"]);
+  });
+
+  test("approving an application that already has a member creates no second row", async () => {
+    signInAs("admin");
+    queuedResults.push([app({ memberId: "m1" })], [], [{ role: null }], []);
+    expect((await setApplicationStatus("a1", "accepted")).ok).toBe(true);
+    expect(dbCalls).not.toContain("insert");
+  });
+
+  test("changing an accepted decision takes the member role back (admins keep theirs)", async () => {
+    signInAs("admin");
+    queuedResults.push([app({ status: "accepted", memberId: "m1" })], [], [{ role: "member" }], []);
+    expect((await setApplicationStatus("a1", "rejected")).ok).toBe(true);
+    expect(clerkLog).toEqual(["role:u1:null"]);
+    expect(setLog).toContainEqual({ active: false });
+
+    clerkLog.length = 0;
+    queuedResults.push([app({ status: "accepted", memberId: "m1" })], [], [{ role: "admin" }], []);
+    expect((await setApplicationStatus("a1", "waitlist")).ok).toBe(true);
+    expect(clerkLog).toEqual([]);
+  });
+
+  test("rejected → accepted later works (admin can change the decision)", async () => {
+    signInAs("admin");
+    queuedResults.push(
+      [app({ status: "rejected" })],
+      [],
+      [{ role: null }],
+      [],
+      [{ schoolYear: "2026-2027" }],
+      [{ id: "m1" }],
+      [],
+    );
+    expect((await setApplicationStatus("a1", "accepted")).ok).toBe(true);
+    expect(clerkLog).toEqual(["role:u1:member"]);
+  });
+
+  test("the applicant's message and the reapply block are admin-only writes", async () => {
+    signInAs("admin");
+    const f = new FormData();
+    f.set("decisionMessage", "Дараагийн элсэлтэд хүлээж байна.");
+    queuedResults.push([{ id: "a1" }]);
+    expect((await saveDecisionMessage("a1", {}, f)).ok).toBe(true);
+    expect(setLog[0]).toEqual({ decisionMessage: "Дараагийн элсэлтэд хүлээж байна." });
+    queuedResults.push([{ id: "u1" }]);
+    expect((await setApplyBlocked("u1", true)).ok).toBe(true);
+    expect(setLog[1]).toMatchObject({ applyBlocked: true });
+  });
+});
+
+describe("member area actions", () => {
+  test("admins can't delete their own account from /me", async () => {
+    signInAs("admin");
+    expect(await deleteMyAccount("УСТГАХ")).toEqual({ ok: false, error: "adminSelfDelete" });
+    expect(clerkLog).toEqual([]);
+  });
+
+  test("self-delete needs the confirmation word; then Clerk + D1 clean-up (no actor)", async () => {
+    signInAs("member", { id: "m1" });
+    expect(await deleteMyAccount("yes")).toEqual({ ok: false, error: "confirm" });
+    expect(clerkLog).toEqual([]);
+    expect(await deleteMyAccount(" устгах ")).toEqual({ ok: true });
+    expect(clerkLog).toEqual(["clerk-delete:m1", "remove:m1:none"]);
+  });
+
+  const event = (extra: Record<string, unknown> = {}) => ({
+    id: "e1",
+    published: true,
+    signupEnabled: true,
+    signupCapacity: 1,
+    signupDeadline: null,
+    startsAt: new Date(Date.now() + 86_400_000),
+    ...extra,
+  });
+
+  test("event sign-up: members only; full → waitlist; closed after the deadline", async () => {
+    signInAs(null);
+    expect(await signUpForEvent("e1")).toEqual({ ok: false, error: "forbidden" });
+    signInAs("member", { id: "m1" });
+    queuedResults.push([event()], [], [{ n: 1 }]);
+    expect(await signUpForEvent("e1")).toEqual({ ok: true, status: "waitlist" });
+    expect(insertedValues).toMatchObject({ eventId: "e1", userId: "m1", status: "waitlist" });
+    queuedResults.push([event({ signupDeadline: new Date(Date.now() - 1000) })]);
+    expect(await signUpForEvent("e1")).toEqual({ ok: false, error: "closed" });
+  });
+
+  test("cancelling a place moves the first waitlisted member up", async () => {
+    signInAs("member", { id: "m1" });
+    queuedResults.push([{ id: "s1", status: "registered" }], [], [{ id: "s2" }], []);
+    expect(await cancelSignup("e1")).toEqual({ ok: true, status: "cancelled" });
+    expect(setLog[0]).toMatchObject({ status: "cancelled" });
+    expect(setLog[1]).toMatchObject({ status: "registered" });
+  });
+});
+
+describe("contact form", () => {
+  const msg = {
+    name: "Эцэг эх",
+    email: "Parent@Example.MN",
+    subject: "",
+    message: "Сайн байна уу, асуулт байна.",
+    turnstileToken: "t",
+  };
+  test("lowercases e-mail, requires Turnstile", async () => {
     expect(await submitContactMessage(msg)).toEqual({ ok: true });
     expect(insertedValues).toMatchObject({ email: "parent@example.mn" });
     turnstileOk = false;
     expect(await submitContactMessage(msg)).toEqual({ ok: false, error: "captcha" });
   });
-
-  test("contact: address over its limit → rate, nothing stored", async () => {
+  test("address over its limit → rate, nothing stored", async () => {
     rateAllowed = false;
-    const res = await submitContactMessage({
-      name: "Эцэг эх",
-      email: "parent@example.mn",
-      subject: "",
-      message: "Сайн байна уу, асуулт байна.",
-      turnstileToken: "t",
-    });
-    expect(res).toEqual({ ok: false, error: "rate" });
+    expect(await submitContactMessage(msg)).toEqual({ ok: false, error: "rate" });
     expect(dbCalls).not.toContain("insert");
-  });
-});
-
-describe("application status lookup", () => {
-  const row = {
-    fullName: "Батын Анужин",
-    status: "interview",
-    phone: "88112233",
-    createdAt: new Date("2026-11-14T03:00:00Z"),
-  };
-  const ask = (extra: Partial<{ code: string; last4: string; turnstileToken: string }> = {}) =>
-    lookupApplicationStatus({ code: "uc-7k3m", last4: "2233", turnstileToken: "t", ...extra });
-
-  test("code + last 4 digits → first name and public status only", async () => {
-    queuedResults.push([row]);
-    expect(await ask()).toEqual({
-      ok: true,
-      firstName: "Анужин",
-      status: "interview",
-      submittedAt: "2026-11-14T03:00:00.000Z",
-    });
-  });
-
-  test("wrong digits and unknown code give the same answer", async () => {
-    queuedResults.push([row]);
-    expect(await ask({ last4: "0000" })).toEqual({ ok: false, error: "notFound" });
-    queuedResults.push([]);
-    expect(await ask()).toEqual({ ok: false, error: "notFound" });
-  });
-
-  test("Turnstile is required before the rate limit and the database", async () => {
-    turnstileOk = false;
-    expect(await ask()).toEqual({ ok: false, error: "captcha" });
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("malformed input and exceeded limit never reach the database", async () => {
-    expect(await ask({ code: "hello" })).toEqual({ ok: false, error: "invalid" });
-    expect(await ask({ last4: "12" })).toEqual({ ok: false, error: "invalid" });
-    rateAllowed = false;
-    expect(await ask()).toEqual({ ok: false, error: "rate" });
-    expect(dbCalls).toHaveLength(0);
-  });
-
-  test("spam is reported as received", async () => {
-    queuedResults.push([{ ...row, status: "spam" }]);
-    expect(await ask()).toMatchObject({ ok: true, status: "received" });
   });
 });

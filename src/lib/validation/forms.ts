@@ -37,7 +37,8 @@ export type JoinQuestion = {
 
 /**
  * Join form schema for one recruitment period. The same schema runs in the browser and again on
- * the server (which additionally checks help options, blocks, duplicates and rate limits).
+ * the server (which also checks the account, help options, duplicates and the rate limit). The
+ * e-mail address comes from the signed-in account, so the form doesn't ask for it.
  * Error messages are i18n keys under `Forms.errors.*`.
  */
 export function buildJoinSchema({
@@ -68,11 +69,6 @@ export function buildJoinSchema({
         .trim()
         .min(1, { error: "required" })
         .refine((v) => normalizeMnPhone(v) !== null, { error: "phone" }),
-      email: z
-        .string()
-        .trim()
-        .max(254, { error: "tooLong" })
-        .refine((v) => v === "" || z.email().safeParse(v).success, { error: "email" }),
       reason: trimmed(10, 1000).refine((v) => !containsUrl(v), { error: "noLinks" }),
       helpWith: z.array(helpOptionKey).min(1, { error: "helpWith" }).max(20, { error: "helpWith" }),
       answers: z.record(z.string(), z.union([z.string().max(500), z.boolean()])),

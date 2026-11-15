@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "unicef-club-130",
-  "main": ".open-next/worker.js",
+  // worker.ts wraps the OpenNext app (.open-next/worker.js) and adds the daily cron job.
+  "main": "worker.ts",
   "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   // esbuild's keep_names injects `__name()` into functions; next-themes serializes its theme
@@ -11,6 +12,8 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS",
   },
+  // Daily at 03:30 Ulaanbaatar time: delete expired rejected applications (privacy).
+  "triggers": { "crons": ["30 19 * * *"] },
   "observability": {
     "enabled": true,
   },
@@ -44,11 +47,11 @@
     },
   ],
   // Non-secret production settings. Locally, .dev.vars overrides these (see .dev.vars.example).
-  // Secrets (BETTER_AUTH_SECRET, TURNSTILE_SECRET_KEY, GOOGLE_*) are set with `wrangler secret put`.
+  // Secrets (CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET, TURNSTILE_SECRET_KEY, GOOGLE_*) are
+  // set with `wrangler secret put`. NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (public) is added here for
+  // the Clerk production instance (see DEPLOY_CHECKLIST).
   "vars": {
     "SITE_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
-    "BETTER_AUTH_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
-    "BETTER_AUTH_TRUSTED_ORIGINS": "https://unicef-club-130.erkhes-labs.workers.dev",
     // Public Turnstile site key (not a secret). Cloudflare's test keys are refused in production.
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGAxVpYS2hRdPPVO",
     "GOOGLE_SHEET_TAB": "Applications",

@@ -5,21 +5,16 @@ import {
   containsUrl,
   findNextPeriod,
   findOpenPeriod,
-  generateTrackingCode,
   givenName,
   intakeFor,
   isCyrillicFullName,
-  looksLikeGibberish,
+  joinView,
   memberDisplayName,
-  MIN_FILL_MS,
   normalizeMnPhone,
-  normalizeTrackingCode,
   parseClassList,
   periodPhase,
   periodsOverlap,
   publicStatus,
-  SPAM_THRESHOLD,
-  spamScore,
 } from "@/lib/recruitment/logic";
 
 const ub = (v: string) => parseUbInputValue(v)!;
@@ -109,71 +104,47 @@ describe("strict field validation", () => {
   });
 });
 
-describe("spam score", () => {
-  const clean = {
-    fillMs: 45_000,
-    fullName: "Батын Анужин",
-    reason: "Би хүүхдүүдэд ном уншиж өгөх дуртай, клубын ажилд идэвхтэй оролцмоор байна.",
-    sameReasonCount: 0,
-    sameIpRecent: 0,
-  };
+describe("what a signed-in account sees on /join", () => {
+  const open = { id: "p2", intake: "accept" as const };
+  const base = { role: null, applyBlocked: false, open, appliedPeriodIds: [] as string[] };
 
-  test("a normal application scores 0", () => {
-    expect(spamScore(clean)).toEqual({ score: 0, flags: [] });
-    expect(MIN_FILL_MS).toBe(4000);
+  test("members and admins have nothing to apply for", () => {
+    expect(joinView({ ...base, role: "member" })).toBe("member");
+    expect(joinView({ ...base, role: "admin" })).toBe("member");
   });
 
-  test("signals add up and cross the threshold", () => {
-    const fast = spamScore({ ...clean, fillMs: 5_000 });
-    expect(fast.flags).toEqual(["fast_fill"]);
-    expect(fast.score).toBeLessThan(SPAM_THRESHOLD);
-
-    const copied = spamScore({ ...clean, fillMs: 5_000, sameReasonCount: 2 });
-    expect(copied.flags).toEqual(["fast_fill", "repeated_text"]);
-    expect(copied.score).toBeGreaterThanOrEqual(SPAM_THRESHOLD);
-
-    const mash = spamScore({ ...clean, fullName: "Сдфгх Жклзхц", reason: "ааааааааааааааааааа" });
-    expect(mash.flags).toContain("gibberish_text");
-    expect(mash.flags).toContain("gibberish_name");
-    expect(mash.score).toBeGreaterThanOrEqual(SPAM_THRESHOLD);
-
-    expect(spamScore({ ...clean, sameIpRecent: 2 }).flags).toEqual([]);
-    expect(spamScore({ ...clean, sameIpRecent: 6 }).score).toBe(50);
-    expect(spamScore({ ...clean, reason: "хөөх хөөх хөөх хөөх хөөх" }).flags).toContain(
-      "repeated_words",
-    );
+  test("no application in the open period → form; one already sent → its status", () => {
+    expect(joinView(base)).toBe("form");
+    expect(joinView({ ...base, appliedPeriodIds: ["p2"] })).toBe("status");
   });
 
-  test("gibberish detector does not flag real Mongolian or English text", () => {
-    for (const ok of [clean.reason, "Номин-Эрдэнэ", "I want to help children in my school."])
-      expect(looksLikeGibberish(ok)).toBe(false);
-    for (const bad of ["qwrtpsdfg", "ккккккккк", "ababababababab"])
-      expect(looksLikeGibberish(bad)).toBe(true);
+  test("rejected in an earlier period → may apply again when a new period opens", () => {
+    expect(joinView({ ...base, appliedPeriodIds: ["p1"] })).toBe("form");
+    // …but not again in the same period, and not while nothing is open.
+    expect(joinView({ ...base, appliedPeriodIds: ["p1", "p2"] })).toBe("status");
+    expect(joinView({ ...base, open: null, appliedPeriodIds: ["p1"] })).toBe("closed");
+  });
+
+  test("full period or an admin's block → no form", () => {
+    expect(joinView({ ...base, open: { id: "p2", intake: "full" } })).toBe("closed");
+    expect(joinView({ ...base, open: { id: "p2", intake: "waitlist" } })).toBe("form");
+    expect(joinView({ ...base, applyBlocked: true })).toBe("blocked");
+    // A blocked account still sees the status of what it already sent.
+    expect(joinView({ ...base, applyBlocked: true, appliedPeriodIds: ["p2"] })).toBe("status");
   });
 });
 
-describe("tracking codes and public status", () => {
-  test("format, normalization, no ambiguous characters", () => {
-    for (let i = 0; i < 200; i++) expect(generateTrackingCode()).toMatch(/^UC-[2-9A-HJKMNP-Z]{4}$/);
-    expect(normalizeTrackingCode(" uc-7k3m ")).toBe("UC-7K3M");
-    expect(normalizeTrackingCode("7K3M")).toBe("UC-7K3M");
-    expect(normalizeTrackingCode("UC7K3M")).toBe("UC-7K3M");
-    expect(normalizeTrackingCode("UC-7K3")).toBeNull();
-    expect(normalizeTrackingCode("UC-7K3O")).toBeNull(); // O is not in the alphabet
-    expect(normalizeTrackingCode("'; DROP TABLE")).toBeNull();
-  });
-
-  test("the applicant never sees internal states", () => {
-    expect(publicStatus("new")).toBe("received");
-    expect(publicStatus("reviewing")).toBe("received");
-    expect(publicStatus("spam")).toBe("received");
-    expect(publicStatus("interview")).toBe("interview");
+describe("public status and names", () => {
+  test("the applicant sees four states; internal steps read as pending", () => {
+    expect(publicStatus("new")).toBe("pending");
+    expect(publicStatus("reviewing")).toBe("pending");
+    expect(publicStatus("interview")).toBe("pending");
     expect(publicStatus("accepted")).toBe("accepted");
     expect(publicStatus("waitlist")).toBe("waitlist");
-    expect(publicStatus("rejected")).toBe("declined");
+    expect(publicStatus("rejected")).toBe("rejected");
   });
 
-  test("names for the status page and the member list", () => {
+  test("names for the greeting and the member list", () => {
     expect(givenName("Батын Анужин")).toBe("Анужин");
     expect(givenName("Б.Анужин")).toBe("Анужин");
     expect(memberDisplayName("Батын Анужин")).toBe("Б.Анужин");

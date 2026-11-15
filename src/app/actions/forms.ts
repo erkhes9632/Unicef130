@@ -1,26 +1,22 @@
 "use server";
 
-import { and, count, eq, gt, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { applications, contactMessages } from "@/db/schema";
 import { runInBackground, syncApplicationToSheets } from "@/lib/applications/sheets-sync";
+import { AuthError, assertSignedIn } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { notifyNewApplication, notifyNewContactMessage } from "@/lib/integrations/notifications";
 import { verifyTurnstile } from "@/lib/integrations/turnstile";
-import { consumeRateLimit } from "@/lib/rate-limit";
-import { countTaken, isBlocked, listPeriods } from "@/lib/recruitment/data";
-import { formAgeMs, hashIp } from "@/lib/recruitment/form-token";
+import { consumeRateLimit, hashIp } from "@/lib/rate-limit";
+import { countTaken, listPeriods } from "@/lib/recruitment/data";
 import {
   findOpenPeriod,
-  generateTrackingCode,
   intakeFor,
-  MIN_FILL_MS,
   normalizeClass,
   normalizeMnPhone,
-  SPAM_THRESHOLD,
-  spamScore,
 } from "@/lib/recruitment/logic";
 import { buildJoinSchema, contactFormSchema } from "@/lib/validation/forms";
 
@@ -33,31 +29,24 @@ export type FormActionResult =
     };
 
 export type JoinActionResult =
-  | { ok: true; trackingCode: string | null; waitlisted: boolean }
+  | { ok: true; waitlisted: boolean }
   | {
       ok: false;
       error:
         | "validation"
-        | "captcha"
-        | "unavailable"
+        | "unauthenticated"
+        | "member"
+        | "blocked"
         | "server"
         | "closed"
         | "full"
         | "duplicate"
-        | "rate"
-        | "tooFast"
-        | "stale";
+        | "rate";
       fieldErrors?: Record<string, string[] | undefined>;
     };
 
-const token = { turnstileToken: z.string().max(2048).optional() };
-const contactServerSchema = contactFormSchema.extend(token);
-/** Fields the browser adds around the visible form. */
-const joinMetaSchema = z.object({
+const contactServerSchema = contactFormSchema.extend({
   turnstileToken: z.string().max(2048).optional(),
-  /** Honeypot: hidden from people, tempting for scripts. Must stay empty. */
-  website: z.string().max(200).optional(),
-  formToken: z.string().max(120).optional(),
 });
 
 async function clientIp() {
@@ -67,28 +56,34 @@ async function clientIp() {
 const isUniqueViolation = (err: unknown) =>
   err instanceof Error && /UNIQUE constraint failed/i.test(`${err.message} ${String(err.cause)}`);
 
+/** Submits per account: at most 5 tries in 10 minutes (typos, validation errors). */
+const JOIN_SUBMITS_PER_10_MIN = 5;
+
 /**
- * Join form. Layers, cheapest first: honeypot → signed form age (min fill time) → Turnstile →
- * open period → strict validation against the period → blocks → duplicate phone → per-address
- * rate limits → capacity → spam score → store. Google Sheets + notifications run in the
- * background and never fail the submission.
+ * Join form (signed-in accounts only; Clerk's bot protection covers sign-up). Order: account
+ * checks → per-account rate limit → open period → strict validation against the period → one
+ * application per account per period → capacity / waitlist → store. Google Sheets and
+ * notifications run in the background and never fail the submission.
  */
 export async function submitJoinApplication(input: unknown): Promise<JoinActionResult> {
-  const meta = joinMetaSchema.safeParse(input);
-  if (!meta.success) return { ok: false, error: "validation" };
-  // A filled honeypot is a script: answer like a success, store nothing.
-  if (meta.data.website) return { ok: true, trackingCode: null, waitlisted: false };
-
-  const fillMs = await formAgeMs(meta.data.formToken);
-  if (fillMs === null) return { ok: false, error: "stale" };
-  if (fillMs < MIN_FILL_MS) return { ok: false, error: "tooFast" };
-
-  const ip = await clientIp();
-  const check = await verifyTurnstile(meta.data.turnstileToken, ip);
-  if (check !== "ok")
-    return { ok: false, error: check === "unavailable" ? "unavailable" : "captcha" };
+  let me;
+  try {
+    me = await assertSignedIn();
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: "unauthenticated" };
+    throw err;
+  }
+  if (me.role) return { ok: false, error: "member" };
+  if (me.applyBlocked) return { ok: false, error: "blocked" };
 
   try {
+    const limit = await consumeRateLimit(
+      `join:user:${me.id}`,
+      JOIN_SUBMITS_PER_10_MIN,
+      10 * 60 * 1000,
+    );
+    if (!limit.allowed) return { ok: false, error: "rate" };
+
     const period = findOpenPeriod(await listPeriods());
     if (!period) return { ok: false, error: "closed" };
 
@@ -117,107 +112,52 @@ export async function submitJoinApplication(input: unknown): Promise<JoinActionR
       return { ok: false, error: "validation", fieldErrors: { helpWith: ["helpWith"] } };
     }
 
-    const phone = normalizeMnPhone(d.phone)!;
-    const ipHash = await hashIp(ip);
-    // Blocked senders get the same answer as a rate limit (no hint that a block exists).
-    if (await isBlocked(phone, ipHash)) return { ok: false, error: "rate" };
-
     const db = await getDb();
     const [existing] = await db
       .select({ id: applications.id })
       .from(applications)
-      .where(and(eq(applications.periodId, period.id), eq(applications.phoneNormalized, phone)))
+      .where(and(eq(applications.userId, me.id), eq(applications.periodId, period.id)))
       .limit(1);
     if (existing) return { ok: false, error: "duplicate" };
 
-    const tenMinutes = await consumeRateLimit(
-      `join:10m:${ipHash}`,
-      period.ipLimitPer10Min,
-      10 * 60 * 1000,
-    );
-    const day = await consumeRateLimit(
-      `join:day:${ipHash}`,
-      period.ipLimitPerDay,
-      24 * 60 * 60 * 1000,
-    );
-    if (!tenMinutes.allowed || !day.allowed) return { ok: false, error: "rate" };
-
     const intake = intakeFor(period, period.capacity === null ? 0 : await countTaken(period.id));
     if (intake === "full") return { ok: false, error: "full" };
+    const status = intake === "waitlist" ? "waitlist" : "new";
 
-    const [[sameReason], [sameIp]] = await Promise.all([
-      db
-        .select({ n: count() })
-        .from(applications)
-        .where(and(eq(applications.periodId, period.id), eq(applications.reason, d.reason))),
-      db
-        .select({ n: count() })
-        .from(applications)
-        .where(
-          and(
-            eq(applications.ipHash, ipHash),
-            gt(applications.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
-            ne(applications.status, "spam"),
-          ),
-        ),
-    ]);
-    const spam = spamScore({
-      fillMs,
-      fullName: d.fullName,
-      reason: d.reason,
-      sameReasonCount: sameReason?.n ?? 0,
-      sameIpRecent: sameIp?.n ?? 0,
-    });
-    const suspicious = spam.score >= SPAM_THRESHOLD;
-    const status = suspicious ? "spam" : intake === "waitlist" ? "waitlist" : "new";
-
-    // Tracking codes are short: retry on the rare collision.
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const trackingCode = generateTrackingCode();
-      try {
-        const [row] = await db
-          .insert(applications)
-          .values({
+    try {
+      const [row] = await db
+        .insert(applications)
+        .values({
+          userId: me.id,
+          periodId: period.id,
+          fullName: d.fullName,
+          className: normalizeClass(d.className),
+          phone: `+976${normalizeMnPhone(d.phone)!}`,
+          email: me.email || null,
+          reason: d.reason,
+          helpWith: [...new Set(d.helpWith)],
+          answers: d.answers,
+          consentAt: new Date(),
+          status,
+        })
+        .returning({ id: applications.id, createdAt: applications.createdAt });
+      await runInBackground(
+        Promise.allSettled([
+          syncApplicationToSheets(row!.id),
+          notifyNewApplication({
+            id: row!.id,
             fullName: d.fullName,
-            className: normalizeClass(d.className),
-            phone: `+976${phone}`,
-            phoneNormalized: phone,
-            email: d.email || null,
-            reason: d.reason,
-            helpWith: [...new Set(d.helpWith)],
-            answers: d.answers,
-            consentAt: new Date(),
-            periodId: period.id,
-            trackingCode,
-            ipHash,
-            spamScore: spam.score,
-            spamFlags: spam.flags,
-            status,
-          })
-          .returning({ id: applications.id, createdAt: applications.createdAt });
-        if (!suspicious) {
-          await runInBackground(
-            Promise.allSettled([
-              syncApplicationToSheets(row!.id),
-              notifyNewApplication({
-                id: row!.id,
-                fullName: d.fullName,
-                className: d.className,
-                createdAt: row!.createdAt,
-              }),
-            ]),
-          );
-        }
-        // Suspicious applications look accepted to the sender; an admin reviews them.
-        return { ok: true, trackingCode, waitlisted: status === "waitlist" };
-      } catch (err) {
-        if (!isUniqueViolation(err)) throw err;
-        if (/phone_normalized/.test(`${(err as Error).message} ${String((err as Error).cause)}`))
-          return { ok: false, error: "duplicate" };
-        // otherwise: tracking code collision → try another code
-      }
+            className: d.className,
+            createdAt: row!.createdAt,
+          }),
+        ]),
+      );
+    } catch (err) {
+      // Two tabs submitting at once: the unique (account, period) index keeps one.
+      if (isUniqueViolation(err)) return { ok: false, error: "duplicate" };
+      throw err;
     }
-    throw new Error("could not allocate a tracking code");
+    return { ok: true, waitlisted: status === "waitlist" };
   } catch (err) {
     console.error("[join] failed to store application", err);
     return { ok: false, error: "server" };

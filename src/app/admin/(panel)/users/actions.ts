@@ -1,243 +1,199 @@
 "use server";
 
-import { and, count, eq, isNull, ne, or } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { getDb } from "@/db";
-import { authTokens, session, twoFactor, user, userRoles, type UserRole } from "@/db/schema";
-import { logActivity } from "@/lib/admin/activity";
-import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
-import { roleLabels } from "@/lib/auth/roles";
-import { requirePermission } from "@/lib/auth/session";
-import { createAuthToken } from "@/lib/auth/token-store";
-import { isEmailConfigured, sendEmail } from "@/lib/integrations/email";
-import { getSiteUrl } from "@/lib/seo";
+import { members } from "@/db/schema";
+import { logActivity, shortId } from "@/lib/admin/activity";
+import { actionError, type ActionState } from "@/lib/admin/action-state";
+import { roleLabel, toRole } from "@/lib/auth/roles";
+import { assertAdmin, refreshUserFromClerk } from "@/lib/auth/session";
+import { memberDisplayName } from "@/lib/recruitment/logic";
+import { countActiveAdmins, deleteClerkUser, setBanned, setRole } from "@/lib/users/clerk-admin";
+import { removeUserData } from "@/lib/users/delete";
+import {
+  checkUserAction,
+  roleAfter,
+  userActionRefusalMessages,
+  type UserAction,
+} from "@/lib/users/rules";
+import { findUser } from "@/lib/users/sync";
 
-/** `link` is shown once, right after it was created (only its hash is stored). */
-export type LinkActionState = ActionState & { link?: string; email?: string; emailed?: boolean };
+const roleActions = ["make-admin", "make-member", "remove-role"] as const;
 
-const inviteSchema = z.object({
-  email: z.email({ error: "И-мэйл буруу." }).max(254),
-  role: z.enum(userRoles, { error: "Эрх сонгоно уу." }),
-});
-
-async function otherActiveAdmins(excludeId: string) {
+/** Loads the target account (repairing the D1 row from Clerk if needed) and runs the guards. */
+async function guarded(actorId: string, userId: string, action: UserAction) {
   const db = await getDb();
-  const [row] = await db
-    .select({ n: count() })
-    .from(user)
-    .where(
-      and(
-        eq(user.role, "admin"),
-        or(eq(user.banned, false), isNull(user.banned)),
-        ne(user.id, excludeId),
-      ),
-    );
-  return row?.n ?? 0;
+  const target = (await findUser(db, userId)) ?? (await refreshUserFromClerk(userId));
+  if (!target) return { db, refusal: "Бүртгэл олдсонгүй." } as const;
+  const refusal = checkUserAction({
+    actorId,
+    target: { id: target.id, role: toRole(target.role), banned: target.banned },
+    action,
+    adminCount: await countActiveAdmins(db),
+  });
+  return { db, target, refusal: refusal ? userActionRefusalMessages[refusal] : null } as const;
 }
 
-/** Creates a one-time invitation link (72 h). The invitee sets their own password. */
-export async function inviteUser(_prev: LinkActionState, data: FormData): Promise<LinkActionState> {
-  try {
-    const me = await requirePermission("admin");
-    const parsed = inviteSchema.safeParse({
-      email: fd.str(data, "email").toLowerCase(),
-      role: fd.str(data, "role"),
-    });
-    if (!parsed.success) return validationError(parsed.error);
-    const { email, role } = parsed.data;
-    const db = await getDb();
-    const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, email));
-    if (existing) return { ok: false, message: "Энэ и-мэйлтэй хэрэглэгч аль хэдийн байна." };
-
-    const { token } = await createAuthToken({ kind: "invite", email, role, createdBy: me.id });
-    const link = `${await getSiteUrl()}/admin/invite/${token}`;
-    const emailed =
-      (await isEmailConfigured()) &&
-      (await sendEmail({
-        to: email,
-        subject: "Админ хэсгийн урилга",
-        text: `Сайн байна уу,\n\nТаныг клубын вэбсайтын админ хэсэгт «${roleLabels[role]}» эрхээр урьж байна. Доорх холбоосоор орж нууц үгээ тохируулна уу (72 цаг хүчинтэй, нэг удаа ашиглана):\n\n${link}\n`,
-      }));
-    await logActivity(me, "user.invite", {
-      type: "user",
-      summary: `${email} хаягийг «${roleLabels[role]}» эрхээр урив`,
-    });
-    revalidatePath("/admin/users");
-    return {
-      ok: true,
-      message: emailed
-        ? "Урилгыг и-мэйлээр илгээлээ. Холбоосыг доороос хуулж бас болно."
-        : "Урилгын холбоос үүслээ. Одоо л нэг удаа харагдана — хуулж аваад тухайн хүнд илгээнэ үү.",
-      link,
-      email,
-      emailed,
-    };
-  } catch (err) {
-    return actionError(err);
-  }
+function revalidateUsers() {
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/members");
 }
 
-export async function revokeInvite(id: string): Promise<ActionState> {
+/** Make admin / make member / remove role (role lives in Clerk; D1 mirrors it). */
+export async function changeUserRole(userId: string, action: string): Promise<ActionState> {
   try {
-    const me = await requirePermission("admin");
-    const db = await getDb();
-    const [row] = await db
-      .delete(authTokens)
-      .where(and(eq(authTokens.id, id), isNull(authTokens.usedAt)))
-      .returning({ email: authTokens.email, kind: authTokens.kind });
-    if (!row) return { ok: false, message: "Холбоос олдсонгүй эсвэл аль хэдийн ашиглагдсан." };
-    await logActivity(me, "user.invite_revoke", {
-      type: "user",
-      summary: `${row.email} — ${row.kind === "invite" ? "урилгыг" : "нууц үг сэргээх холбоосыг"} цуцлав`,
-    });
-    revalidatePath("/admin/users");
-    return { ok: true, message: "Холбоос цуцлагдлаа." };
-  } catch (err) {
-    return actionError(err);
-  }
-}
+    const me = await assertAdmin();
+    if (!(roleActions as readonly string[]).includes(action))
+      return { ok: false, message: "Үйлдэл буруу." };
+    const act = action as (typeof roleActions)[number];
+    const { db, target, refusal } = await guarded(me.id, userId, act);
+    if (refusal || !target) return { ok: false, message: refusal ?? "Бүртгэл олдсонгүй." };
 
-/** One-time password reset link for an existing user (same rules as invitations). */
-export async function createResetLink(id: string): Promise<LinkActionState> {
-  try {
-    const me = await requirePermission("admin");
-    const db = await getDb();
-    const [target] = await db
-      .select({ email: user.email })
-      .from(user)
-      .where(eq(user.id, id))
-      .limit(1);
-    if (!target) return { ok: false, message: "Хэрэглэгч олдсонгүй." };
-    const { token } = await createAuthToken({
-      kind: "reset",
-      email: target.email,
-      userId: id,
-      createdBy: me.id,
-    });
-    await logActivity(me, "user.reset_link", {
-      type: "user",
-      id,
-      summary: `${target.email} — нууц үг сэргээх холбоос үүсгэв`,
-    });
-    revalidatePath("/admin/users");
-    return {
-      ok: true,
-      message: "Нууц үг сэргээх холбоос (72 цаг, нэг удаа). Одоо л харагдана — хуулж илгээнэ үү.",
-      link: `${await getSiteUrl()}/admin/reset/${token}`,
-      email: target.email,
-    };
-  } catch (err) {
-    return actionError(err);
-  }
-}
-
-export async function setUserRole(id: string, role: UserRole): Promise<ActionState> {
-  try {
-    const me = await requirePermission("admin");
-    if (!(userRoles as readonly string[]).includes(role))
-      return { ok: false, message: "Эрх буруу." };
-    if (id === me.id) return { ok: false, message: "Өөрийнхөө эрхийг өөрчлөх боломжгүй." };
-    const db = await getDb();
-    const [before] = await db
-      .select({ role: user.role, email: user.email })
-      .from(user)
-      .where(eq(user.id, id))
-      .limit(1);
-    if (!before) return { ok: false, message: "Хэрэглэгч олдсонгүй." };
-    if (before.role === "admin" && role !== "admin" && (await otherActiveAdmins(id)) === 0) {
-      return { ok: false, message: "Дор хаяж нэг идэвхтэй админ байх ёстой." };
+    const next = roleAfter(act, toRole(target.role));
+    if (next === "member") {
+      const [linked] = await db
+        .select({ id: members.id })
+        .from(members)
+        .where(eq(members.userId, userId))
+        .limit(1);
+      if (linked) {
+        await db.update(members).set({ active: true }).where(eq(members.id, linked.id));
+      } else {
+        // Never link silently: an imported member with this e-mail is offered as a button.
+        const [match] = target.email
+          ? await db
+              .select({ id: members.id })
+              .from(members)
+              .where(and(eq(members.email, target.email), isNull(members.userId)))
+              .limit(1)
+          : [];
+        if (match)
+          return {
+            ok: false,
+            message:
+              "Энэ и-мэйлтэй гишүүний бүртгэл байна. Давхардуулахгүйн тулд «Гишүүнтэй холбох»-ыг ашиглана уу.",
+          };
+        await db.insert(members).values({
+          name: memberDisplayName(target.name) || target.email,
+          role: "Гишүүн",
+          roleEn: "Member",
+          group: "member",
+          showPublicly: false,
+          sortOrder: 500,
+          userId,
+          email: target.email || null,
+        });
+      }
     }
-    await db.update(user).set({ role }).where(eq(user.id, id));
-    // A changed role takes effect immediately on every device.
-    await db.delete(session).where(eq(session.userId, id));
+    await setRole(db, userId, next);
     await logActivity(me, "user.role", {
       type: "user",
-      id,
-      summary: `${before.email} хэрэглэгчийн эрхийг өөрчлөв`,
-      changes: { role: [before.role, role] },
+      id: userId,
+      summary: `Бүртгэл #${shortId(userId)} — эрх: ${roleLabel(next)}`,
+      changes: { role: [roleLabel(toRole(target.role)), roleLabel(next)] },
     });
-    revalidatePath("/admin/users");
-    return { ok: true, message: "Эрх шинэчлэгдлээ." };
+    revalidateUsers();
+    return { ok: true, message: `Эрх шинэчлэгдлээ: ${roleLabel(next)}.` };
   } catch (err) {
     return actionError(err);
   }
 }
 
-export async function setUserDisabled(id: string, disabled: boolean): Promise<ActionState> {
+/** Идэвхгүй болгох / Идэвхжүүлэх: Clerk ban (can't sign in, data kept, reversible). */
+export async function setUserBanned(userId: string, banned: boolean): Promise<ActionState> {
   try {
-    const me = await requirePermission("admin");
-    if (id === me.id) return { ok: false, message: "Өөрийгөө идэвхгүй болгох боломжгүй." };
+    const me = await assertAdmin();
+    const { db, target, refusal } = await guarded(me.id, userId, banned ? "ban" : "unban");
+    if (refusal || !target) return { ok: false, message: refusal ?? "Бүртгэл олдсонгүй." };
+    await setBanned(db, userId, banned);
+    await logActivity(me, banned ? "user.ban" : "user.unban", {
+      type: "user",
+      id: userId,
+      summary: `Бүртгэл #${shortId(userId)} — ${banned ? "идэвхгүй болгов" : "идэвхжүүлэв"}`,
+    });
+    revalidateUsers();
+    return { ok: true, message: banned ? "Бүртгэлийг идэвхгүй болголоо." : "Бүртгэл идэвхжлээ." };
+  } catch (err) {
+    return actionError(err);
+  }
+}
+
+/**
+ * Бүр мөсөн устгах: the Clerk user is deleted first (so the person can't sign in again with
+ * half-deleted data), then the D1 personal data. The admin must retype the account's e-mail.
+ */
+export async function deleteUserAccount(
+  userId: string,
+  confirmEmail: string,
+): Promise<ActionState> {
+  try {
+    const me = await assertAdmin();
+    const { db, target, refusal } = await guarded(me.id, userId, "delete");
+    if (refusal || !target) return { ok: false, message: refusal ?? "Бүртгэл олдсонгүй." };
+    if (confirmEmail.trim().toLowerCase() !== target.email.toLowerCase())
+      return { ok: false, message: "Баталгаажуулах и-мэйл таарахгүй байна." };
+    await deleteClerkUser(userId);
+    await removeUserData(db, userId, me);
+    revalidateUsers();
+    return { ok: true, message: "Бүртгэл болон хувийн мэдээлэл устгагдлаа." };
+  } catch (err) {
+    return actionError(err);
+  }
+}
+
+/**
+ * Links an account to an existing member record (e.g. one of the imported members) and gives
+ * it the member role. Only ever done by an admin, one click at a time.
+ */
+export async function linkAccountToMember(userId: string, memberId: string): Promise<ActionState> {
+  try {
+    const me = await assertAdmin();
     const db = await getDb();
-    const [target] = await db
-      .select({ role: user.role, email: user.email, banned: user.banned })
-      .from(user)
-      .where(eq(user.id, id))
+    const target = (await findUser(db, userId)) ?? (await refreshUserFromClerk(userId));
+    if (!target) return { ok: false, message: "Бүртгэл олдсонгүй." };
+    const [member] = await db
+      .select({ id: members.id, userId: members.userId, anonymized: members.anonymized })
+      .from(members)
+      .where(eq(members.id, memberId))
       .limit(1);
-    if (!target) return { ok: false, message: "Хэрэглэгч олдсонгүй." };
-    if (disabled && target.role === "admin" && (await otherActiveAdmins(id)) === 0) {
-      return { ok: false, message: "Дор хаяж нэг идэвхтэй админ байх ёстой." };
-    }
-    await db.update(user).set({ banned: disabled }).where(eq(user.id, id));
-    // Sign the user out everywhere.
-    if (disabled) await db.delete(session).where(eq(session.userId, id));
-    await logActivity(me, disabled ? "user.disable" : "user.enable", {
+    if (!member || member.anonymized) return { ok: false, message: "Гишүүн олдсонгүй." };
+    if (member.userId && member.userId !== userId)
+      return { ok: false, message: "Энэ гишүүн өөр бүртгэлтэй холбогдсон байна." };
+    const [already] = await db
+      .select({ id: members.id })
+      .from(members)
+      .where(eq(members.userId, userId))
+      .limit(1);
+    if (already && already.id !== memberId)
+      return { ok: false, message: "Энэ бүртгэл өөр гишүүнтэй холбогдсон байна." };
+
+    await db
+      .update(members)
+      .set({ userId, active: true, updatedAt: new Date() })
+      .where(eq(members.id, memberId));
+    if (!toRole(target.role)) await setRole(db, userId, "member");
+    await logActivity(me, "user.link_member", {
       type: "user",
-      id,
-      summary: `${target.email} бүртгэлийг ${disabled ? "идэвхгүй болгов" : "идэвхжүүлэв"}`,
-      changes: { disabled: [target.banned === true, disabled] },
+      id: userId,
+      summary: `Бүртгэл #${shortId(userId)} — гишүүн #${shortId(memberId)}-тэй холбов`,
     });
-    revalidatePath("/admin/users");
-    return { ok: true, message: disabled ? "Хэрэглэгч идэвхгүй боллоо." : "Хэрэглэгч идэвхжлээ." };
+    revalidateUsers();
+    return { ok: true, message: "Бүртгэлийг гишүүнтэй холболоо." };
   } catch (err) {
     return actionError(err);
   }
 }
 
-/** Force logout: ends every session of the user on all devices. */
-export async function revokeUserSessions(id: string): Promise<ActionState> {
+/** Re-reads an account from Clerk (e.g. when a webhook was missed). */
+export async function refreshUser(userId: string): Promise<ActionState> {
   try {
-    const me = await requirePermission("admin");
-    const db = await getDb();
-    const [target] = await db.select({ email: user.email }).from(user).where(eq(user.id, id));
-    if (!target) return { ok: false, message: "Хэрэглэгч олдсонгүй." };
-    const ended = await db
-      .delete(session)
-      .where(eq(session.userId, id))
-      .returning({ id: session.id });
-    await logActivity(me, "user.sessions_revoke", {
-      type: "user",
-      id,
-      summary: `${target.email} — бүх төхөөрөмжөөс гаргав (${ended.length} session)`,
-    });
-    revalidatePath("/admin/users");
-    return { ok: true, message: `${ended.length} session дуусгавар боллоо.` };
-  } catch (err) {
-    return actionError(err);
-  }
-}
-
-/** For a user who lost their authenticator: removes two-factor so they can enrol again. */
-export async function resetUserTwoFactor(id: string): Promise<ActionState> {
-  try {
-    const me = await requirePermission("admin");
-    if (id === me.id)
-      return { ok: false, message: "Өөрийнхөө 2FA-г «Миний профайл» хэсгээс удирдана." };
-    const db = await getDb();
-    const [target] = await db.select({ email: user.email }).from(user).where(eq(user.id, id));
-    if (!target) return { ok: false, message: "Хэрэглэгч олдсонгүй." };
-    await db.batch([
-      db.delete(twoFactor).where(eq(twoFactor.userId, id)),
-      db.update(user).set({ twoFactorEnabled: false }).where(eq(user.id, id)),
-      db.delete(session).where(eq(session.userId, id)),
-    ]);
-    await logActivity(me, "user.two_factor_reset", {
-      type: "user",
-      id,
-      summary: `${target.email} — 2 шатлалт баталгаажуулалтыг арилгав`,
-    });
-    revalidatePath("/admin/users");
-    return { ok: true, message: "2FA арилгагдлаа. Хэрэглэгч дахин нэвтэрч шинээр тохируулна." };
+    await assertAdmin();
+    const row = await refreshUserFromClerk(userId);
+    revalidateUsers();
+    return row
+      ? { ok: true, message: "Clerk-ээс шинэчиллээ." }
+      : { ok: false, message: "Олдсонгүй." };
   } catch (err) {
     return actionError(err);
   }

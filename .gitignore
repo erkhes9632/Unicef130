@@ -59,3 +59,7 @@ CLAUDE_CODE_PROMPT.md
 
 # private club data (member names, hours) and generated production seed SQL
 private/
+
+# Playwright
+/test-results/
+/playwright-report/

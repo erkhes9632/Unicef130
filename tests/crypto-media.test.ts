@@ -1,20 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createServiceAccountJwt, sheetsConfigFromEnv } from "@/lib/integrations/google-sheets";
 import { sniffImageType } from "@/lib/media/server";
-
-describe("password hashing (PBKDF2)", () => {
-  test("hash/verify round trip, unique salts", async () => {
-    const h1 = await hashPassword("correct horse battery");
-    const h2 = await hashPassword("correct horse battery");
-    expect(h1).not.toBe(h2);
-    expect(h1.startsWith("pbkdf2$sha256$100000$")).toBe(true);
-    expect(await verifyPassword({ hash: h1, password: "correct horse battery" })).toBe(true);
-    expect(await verifyPassword({ hash: h1, password: "wrong" })).toBe(false);
-    expect(await verifyPassword({ hash: "scrypt$garbage", password: "x" })).toBe(false);
-    expect(await verifyPassword({ hash: "pbkdf2$sha256$1$a$b", password: "x" })).toBe(false);
-  });
-});
 
 describe("image sniffing", () => {
   test("detects by magic bytes", () => {

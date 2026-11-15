@@ -39,6 +39,24 @@ describe("Content-Security-Policy", () => {
     expect("upgrade-insecure-requests" in http).toBe(false);
   });
 
+  test("Clerk: its Frontend API (from the key) and bot-protection hosts only when configured", () => {
+    const clerk = directives(
+      buildCsp({
+        nonce: "n",
+        dev: false,
+        https: true,
+        clerkFrontendApi: "https://clerk.example.mn",
+      }),
+    );
+    expect(clerk["script-src"]).toContain("https://clerk.example.mn");
+    expect(clerk["connect-src"]).toContain("https://clerk.example.mn");
+    expect(clerk["connect-src"]).toContain("https://*.protect.clerk.com:*");
+    expect(clerk["frame-src"]).toContain("https://*.protect.clerk.com");
+    expect(clerk["worker-src"]).toEqual(["'self'", "blob:"]);
+    expect(clerk["script-src"]).not.toContain("'unsafe-inline'");
+    expect(prod["connect-src"]).toEqual(["'self'", "https://challenges.cloudflare.com"]);
+  });
+
   test("development adds only what the dev server needs", () => {
     const dev = directives(buildCsp({ nonce: "n", dev: true, https: false }));
     expect(dev["script-src"]).toContain("'unsafe-eval'");
@@ -72,11 +90,7 @@ describe("static security headers", () => {
   });
 
   test("browser-side schemas never probe for eval (zod JIT off)", () => {
-    for (const f of [
-      "src/lib/validation/forms.ts",
-      "src/lib/settings/types.ts",
-      "src/lib/auth/password-policy.ts",
-    ]) {
+    for (const f of ["src/lib/validation/forms.ts", "src/lib/settings/types.ts"]) {
       expect(readFileSync(f, "utf8").split("\n")[0]).toContain("zod-config");
     }
   });

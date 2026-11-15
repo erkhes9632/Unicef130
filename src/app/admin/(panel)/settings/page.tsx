@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { SettingsForm } from "@/components/admin/settings-form";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { saveSettings } from "./actions";
 
 export const metadata: Metadata = { title: "Сайтын тохиргоо" };
 
 export default async function AdminSettingsPage() {
-  await requireUser("admin");
+  await requireAdmin();
   const initial = await getSiteSettings();
   return (
     <>

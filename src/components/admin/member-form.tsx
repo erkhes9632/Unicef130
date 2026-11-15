@@ -29,6 +29,10 @@ export type MemberFormValues = {
   showPublicly: boolean;
   volunteerHours: number | null;
   schoolYear: string | null;
+  team: string;
+  email: string | null;
+  /** Linked account (approved applicant or linked by an admin). */
+  hasAccount?: boolean;
 };
 
 export function MemberForm({
@@ -141,6 +145,34 @@ export function MemberForm({
               max={100000}
               defaultValue={initial?.volunteerHours ?? ""}
               className="max-w-32"
+            />
+          </AdminField>
+          <AdminField label="Баг" htmlFor="team" errors={e.team}>
+            <Input
+              id="team"
+              name="team"
+              defaultValue={initial?.team ?? ""}
+              maxLength={60}
+              className="max-w-64"
+            />
+          </AdminField>
+          <AdminField
+            label="И-мэйл (зөвхөн админд)"
+            htmlFor="email"
+            hint={
+              initial?.hasAccount
+                ? "Энэ гишүүн сайтын бүртгэлтэй холбогдсон."
+                : "Гишүүн энэ и-мэйлээр нэвтэрвэл Хэрэглэгчид хэсэгт «Гишүүнтэй холбох» товч гарна (автоматаар холбогдохгүй)."
+            }
+            errors={e.email}
+          >
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={initial?.email ?? ""}
+              maxLength={254}
+              className="max-w-80"
             />
           </AdminField>
         </FormSection>

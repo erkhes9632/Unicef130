@@ -97,10 +97,23 @@ export const eventInputSchema = z
     beneficiaries: z.array(z.string().trim().min(1).max(120)).max(10),
     sdgs: sdgList,
     adminNote: z.string().trim().max(2000),
+    // Volunteer sign-up for members (/me)
+    signupEnabled: z.boolean(),
+    signupCapacity: z
+      .number({ error: "Орон тоо: бүхэл тоо." })
+      .int({ error: "Орон тоо: бүхэл тоо." })
+      .min(1, { error: "Орон тоо дор хаяж 1." })
+      .max(10_000)
+      .nullable(),
+    signupDeadline: date.nullable(),
   })
   .refine((e) => !e.endsAt || e.endsAt >= e.startsAt, {
     path: ["endsAt"],
     error: "Дуусах цаг эхлэх цагаас хойш байх ёстой.",
+  })
+  .refine((e) => !e.signupDeadline || e.signupDeadline <= e.startsAt, {
+    path: ["signupDeadline"],
+    error: "Бүртгэл хаагдах хугацаа арга хэмжээ эхлэхээс өмнө байна.",
   });
 export type EventInput = z.output<typeof eventInputSchema>;
 
@@ -123,6 +136,15 @@ export const memberInputSchema = z.object({
     .refine((v) => v === "" || /^\d{4}-\d{4}$/.test(v), {
       error: "Хичээлийн жилийг 2026-2027 хэлбэрээр бичнэ.",
     })
+    .transform((v) => v || null),
+  team: z.string().trim().max(60, { error: "Хамгийн ихдээ 60 тэмдэгт." }),
+  /** Admin-only: offers "link account to member" when this address signs in. */
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(254)
+    .refine((v) => v === "" || z.email().safeParse(v).success, { error: "И-мэйл буруу байна." })
     .transform((v) => v || null),
 });
 export type MemberInput = z.output<typeof memberInputSchema>;
@@ -173,7 +195,18 @@ export const settingsInputSchema = z.object({
         error: "Зарлалын холбоос: /join гэх мэт дотоод зам эсвэл https:// хаяг оруулна.",
       }),
   }),
-  security: z.object({ requireAdminTwoFactor: z.boolean() }),
+  membership: z.object({
+    rejectedRetentionDays: z
+      .number({ error: "7–730 хоног" })
+      .int({ error: "Бүхэл тоо" })
+      .min(7, { error: "Хамгийн багадаа 7 хоног" })
+      .max(730, { error: "Хамгийн ихдээ 730 хоног" }),
+    activeMemberHours: z
+      .number({ error: "Тоо оруулна уу" })
+      .min(1, { error: "1-ээс их" })
+      .max(10_000, { error: "Хэт их" })
+      .nullable(),
+  }),
   club: z.object({
     name: text(120, "Клубын нэр"),
     nameEn: text(120, "Club name"),

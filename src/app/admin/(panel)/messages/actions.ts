@@ -6,11 +6,11 @@ import { getDb } from "@/db";
 import { contactMessages } from "@/db/schema";
 import { logActivity, shortId } from "@/lib/admin/activity";
 import { actionError, type ActionState } from "@/lib/admin/action-state";
-import { requirePermission } from "@/lib/auth/session";
+import { assertAdmin } from "@/lib/auth/session";
 
 export async function setMessageRead(id: string, read: boolean): Promise<ActionState> {
   try {
-    await requirePermission("messages");
+    await assertAdmin();
     const db = await getDb();
     await db
       .update(contactMessages)
@@ -25,7 +25,7 @@ export async function setMessageRead(id: string, read: boolean): Promise<ActionS
 
 export async function deleteMessage(id: string): Promise<ActionState> {
   try {
-    const user = await requirePermission("admin");
+    const user = await assertAdmin();
     const db = await getDb();
     const [row] = await db
       .delete(contactMessages)

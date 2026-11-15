@@ -1,7 +1,6 @@
 import { getDb } from "@/db";
-import { recruitmentPeriods, user } from "@/db/schema";
+import { recruitmentPeriods, users } from "@/db/schema";
 import { helpOptionLabels } from "@/lib/admin/labels";
-import { can } from "@/lib/auth/roles";
 import { getCurrentUser } from "@/lib/auth/session";
 import { toCsv } from "@/lib/csv";
 import { getSiteSettings } from "@/lib/data/settings";
@@ -16,14 +15,14 @@ import { applicationStatusLabels } from "@/lib/recruitment/logic";
 export async function GET(request: Request) {
   const me = await getCurrentUser();
   if (!me) return new Response("Unauthorized", { status: 401 });
-  if (!can(me.role, "applications")) return new Response("Forbidden", { status: 403 });
+  if (me.role !== "admin") return new Response("Forbidden", { status: 403 });
 
   const filters = parseApplicationFilters(new URL(request.url).searchParams);
   const db = await getDb();
   const [rows, periods, staff, settings] = await Promise.all([
     queryApplications(filters),
     db.select().from(recruitmentPeriods),
-    db.select({ id: user.id, name: user.name }).from(user),
+    db.select({ id: users.id, name: users.name }).from(users),
     getSiteSettings(),
   ]);
   const helpLabel = helpOptionLabels(settings.helpOptions);
@@ -36,7 +35,6 @@ export async function GET(request: Request) {
   const csv = toCsv([
     [
       "Огноо",
-      "Дугаар",
       "Элсэлт",
       "Овог нэр",
       "Анги",
@@ -46,14 +44,13 @@ export async function GET(request: Request) {
       "Туслах чиглэл",
       "Нэмэлт хариулт",
       "Төлөв",
-      "Хянагч",
+      "Шийдвэрлэсэн",
+      "Өргөдөл гаргагчид өгсөн мессеж",
       "Тэмдэглэл",
-      "Спам оноо",
       "ID",
     ],
     ...rows.map((a) => [
       `${formatDate("mn", a.createdAt, "long")} ${formatDate("mn", a.createdAt, "time")}`,
-      a.trackingCode ?? "",
       a.periodId ? (periodName.get(a.periodId) ?? "") : "",
       a.fullName,
       a.className,
@@ -68,9 +65,9 @@ export async function GET(request: Request) {
         )
         .join("; "),
       applicationStatusLabels[a.status],
-      a.reviewerId ? (staffName.get(a.reviewerId) ?? "") : "",
+      a.decidedBy ? (staffName.get(a.decidedBy) ?? "") : "",
+      a.decisionMessage,
       a.notes,
-      a.spamScore,
       a.id,
     ]),
   ]);

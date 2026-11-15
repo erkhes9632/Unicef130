@@ -1,18 +1,22 @@
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { AdminNav } from "@/components/admin/admin-nav";
-import { BrandLockup } from "@/components/brand/brand-lockup";
 import { ThemeToggleAdmin } from "@/components/admin/theme-toggle-admin";
-import { Button } from "@/components/ui/button";
-import { requireUser } from "@/lib/auth/session";
-import { permissionsOf, roleLabels } from "@/lib/auth/roles";
-import { logoutAction } from "../actions";
+import { AccountMenu } from "@/components/auth/account-menu";
+import { BrandLockup } from "@/components/brand/brand-lockup";
+import { requireAdmin } from "@/lib/auth/session";
+
+const accountLabels = {
+  signIn: "Нэвтрэх",
+  admin: "Админ",
+  me: "Миний хэсэг",
+  application: "Өргөдөл",
+};
 
 /** Protected admin shell. Every page below is server-checked here AND in each Server Action. */
 export default async function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
-  const user = await requireUser(undefined, { allowWithoutTwoFactor: true });
-  const granted = permissionsOf(user.role);
+  const user = await requireAdmin();
 
   return (
     <div className="flex flex-1">
@@ -27,7 +31,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
           </Link>
         </div>
         <nav aria-label="Админ цэс" className="flex-1 overflow-y-auto p-3">
-          <AdminNav granted={granted} />
+          <AdminNav />
         </nav>
         <div className="border-t p-3 text-xs text-muted-foreground">
           <Link
@@ -42,20 +46,14 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur sm:px-6">
-          <AdminMobileNav granted={granted} />
+          <AdminMobileNav />
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right text-xs sm:block">
-              <p className="font-semibold">{user.name}</p>
-              <p className="text-muted-foreground">
-                {user.email} · {roleLabels[user.role]}
-              </p>
+              <p className="font-semibold">{user.name || user.email}</p>
+              <p className="text-muted-foreground">{user.email} · Админ</p>
             </div>
             <ThemeToggleAdmin />
-            <form action={logoutAction}>
-              <Button type="submit" variant="outline" size="sm">
-                <LogOut /> Гарах
-              </Button>
-            </form>
+            <AccountMenu labels={accountLabels} />
           </div>
         </header>
         <main id="main" className="flex-1 p-4 sm:p-6 lg:p-8">

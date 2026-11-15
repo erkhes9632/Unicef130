@@ -7,7 +7,7 @@ import { events } from "@/db/schema";
 import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requirePermission } from "@/lib/auth/session";
+import { assertAdmin } from "@/lib/auth/session";
 import { recordSlugRename } from "@/lib/data/redirects";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
@@ -34,6 +34,9 @@ function parseForm(data: FormData) {
     contentEn: contentEn && !isEmptyDoc(contentEn as never) ? contentEn : null,
     published: fd.bool(data, "published"),
     allDay: fd.bool(data, "allDay"),
+    signupEnabled: fd.bool(data, "signupEnabled"),
+    signupCapacity: optInt(fd.str(data, "signupCapacity")),
+    signupDeadline: parseUbInputValue(fd.str(data, "signupDeadline")),
     direction: (clubDirections as readonly string[]).includes(fd.str(data, "direction"))
       ? fd.str(data, "direction")
       : null,
@@ -68,7 +71,7 @@ export async function saveEvent(
 ): Promise<ActionState> {
   let savedId = id;
   try {
-    const user = await requirePermission("content");
+    const user = await assertAdmin();
     const parsed = parseForm(data);
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -134,7 +137,7 @@ export async function saveEvent(
 
 export async function deleteEvent(id: string): Promise<ActionState> {
   try {
-    const user = await requirePermission("content");
+    const user = await assertAdmin();
     const db = await getDb();
     const [row] = await db
       .delete(events)

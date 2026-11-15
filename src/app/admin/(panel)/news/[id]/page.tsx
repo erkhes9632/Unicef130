@@ -8,7 +8,7 @@ import { NewsForm } from "@/components/admin/news-form";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { toUbInputValue } from "@/lib/dates/ub-input";
 import { saveNews } from "../actions";
 
@@ -18,7 +18,7 @@ export default async function EditNewsPage({
   params,
   searchParams,
 }: PageProps<"/admin/news/[id]">) {
-  await requireUser("content");
+  await requireAdmin();
   const { id } = await params;
   const sp = await searchParams;
   const db = await getDb();

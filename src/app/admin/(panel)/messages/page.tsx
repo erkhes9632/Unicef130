@@ -7,7 +7,7 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
 import { getDb } from "@/db";
 import { contactMessages } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 import { cn } from "@/lib/utils";
 import { deleteMessage, setMessageRead } from "./actions";
@@ -15,7 +15,7 @@ import { deleteMessage, setMessageRead } from "./actions";
 export const metadata: Metadata = { title: "Зурвасууд" };
 
 export default async function AdminMessagesPage({ searchParams }: PageProps<"/admin/messages">) {
-  const me = await requireUser("messages");
+  const me = await requireAdmin();
   const sp = await searchParams;
   const filter = sp.filter === "unread" || sp.filter === "read" ? sp.filter : "all";
   const db = await getDb();

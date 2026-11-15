@@ -102,106 +102,66 @@ export function containsUrl(text: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Spam scoring
+// The applicant's view of /join
 // ---------------------------------------------------------------------------
 
-export const MIN_FILL_MS = 4_000;
-export const SPAM_THRESHOLD = 50;
+export type PublicStatus = "pending" | "accepted" | "rejected" | "waitlist";
 
-export type SpamSignals = {
-  /** Time between rendering the form and submitting it. */
-  fillMs: number;
-  fullName: string;
-  reason: string;
-  /** Other applications in this period with exactly the same reason text. */
-  sameReasonCount: number;
-  /** Other applications from the same network address in the last 24 hours. */
-  sameIpRecent: number;
-};
-
-const VOWELS = /[аэиоуөүяеёюыaeiouy]/giu;
-
-/** Keyboard mashing: almost no vowels, one character repeated, or very few distinct letters. */
-export function looksLikeGibberish(text: string) {
-  const letters = text.toLocaleLowerCase("mn").replace(/[^\p{L}]/gu, "");
-  if (letters.length < 6) return false;
-  if (/(.)\1{4,}/u.test(letters)) return true;
-  const vowelRatio = (letters.match(VOWELS)?.length ?? 0) / letters.length;
-  if (vowelRatio < 0.15) return true;
-  return letters.length >= 12 && new Set(letters).size <= 4;
-}
-
-/** Combines the signals into a score (0–100+) with the reasons; ≥ SPAM_THRESHOLD is "suspicious". */
-export function spamScore(s: SpamSignals): { score: number; flags: string[] } {
-  const flags: string[] = [];
-  let score = 0;
-  const add = (points: number, flag: string) => {
-    score += points;
-    flags.push(flag);
-  };
-  if (s.fillMs < 10_000) add(30, "fast_fill");
-  if (s.sameReasonCount > 0) add(40, "repeated_text");
-  if (looksLikeGibberish(s.reason)) add(35, "gibberish_text");
-  if (looksLikeGibberish(s.fullName)) add(35, "gibberish_name");
-  if (s.sameIpRecent >= 3) add(20 + Math.min(30, (s.sameIpRecent - 3) * 10), "many_from_ip");
-  const words = s.reason.trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 4 && new Set(words.map((w) => w.toLocaleLowerCase("mn"))).size <= 2)
-    add(30, "repeated_words");
-  return { score, flags };
-}
-
-export const spamFlagLabels: Record<string, string> = {
-  fast_fill: "Хэт хурдан бөглөсөн",
-  repeated_text: "Ижил тексттэй өөр өргөдөл байна",
-  gibberish_text: "Утгагүй текст",
-  gibberish_name: "Утгагүй нэр",
-  many_from_ip: "Нэг сүлжээнээс олон өргөдөл",
-  repeated_words: "Давтагдсан үгс",
-  marked_by_admin: "Админ спам гэж тэмдэглэсэн",
-};
-
-// ---------------------------------------------------------------------------
-// Tracking codes and the public status page
-// ---------------------------------------------------------------------------
-
-/** No 0/O, 1/I/L: easy to read aloud and type. */
-const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
-
-/** e.g. "UC-7K3M" */
-export function generateTrackingCode(random: () => number = Math.random) {
-  let code = "";
-  for (let i = 0; i < 4; i++) code += CODE_ALPHABET[Math.floor(random() * CODE_ALPHABET.length)];
-  return `UC-${code}`;
-}
-
-/** Accepts "uc-7k3m", "UC7K3M", " 7k3m " → "UC-7K3M"; null when it cannot be a code. */
-export function normalizeTrackingCode(input: string): string | null {
-  const v = input
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .replace(/^UC/, "");
-  return v.length === 4 && [...v].every((c) => CODE_ALPHABET.includes(c)) ? `UC-${v}` : null;
-}
-
-export type PublicStatus = "received" | "interview" | "accepted" | "waitlist" | "declined";
-
-/** What the applicant sees. Internal states (reviewing, spam) are not revealed. */
+/** What the applicant sees. Internal steps (reviewing, interview) read as "pending". */
 export function publicStatus(status: ApplicationStatus): PublicStatus {
-  switch (status) {
-    case "interview":
-      return "interview";
-    case "accepted":
-      return "accepted";
-    case "waitlist":
-      return "waitlist";
-    case "rejected":
-      return "declined";
-    default:
-      return "received";
-  }
+  if (status === "accepted" || status === "rejected" || status === "waitlist") return status;
+  return "pending";
 }
 
-/** Given name only ("Батын Анужин" → "Анужин") for the status page greeting. */
+export type JoinView =
+  /** Already a member (or an admin): nothing to apply for. */
+  | "member"
+  /** An admin blocked new applications from this account. */
+  | "blocked"
+  /** Has an application for the open period → its status. */
+  | "status"
+  /** The open period has room (or a waitlist) and no application from this account yet. */
+  | "form"
+  /** No open period (or it is full): closed page, plus the latest status if there is one. */
+  | "closed";
+
+/**
+ * Decides what a signed-in account sees on /join. One application per account per period: a
+ * rejected applicant can apply again only when a new period opens.
+ */
+export function joinView(input: {
+  role: "admin" | "member" | null;
+  applyBlocked: boolean;
+  /** The period open right now and whether it still takes applications. */
+  open: { id: string; intake: Intake } | null;
+  /** Period ids this account has applied for. */
+  appliedPeriodIds: readonly (string | null)[];
+}): JoinView {
+  if (input.role) return "member";
+  if (input.open && input.appliedPeriodIds.includes(input.open.id)) return "status";
+  if (input.applyBlocked) return "blocked";
+  if (input.open && input.open.intake !== "full") return "form";
+  return "closed";
+}
+
+// ---------------------------------------------------------------------------
+// Privacy: rejected applications are deleted after a while
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_REJECTED_RETENTION_DAYS = 90;
+
+/**
+ * Rejected applications are kept for `days` after their period closes, then deleted (personal
+ * data of minors). Returns the instant before which a period must have closed for its rejected
+ * applications to be deleted now.
+ */
+export function retentionCutoff(days: number, now: number = Date.now()) {
+  const safeDays =
+    Number.isFinite(days) && days >= 1 ? Math.floor(days) : DEFAULT_REJECTED_RETENTION_DAYS;
+  return new Date(now - safeDays * 86_400_000);
+}
+
+/** Given name only ("Батын Анужин" → "Анужин") for the /join greeting. */
 export function givenName(fullName: string) {
   const parts = fullName
     .trim()
@@ -232,5 +192,4 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   accepted: "Элссэн",
   rejected: "Татгалзсан",
   waitlist: "Хүлээлгийн жагсаалт",
-  spam: "Спам / сэжигтэй",
 };

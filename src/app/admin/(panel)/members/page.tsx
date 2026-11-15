@@ -7,20 +7,22 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { deleteMember, setMembersPublic } from "./actions";
 
 export const metadata: Metadata = { title: "Гишүүд" };
 
 export default async function AdminMembersPage({ searchParams }: PageProps<"/admin/members">) {
-  const user = await requireUser("members");
+  const user = await requireAdmin();
   const sp = await searchParams;
   const db = await getDb();
-  const rows = await db
+  const all = await db
     .select()
     .from(members)
     .orderBy(asc(members.group), asc(members.sortOrder), asc(members.name));
-  const totalHours = rows.reduce((sum, r) => sum + (r.volunteerHours ?? 0), 0);
+  // Anonymized rows (deleted accounts) only count towards the hours total.
+  const totalHours = all.reduce((sum, r) => sum + (r.volunteerHours ?? 0), 0);
+  const rows = all.filter((r) => !r.anonymized);
 
   return (
     <>

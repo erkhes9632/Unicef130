@@ -7,3 +7,10 @@ declare module "next-intl" {
     Messages: typeof messages;
   }
 }
+
+declare global {
+  /** Custom session-token claims (Clerk dashboard → Sessions → Customize session token). */
+  interface CustomJwtSessionClaims {
+    role?: "admin" | "member" | null;
+  }
+}

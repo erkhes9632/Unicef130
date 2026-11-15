@@ -1,105 +1,157 @@
-import { and, asc, count, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { NativeSelect } from "@/components/admin/form";
 import { AdminPageHeader } from "@/components/admin/page-header";
-import { InviteUserForm, PendingLinkRow, UserRowActions } from "@/components/admin/users-client";
+import { UserRowActions } from "@/components/admin/users-client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getDb } from "@/db";
-import { authTokens, session, user } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { applications, members, users } from "@/db/schema";
+import { roleLabel, toRole } from "@/lib/auth/roles";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
+import { applicationStatusLabels } from "@/lib/recruitment/logic";
+import { filterUsers, parseUserFilters, userFilterOptions } from "@/lib/users/list";
 import {
-  createResetLink,
-  inviteUser,
-  resetUserTwoFactor,
-  revokeInvite,
-  revokeUserSessions,
-  setUserDisabled,
-  setUserRole,
+  changeUserRole,
+  deleteUserAccount,
+  linkAccountToMember,
+  refreshUser,
+  setUserBanned,
 } from "./actions";
 
 export const metadata: Metadata = { title: "Хэрэглэгчид" };
 
-export default async function AdminUsersPage() {
-  const me = await requireUser("admin");
+export default async function AdminUsersPage({ searchParams }: PageProps<"/admin/users">) {
+  const me = await requireAdmin();
+  const filters = parseUserFilters(await searchParams);
   const db = await getDb();
-  const now = new Date();
-  const [rows, sessions, pending] = await Promise.all([
+  const [rows, apps, linked, candidates] = await Promise.all([
+    db.select().from(users).orderBy(desc(users.createdAt)),
     db
       .select({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        banned: user.banned,
-        twoFactorEnabled: user.twoFactorEnabled,
+        userId: applications.userId,
+        status: applications.status,
+        createdAt: applications.createdAt,
       })
-      .from(user)
-      .orderBy(asc(user.createdAt)),
+      .from(applications)
+      .where(isNotNull(applications.userId))
+      .orderBy(desc(applications.createdAt)),
     db
-      .select({ userId: session.userId, n: count() })
-      .from(session)
-      .where(gt(session.expiresAt, now))
-      .groupBy(session.userId),
+      .select({ id: members.id, userId: members.userId, name: members.name })
+      .from(members)
+      .where(isNotNull(members.userId)),
     db
-      .select({
-        id: authTokens.id,
-        kind: authTokens.kind,
-        email: authTokens.email,
-        role: authTokens.role,
-        expiresAt: authTokens.expiresAt,
-      })
-      .from(authTokens)
-      .where(and(isNull(authTokens.usedAt), gt(authTokens.expiresAt, now)))
-      .orderBy(asc(authTokens.expiresAt)),
+      .select({ id: members.id, name: members.name, email: members.email })
+      .from(members)
+      .where(and(isNull(members.userId), isNotNull(members.email), eq(members.anonymized, false))),
   ]);
-  const sessionCount = new Map(sessions.map((s) => [s.userId, s.n]));
+
+  // Latest application per account (rows are newest first).
+  const latestApp = new Map<string, (typeof apps)[number]>();
+  for (const a of apps) if (a.userId && !latestApp.has(a.userId)) latestApp.set(a.userId, a);
+  const memberOf = new Map(linked.map((m) => [m.userId!, m]));
+  const candidatesFor = (email: string) =>
+    email ? candidates.filter((c) => c.email?.toLowerCase() === email.toLowerCase()) : [];
+
+  const shown = filterUsers(
+    rows.map((r) => ({
+      ...r,
+      role: toRole(r.role),
+      applicationStatus: latestApp.get(r.id)?.status,
+    })),
+    filters,
+  );
 
   return (
     <>
       <AdminPageHeader
         title="Хэрэглэгчид"
-        description="Админ: бүх эрх. Редактор: мэдээ, арга хэмжээ, цомог, гишүүд. Өргөдөл хянагч: зөвхөн өргөдлүүд."
+        description="Сайтад нэвтэрсэн бүх хүн: өргөдөл гаргагч, гишүүн, админ. Хүн бүр Google эсвэл и-мэйлээр өөрөө бүртгүүлнэ; эрхийг энд олгоно. Админ өөрийгөө болон сүүлчийн админыг хасаж, идэвхгүй болгож, устгаж чадахгүй."
       />
-      <div className="grid gap-6 xl:grid-cols-[1fr_26rem]">
-        <div className="space-y-6">
-          <ul className="h-fit divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-border">
-            {rows.map((r) => (
-              <UserRowActions
-                key={r.id}
-                row={{ ...r, sessions: sessionCount.get(r.id) ?? 0 }}
-                isSelf={r.id === me.id}
-                setRole={setUserRole.bind(null, r.id)}
-                setDisabled={setUserDisabled.bind(null, r.id)}
-                createResetLink={createResetLink.bind(null, r.id)}
-                revokeSessions={revokeUserSessions.bind(null, r.id)}
-                resetTwoFactor={resetUserTwoFactor.bind(null, r.id)}
-              />
+
+      <form className="mb-6 grid gap-3 rounded-2xl bg-card p-4 ring-1 ring-border sm:grid-cols-[1fr_14rem_auto]">
+        <label className="space-y-1 text-xs font-semibold">
+          <span>Хайх (нэр, и-мэйл)</span>
+          <Input name="q" defaultValue={filters.q} placeholder="Анужин / name@gmail.com" />
+        </label>
+        <label className="space-y-1 text-xs font-semibold">
+          <span>Төрөл</span>
+          <NativeSelect name="role" defaultValue={filters.role}>
+            {userFilterOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
             ))}
-          </ul>
-          {pending.length > 0 && (
-            <section aria-labelledby="pending-links">
-              <h2 id="pending-links" className="mb-2 font-bold">
-                Хүлээгдэж буй холбоосууд
-              </h2>
-              <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-border">
-                {pending.map((p) => (
-                  <PendingLinkRow
-                    key={p.id}
-                    link={{
-                      id: p.id,
-                      kind: p.kind,
-                      email: p.email,
-                      role: p.role,
-                      expiresLabel: `${formatDate("mn", p.expiresAt, "long")} ${formatDate("mn", p.expiresAt, "time")}`,
-                    }}
-                    revoke={revokeInvite.bind(null, p.id)}
-                  />
-                ))}
-              </ul>
-            </section>
-          )}
+          </NativeSelect>
+        </label>
+        <div className="flex items-end gap-2">
+          <Button type="submit">Шүүх</Button>
+          <Button asChild variant="ghost">
+            <Link href="/admin/users">Цэвэрлэх</Link>
+          </Button>
         </div>
-        <InviteUserForm action={inviteUser} />
-      </div>
+      </form>
+
+      <p className="mb-3 text-sm text-muted-foreground">{shown.length} хэрэглэгч</p>
+      {shown.length === 0 ? (
+        <p className="rounded-2xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
+          Хэрэглэгч олдсонгүй.
+        </p>
+      ) : (
+        <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+          {shown.map((r) => {
+            const app = latestApp.get(r.id);
+            const member = memberOf.get(r.id);
+            return (
+              <li key={r.id} className="space-y-3 p-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="font-bold">{r.name || "Нэргүй"}</span>
+                  <span className="text-sm break-all text-muted-foreground">{r.email}</span>
+                  <Badge variant={r.role === "admin" ? "default" : "secondary"}>
+                    {roleLabel(r.role)}
+                  </Badge>
+                  {r.banned && <Badge variant="destructive">Идэвхгүй</Badge>}
+                  {r.applyBlocked && <Badge variant="outline">Өргөдөл хориглосон</Badge>}
+                  {r.id === me.id && <Badge variant="outline">Та</Badge>}
+                </div>
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>Бүртгүүлсэн: {formatDate("mn", r.createdAt, "long")}</span>
+                  {r.lastSignInAt && (
+                    <span>Сүүлд нэвтэрсэн: {formatDate("mn", r.lastSignInAt, "long")}</span>
+                  )}
+                  {app && <span>Өргөдөл: {applicationStatusLabels[app.status]}</span>}
+                  {member && (
+                    <Link href={`/admin/members/${member.id}`} className="font-semibold underline">
+                      Гишүүн: {member.name}
+                    </Link>
+                  )}
+                  {r.role === "admin" && !r.twoFactorEnabled && (
+                    <span className="font-semibold text-brand-gold-strong">2FA асаагаагүй</span>
+                  )}
+                </p>
+                <UserRowActions
+                  row={{
+                    id: r.id,
+                    email: r.email,
+                    role: r.role,
+                    banned: r.banned,
+                    isSelf: r.id === me.id,
+                    linkCandidates: member ? [] : candidatesFor(r.email),
+                  }}
+                  changeRole={changeUserRole.bind(null, r.id)}
+                  setBanned={setUserBanned.bind(null, r.id)}
+                  deleteAccount={deleteUserAccount.bind(null, r.id)}
+                  linkMember={linkAccountToMember.bind(null, r.id)}
+                  refresh={refreshUser.bind(null, r.id)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </>
   );
 }

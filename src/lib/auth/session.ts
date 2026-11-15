@@ -1,94 +1,102 @@
 import "server-only";
-import { headers } from "next/headers";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import type { UserRole } from "@/db/schema";
-import { getSiteSettings } from "@/lib/data/settings";
-import { getAuth } from "./index";
-import { can, isRole, needsTwoFactorSetup, type Permission } from "./roles";
+import { getDb } from "@/db";
+import { findUser, mirrorFromClerk, upsertUser } from "@/lib/users/sync";
+import { clerkPublishableKey } from "./clerk";
+import { SIGN_IN_PATH, toRole, type AppRole } from "./roles";
 
 export type CurrentUser = {
   id: string;
-  name: string;
   email: string;
-  role: UserRole;
+  name: string;
+  role: AppRole | null;
   twoFactorEnabled: boolean;
-  /** Id of the session used for this request (to mark "this device" in the session list). */
-  sessionId: string;
+  applyBlocked: boolean;
 };
 
-export const TWO_FACTOR_SETUP_PATH = "/admin/profile/two-factor";
-
-/** Session user for this request (deduplicated per render), or null. Disabled users → null. */
-export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  const auth = await getAuth();
-  // Always validate against D1 (no cookie cache) so disabled users / revoked sessions are
-  // rejected immediately. Admin traffic is low, so the extra query is fine.
-  const result = await auth.api.getSession({
-    headers: await headers(),
-    query: { disableCookieCache: true },
-  });
-  if (!result) return null;
-  const u = result.user as typeof result.user & {
-    role?: unknown;
-    banned?: unknown;
-    twoFactorEnabled?: unknown;
-  };
-  if (u.banned) return null;
-  return {
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    // An unknown role gets no permissions at all.
-    role: isRole(u.role) ? u.role : "reviewer",
-    twoFactorEnabled: u.twoFactorEnabled === true,
-    sessionId: result.session.id,
-  };
-});
-
-async function twoFactorPending(user: CurrentUser) {
-  const { security } = await getSiteSettings();
-  return needsTwoFactorSetup(user, security.requireAdminTwoFactor);
+/** Fetches the user from Clerk and refreshes the D1 mirror (lazy upsert / drift repair). */
+export async function refreshUserFromClerk(userId: string) {
+  const client = await clerkClient();
+  const mirror = mirrorFromClerk(await client.users.getUser(userId));
+  if (!mirror) return null;
+  return upsertUser(await getDb(), mirror);
 }
 
 /**
- * For admin pages/layouts: redirects to the login page when not signed in, to the two-factor
- * setup when an admin has not enrolled yet, and to the dashboard when the role lacks `permission`.
- * `allowWithoutTwoFactor` is only for the layout and the profile / two-factor pages themselves.
+ * The signed-in user for this request (deduplicated per render), or null.
+ *
+ * The D1 row decides (it changes the moment an admin acts, while the session token's `role`
+ * claim can lag up to a minute). When the row is missing (webhook not delivered yet) or the
+ * claim disagrees with it, the user is fetched from Clerk once and the row is repaired.
+ * Banned users are treated as signed out.
  */
-export async function requireUser(
-  permission?: Permission,
-  { allowWithoutTwoFactor = false }: { allowWithoutTwoFactor?: boolean } = {},
-): Promise<CurrentUser> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // Clerk not configured: nobody is signed in (public pages keep working).
+  if (!clerkPublishableKey()) return null;
+  const { userId, sessionClaims } = await auth();
+  if (!userId) return null;
+  const db = await getDb();
+  let row = await findUser(db, userId);
+  if (!row || row.role !== toRole(sessionClaims?.role)) row = await refreshUserFromClerk(userId);
+  if (!row || row.banned) return null;
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: toRole(row.role),
+    twoFactorEnabled: row.twoFactorEnabled,
+    applyBlocked: row.applyBlocked,
+  };
+});
+
+// ---- Pages and layouts: redirect ------------------------------------------------------------
+
+/** Admin pages: not signed in → sign-in, anyone but an admin → home. */
+export async function requireAdmin(): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/admin/login");
-  if (!allowWithoutTwoFactor && (await twoFactorPending(user)))
-    redirect(`${TWO_FACTOR_SETUP_PATH}?required=1`);
-  if (permission && !can(user.role, permission)) redirect("/admin?forbidden=1");
+  if (!user) redirect(SIGN_IN_PATH);
+  if (user.role !== "admin") redirect("/");
   return user;
 }
 
+/** Member area (/me): members and admins. An applicant is sent to /join. */
+export async function requireMember(locale: "mn" | "en" = "mn"): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  const prefix = locale === "en" ? "/en" : "";
+  if (!user) redirect(`${prefix}${SIGN_IN_PATH}`);
+  if (!user.role) redirect(`${prefix}/join`);
+  return user;
+}
+
+// ---- Server Actions and route handlers: throw ------------------------------------------------
+
 export class AuthError extends Error {
-  constructor(public readonly code: "unauthenticated" | "forbidden" | "two_factor_required") {
+  constructor(public readonly code: "unauthenticated" | "forbidden") {
     super(code);
     this.name = "AuthError";
   }
 }
 
-/**
- * For Server Actions and route handlers: every admin write must call this first.
- * Throws AuthError (never trust the UI to hide buttons).
- */
-export async function requirePermission(permission: Permission): Promise<CurrentUser> {
+/** Every admin write calls this first (never trust the UI to hide buttons). */
+export async function assertAdmin(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) throw new AuthError("unauthenticated");
-  if (await twoFactorPending(user)) throw new AuthError("two_factor_required");
-  if (!can(user.role, permission)) throw new AuthError("forbidden");
+  if (user.role !== "admin") throw new AuthError("forbidden");
   return user;
 }
 
-/** For "my profile" actions (password, sessions, two-factor setup): any signed-in user. */
-export async function requireSession(): Promise<CurrentUser> {
+/** Member-area writes (profile, event sign-up). */
+export async function assertMember(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) throw new AuthError("unauthenticated");
+  if (!user.role) throw new AuthError("forbidden");
+  return user;
+}
+
+/** Any signed-in account (submitting an application, deleting one's own account). */
+export async function assertSignedIn(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) throw new AuthError("unauthenticated");
   return user;

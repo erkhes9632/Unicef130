@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 import { nowMs } from "@/lib/dates/ub-time";
 import { deleteEvent } from "./actions";
@@ -16,7 +16,7 @@ import { deleteEvent } from "./actions";
 export const metadata: Metadata = { title: "Арга хэмжээ" };
 
 export default async function AdminEventsPage() {
-  await requireUser("content");
+  await requireAdmin();
   const db = await getDb();
   const rows = await db
     .select({

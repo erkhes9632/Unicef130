@@ -5,14 +5,14 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { PeriodForm } from "@/components/admin/period-form";
 import { getDb } from "@/db";
 import { recruitmentPeriods } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { toUbInputValue } from "@/lib/dates/ub-input";
 import { savePeriod } from "../actions";
 
 export const metadata: Metadata = { title: "Элсэлт засах" };
 
 export default async function EditPeriodPage({ params }: PageProps<"/admin/recruitment/[id]">) {
-  await requireUser("admin");
+  await requireAdmin();
   const { id } = await params;
   const db = await getDb();
   const [p] = await db

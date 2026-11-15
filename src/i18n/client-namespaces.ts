@@ -11,5 +11,5 @@ export const clientNamespaces = [
   "Share",
   "Gallery",
   "Errors",
-  "JoinStatus",
+  "Me",
 ] as const;

@@ -7,7 +7,7 @@ import { ImpactYearForm, type ImpactFormRow } from "@/components/admin/impact-ye
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { getDb } from "@/db";
 import { impactDirections, impactStats } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatNumber } from "@/lib/dates/format";
 import { createImpactYear, deleteImpactYear, saveImpactYear } from "./actions";
 
@@ -53,7 +53,7 @@ function checks(rows: ImpactFormRow[]): string[] {
 }
 
 export default async function AdminImpactPage() {
-  await requireUser("admin");
+  await requireAdmin();
   const db = await getDb();
   const all = await db.select().from(impactStats).orderBy(desc(impactStats.schoolYear));
   const years = [...new Set(all.map((r) => r.schoolYear))];

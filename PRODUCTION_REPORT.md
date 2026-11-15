@@ -2,6 +2,10 @@
 
 **Огноо:** 2026-11-08 · **Commit:** `125e372` (энэ тайлангийн commit-ийн өмнөх) · **Deploy хийгээгүй.**
 
+> **2026-11-15:** нэвтрэлтийг Clerk-ээр сольсон. Нэвтрэлт, secret-ийн одоогийн мэдээллийг README
+> («Clerk тохиргоо») болон DEPLOY_CHECKLIST-ээс харна; энэ тайлангийн нэвтрэлттэй холбоотой мөрүүд
+> хуучин системийг тодорхойлно.
+
 ## Хэрхэн шалгасан бэ
 
 Энэ тайланд "ажиллана" гэж бичсэн зүйл бүрийг **local дээр бодитоор ажиллуулж** шалгасан. Таамаглал
@@ -145,7 +149,7 @@ Admin UI зөвхөн Монгол хэлтэй (spec §5). Бүх admin хуу�
 | Rate limit — `/api/auth/*`        | ✅ (хэсэгчлэн) | Буруу нууц үг: 401, 401, **429**… (curl). Санах ойн storage тул isolate бүрт тусдаа тоолно                                                                                                                                                | `src/lib/auth/index.ts`                                                                                   |
 | **Rate limit — admin login form** | ❌             | UI form (Server Action → `auth.api.signInEmail`) HTTP rate limiter-ийг тойрдог: 8 буруу оролдлого бүгд боловсруулагдсан. **P1**                                                                                                           | `src/app/admin/actions.ts`                                                                                |
 | XSS (Tiptap агуулга)              | ✅             | Allow-list renderer, `dangerouslySetInnerHTML` ашигладаггүй; `javascript:`/`data:` холбоос, `<script>`, `onclick`, `iframe` хаягдана (тест + no-JS form-оор `<script>` агуулга escape хийгдсэн). Rich text JSON-ий хэмжээ ≤200KB, гүн ≤12 | `src/components/common/rich-text.tsx`, `src/lib/rich-text/sanitize.ts`, `src/lib/validation/rich-text.ts` |
-| CSRF                              | ✅             | Better Auth: cookie-тэй хүсэлтэд гадны origin → **403**. Server Action: гадны origin → Next татгалзсан (500), **өгөгдөл хадгалагдаагүй**. Upload: гадны origin → 403                                                                      | —                                                                                                         |
+| CSRF                              | ✅             | Нэвтрэлт (тухайн үеийн систем): cookie-тэй хүсэлтэд гадны origin → **403**. Server Action: гадны origin → Next татгалзсан (500), **өгөгдөл хадгалагдаагүй**. Upload: гадны origin → 403                                                   | —                                                                                                         |
 | CSV injection                     | ✅             | `= + - @` угтвартай нүднүүд `'`-тэй болно (утасны дугаараас бусад); UTF-8 BOM (тест)                                                                                                                                                      | `src/lib/csv.ts`                                                                                          |
 | Sheets formula injection          | ✅ (кодоор)    | `valueInputOption=RAW`                                                                                                                                                                                                                    | `google-sheets.ts`                                                                                        |
 | Map embed / гадны холбоос         | ✅             | Зөвхөн `https://www.google.com/maps/embed…`; сошиал/хандив зөвхөн `https://` (тест)                                                                                                                                                       | `src/lib/validation/admin.ts`                                                                             |
@@ -154,10 +158,10 @@ Admin UI зөвхөн Монгол хэлтэй (spec §5). Бүх admin хуу�
 
 **Сайжруулах зүйлс** (дэлгэрэнгүй нь §10-д):
 
-1. Login form-д rate limit тавих: IP + и-мэйлээр D1-д тоолж, жишээ нь 15 минутад 5 оролдлого зөвшөөрөх. Мөн Better Auth-ийн rate limit storage-ийг `database` болгох.
+1. Login form-д rate limit тавих: IP + и-мэйлээр D1-д тоолж, жишээ нь 15 минутад 5 оролдлого зөвшөөрөх.
 2. Security header нэмэх (middleware эсвэл `next.config.ts` → `headers()`).
 3. Login form-д Turnstile нэмэх.
-4. Admin-д 2FA нэмэх (Better Auth plugin), урт хугацаанд.
+4. Admin-д 2FA нэмэх, урт хугацаанд.
 
 ---
 
@@ -196,20 +200,20 @@ bunx wrangler d1 execute DB --remote --file admin.sql && rm admin.sql
 
 ### Secret ба тохиргооны бүрэн жагсаалт
 
-| Нэр                                                           | Төрөл            | Заавал уу | Байхгүй бол                                                                                                                     |
-| ------------------------------------------------------------- | ---------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET`                                          | secret           | **Тийм**  | Байхгүй үеийн үйлдлийг шалгаагүй — заавал тохируулна. Local-ынхийг ашиглахгүй, `openssl rand -base64 32`-ээр шинээр үүсгэнэ     |
-| `BETTER_AUTH_TRUSTED_ORIGINS`                                 | var              | **Тийм**  | Admin нэвтрэлтийн origin шалгалтад ашиглагдана (жишээ: `https://domain,https://www.domain`). Тохируулаагүй хувилбарыг шалгаагүй |
-| `BETTER_AUTH_URL`                                             | var              | Зөвлөмж   | Хүсэлтийн URL-аас таана                                                                                                         |
-| `SITE_URL`                                                    | var              | Зөвлөмж   | Canonical/sitemap/OG нь хүсэлтийн host-ийг ашиглана                                                                             |
-| `TURNSTILE_SITE_KEY`                                          | var              | **Тийм**  | Test key → spam хамгаалалтгүй                                                                                                   |
-| `TURNSTILE_SECRET_KEY`                                        | secret           | **Тийм**  | Test secret → бүгд давна                                                                                                        |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL`                                | secret           | Үгүй      | Sheets sync алгасагдана                                                                                                         |
-| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`                          | secret           | Үгүй      | ″                                                                                                                               |
-| `GOOGLE_SHEET_ID`                                             | secret           | Үгүй      | ″                                                                                                                               |
-| `GOOGLE_SHEET_TAB`                                            | var              | Үгүй      | `Applications`                                                                                                                  |
-| D1 `database_id`                                              | `wrangler.jsonc` | **Тийм**  | Одоогоор `00000000-…` placeholder                                                                                               |
-| R2: `unicef-club-130-media`, `unicef-club-130-opennext-cache` | buckets          | **Тийм**  | Deploy амжилтгүй болно                                                                                                          |
+| Нэр                                                           | Төрөл            | Заавал уу | Байхгүй бол                                                                |
+| ------------------------------------------------------------- | ---------------- | --------- | -------------------------------------------------------------------------- |
+| `SITE_URL`                                                    | var              | Зөвлөмж   | Canonical/sitemap/OG нь хүсэлтийн host-ийг ашиглана                        |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`                           | var              | **Тийм**  | Нэвтрэлт ажиллахгүй (2026-11-15-аас)                                       |
+| `CLERK_SECRET_KEY`                                            | secret           | **Тийм**  | Нэвтрэлт ажиллахгүй (2026-11-15-аас)                                       |
+| `CLERK_WEBHOOK_SIGNING_SECRET`                                | secret           | **Тийм**  | Webhook 503 буцаана; хэрэглэгчийн мэдээлэл зөвхөн нэвтрэх үед шинэчлэгдэнэ |
+| `TURNSTILE_SITE_KEY`                                          | var              | **Тийм**  | Test key → spam хамгаалалтгүй                                              |
+| `TURNSTILE_SECRET_KEY`                                        | secret           | **Тийм**  | Test secret → бүгд давна                                                   |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL`                                | secret           | Үгүй      | Sheets sync алгасагдана                                                    |
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`                          | secret           | Үгүй      | ″                                                                          |
+| `GOOGLE_SHEET_ID`                                             | secret           | Үгүй      | ″                                                                          |
+| `GOOGLE_SHEET_TAB`                                            | var              | Үгүй      | `Applications`                                                             |
+| D1 `database_id`                                              | `wrangler.jsonc` | **Тийм**  | Одоогоор `00000000-…` placeholder                                          |
+| R2: `unicef-club-130-media`, `unicef-club-130-opennext-cache` | buckets          | **Тийм**  | Deploy амжилтгүй болно                                                     |
 
 ---
 
@@ -267,7 +271,7 @@ bunx wrangler d1 execute DB --remote --file admin.sql && rm admin.sql
 
 **P1 — deploy-ийн өмнө**
 
-1. Login rate limit: D1 дээр тулгуурласан тоолуур (IP+и-мэйл) тавих; Better Auth `rateLimit.storage: "database"`; login form-д Turnstile нэмэх.
+1. Login rate limit: D1 дээр тулгуурласан тоолуур (IP+и-мэйл) тавих; login form-д Turnstile нэмэх.
 2. Security header нэмэх: `Content-Security-Policy` (self + challenges.cloudflare.com + fonts), `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, HSTS (домэйн холбосны дараа).
 3. `activity_log`-д хүүхдийн нэрийн оронд өргөдлийн ID бичих; өргөдөл устгахад холбогдох log-ийг цэвэрлэх.
 4. Workers Paid сонгох, production secret-үүдийг бүрэн тохируулах (§8).

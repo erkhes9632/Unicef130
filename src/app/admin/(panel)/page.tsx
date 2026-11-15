@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, isNull, ne } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNull } from "drizzle-orm";
 import { CalendarDays, Inbox, Mail, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -12,15 +12,14 @@ import {
   events,
   news,
   recruitmentPeriods,
-  user,
+  users,
 } from "@/db/schema";
-import { can, type Permission } from "@/lib/auth/roles";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 import { UB_OFFSET_MS } from "@/lib/dates/ub-time";
 import { applicationStatusLabels, findOpenPeriod } from "@/lib/recruitment/logic";
 
-/** Counts for the open (or latest) recruitment period; spam is left out of the class chart. */
+/** Counts for the open (or latest) recruitment period. */
 async function recruitmentWidgets() {
   const db = await getDb();
   const periods = await db
@@ -48,12 +47,12 @@ async function recruitmentWidgets() {
     db
       .select({ className: applications.className, n: count() })
       .from(applications)
-      .where(and(inPeriod, ne(applications.status, "spam")))
+      .where(inPeriod)
       .groupBy(applications.className),
     db
       .select({ n: count() })
       .from(applications)
-      .where(and(gte(applications.createdAt, ubMidnight), ne(applications.status, "spam"))),
+      .where(and(inPeriod, gte(applications.createdAt, ubMidnight))),
   ]);
   const sorted = byClass.sort((a, b) =>
     a.className.localeCompare(b.className, "mn", { numeric: true }),
@@ -71,58 +70,45 @@ async function recruitmentWidgets() {
   };
 }
 
-export default async function AdminDashboard({ searchParams }: PageProps<"/admin">) {
-  const me = await requireUser();
-  const sp = await searchParams;
+export default async function AdminDashboard() {
+  const me = await requireAdmin();
   const db = await getDb();
 
-  // Each widget is loaded only for roles that may see that data.
-  const allow = (p: Permission) => can(me.role, p);
-  const none = Promise.resolve([{ n: 0 }]);
   const [[newsCount], [eventsCount], [newApps], [unread], recent, latestApps] = await Promise.all([
-    allow("content") ? db.select({ n: count() }).from(news) : none,
-    allow("content") ? db.select({ n: count() }).from(events) : none,
-    allow("applications")
-      ? db.select({ n: count() }).from(applications).where(eq(applications.status, "new"))
-      : none,
-    allow("messages")
-      ? db.select({ n: count() }).from(contactMessages).where(isNull(contactMessages.readAt))
-      : none,
-    allow("admin")
-      ? db
-          .select({
-            id: activityLog.id,
-            action: activityLog.action,
-            summary: activityLog.summary,
-            createdAt: activityLog.createdAt,
-            userName: user.name,
-          })
-          .from(activityLog)
-          .leftJoin(user, eq(activityLog.userId, user.id))
-          .orderBy(desc(activityLog.createdAt))
-          .limit(10)
-      : Promise.resolve([]),
-    allow("applications")
-      ? db
-          .select({
-            id: applications.id,
-            fullName: applications.fullName,
-            className: applications.className,
-            createdAt: applications.createdAt,
-          })
-          .from(applications)
-          .where(eq(applications.status, "new"))
-          .orderBy(desc(applications.createdAt))
-          .limit(5)
-      : Promise.resolve([]),
+    db.select({ n: count() }).from(news),
+    db.select({ n: count() }).from(events),
+    db.select({ n: count() }).from(applications).where(eq(applications.status, "new")),
+    db.select({ n: count() }).from(contactMessages).where(isNull(contactMessages.readAt)),
+    db
+      .select({
+        id: activityLog.id,
+        action: activityLog.action,
+        summary: activityLog.summary,
+        createdAt: activityLog.createdAt,
+        userName: users.name,
+      })
+      .from(activityLog)
+      .leftJoin(users, eq(activityLog.userId, users.id))
+      .orderBy(desc(activityLog.createdAt))
+      .limit(10),
+    db
+      .select({
+        id: applications.id,
+        fullName: applications.fullName,
+        className: applications.className,
+        createdAt: applications.createdAt,
+      })
+      .from(applications)
+      .where(eq(applications.status, "new"))
+      .orderBy(desc(applications.createdAt))
+      .limit(5),
   ]);
 
   // Recruitment widgets for the period that is open now (or the most recent one).
-  const widgets = allow("applications") ? await recruitmentWidgets() : null;
+  const widgets = await recruitmentWidgets();
 
   const cards = [
     {
-      permission: "content" as Permission,
       label: "Мэдээ",
       value: newsCount?.n ?? 0,
       href: "/admin/news",
@@ -130,7 +116,6 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
       tone: "bg-brand-cyan-soft text-brand-cyan-strong",
     },
     {
-      permission: "content" as Permission,
       label: "Арга хэмжээ",
       value: eventsCount?.n ?? 0,
       href: "/admin/events",
@@ -138,7 +123,6 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
       tone: "bg-brand-purple-soft text-brand-purple-strong",
     },
     {
-      permission: "applications" as Permission,
       label: "Шинэ өргөдөл",
       value: newApps?.n ?? 0,
       href: "/admin/applications?status=new",
@@ -146,29 +130,20 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
       tone: "bg-brand-green-soft text-brand-green-strong",
     },
     {
-      permission: "messages" as Permission,
       label: "Уншаагүй зурвас",
       value: unread?.n ?? 0,
       href: "/admin/messages",
       icon: Mail,
       tone: "bg-brand-gold-soft text-brand-gold-strong",
     },
-  ].filter((c) => allow(c.permission));
+  ];
 
   return (
     <>
       <AdminPageHeader
-        title={`Сайн байна уу, ${me.name}!`}
+        title={me.name ? `Сайн байна уу, ${me.name}!` : "Сайн байна уу!"}
         description="Клубын сайтын товч мэдээлэл"
       />
-      {sp.forbidden && (
-        <p
-          role="alert"
-          className="mb-6 rounded-xl bg-destructive/10 p-3 text-sm font-medium text-destructive"
-        >
-          Танд энэ хэсэгт хандах эрх байхгүй.
-        </p>
-      )}
       <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map(({ label, value, href, icon: Icon, tone }) => (
           <li key={label}>
@@ -239,73 +214,68 @@ export default async function AdminDashboard({ searchParams }: PageProps<"/admin
       )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        {allow("admin") && (
-          <section className="rounded-2xl bg-card p-5 ring-1 ring-border">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-bold">Сүүлийн үйлдлүүд</h2>
-              <Link
-                href="/admin/audit"
-                className="text-sm font-semibold text-brand-cyan-strong hover:underline"
-              >
-                Бүгд
-              </Link>
-            </div>
-            {recent.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Одоогоор үйлдэл бүртгэгдээгүй байна.</p>
-            ) : (
-              <ul className="divide-y text-sm">
-                {recent.map((r) => (
-                  <li key={r.id} className="flex items-start justify-between gap-3 py-2.5">
-                    <span>
-                      <span className="font-semibold">{r.userName ?? "Систем"}</span> —{" "}
-                      {r.summary || r.action}
-                    </span>
+        <section className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-bold">Сүүлийн үйлдлүүд</h2>
+            <Link
+              href="/admin/audit"
+              className="text-sm font-semibold text-brand-cyan-strong hover:underline"
+            >
+              Бүгд
+            </Link>
+          </div>
+          {recent.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Одоогоор үйлдэл бүртгэгдээгүй байна.</p>
+          ) : (
+            <ul className="divide-y text-sm">
+              {recent.map((r) => (
+                <li key={r.id} className="flex items-start justify-between gap-3 py-2.5">
+                  <span>
+                    <span className="font-semibold">{r.userName ?? "Систем"}</span> —{" "}
+                    {r.summary || r.action}
+                  </span>
+                  <time
+                    className="shrink-0 text-xs text-muted-foreground"
+                    dateTime={r.createdAt.toISOString()}
+                  >
+                    {formatDate("mn", r.createdAt, "long")} {formatDate("mn", r.createdAt, "time")}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className="rounded-2xl bg-card p-5 ring-1 ring-border">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-bold">Шинэ өргөдлүүд</h2>
+            <Link
+              href="/admin/applications"
+              className="text-sm font-semibold text-brand-cyan-strong hover:underline"
+            >
+              Бүгд
+            </Link>
+          </div>
+          {latestApps.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Шинэ өргөдөл алга.</p>
+          ) : (
+            <ul className="divide-y text-sm">
+              {latestApps.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <span className="font-semibold">{a.fullName}</span>
+                  <span className="flex items-center gap-2">
+                    <Badge variant="secondary">{a.className}</Badge>
                     <time
-                      className="shrink-0 text-xs text-muted-foreground"
-                      dateTime={r.createdAt.toISOString()}
+                      className="text-xs text-muted-foreground"
+                      dateTime={a.createdAt.toISOString()}
                     >
-                      {formatDate("mn", r.createdAt, "long")}{" "}
-                      {formatDate("mn", r.createdAt, "time")}
+                      {formatDate("mn", a.createdAt, "long")}
                     </time>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-        {allow("applications") && (
-          <section className="rounded-2xl bg-card p-5 ring-1 ring-border">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-bold">Шинэ өргөдлүүд</h2>
-              <Link
-                href="/admin/applications"
-                className="text-sm font-semibold text-brand-cyan-strong hover:underline"
-              >
-                Бүгд
-              </Link>
-            </div>
-            {latestApps.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Шинэ өргөдөл алга.</p>
-            ) : (
-              <ul className="divide-y text-sm">
-                {latestApps.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <span className="font-semibold">{a.fullName}</span>
-                    <span className="flex items-center gap-2">
-                      <Badge variant="secondary">{a.className}</Badge>
-                      <time
-                        className="text-xs text-muted-foreground"
-                        dateTime={a.createdAt.toISOString()}
-                      >
-                        {formatDate("mn", a.createdAt, "long")}
-                      </time>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </>
   );

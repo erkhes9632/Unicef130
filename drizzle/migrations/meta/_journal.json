@@ -43,6 +43,13 @@
       "when": 1794666496746,
       "tag": "0005_recruitment",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794720091164,
+      "tag": "0006_clerk_users",
+      "breakpoints": true
     }
   ]
 }

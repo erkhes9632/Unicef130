@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/db";
 import { activityLog, user } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 
 export const metadata: Metadata = { title: "Үйлдлийн түүх" };
@@ -40,7 +40,7 @@ const show = (v: unknown) =>
         : String(v);
 
 export default async function AuditLogPage({ searchParams }: PageProps<"/admin/audit">) {
-  await requireUser("admin");
+  await requireAdmin();
   const sp = await searchParams;
   const str = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
   const filters = { user: str("user"), type: str("type"), from: str("from"), to: str("to") };

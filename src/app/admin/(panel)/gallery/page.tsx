@@ -8,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
 import { deleteAlbum } from "./actions";
 
 export const metadata: Metadata = { title: "Зургийн цомог" };
 
 export default async function AdminGalleryPage() {
-  await requireUser("content");
+  await requireAdmin();
   const db = await getDb();
   const rows = await db
     .select({

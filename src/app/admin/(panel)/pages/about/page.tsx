@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { AboutPageForm } from "@/components/admin/about-page-form";
 import { AdminPageHeader } from "@/components/admin/page-header";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { saveAboutPage } from "../../settings/actions";
 
 export const metadata: Metadata = { title: "Бидний тухай хуудас" };
 
 export default async function AdminAboutPage() {
-  await requireUser("admin");
+  await requireAdmin();
   const { about } = await getSiteSettings();
   return (
     <>

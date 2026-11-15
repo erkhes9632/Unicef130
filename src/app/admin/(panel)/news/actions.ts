@@ -7,7 +7,7 @@ import { news } from "@/db/schema";
 import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requirePermission } from "@/lib/auth/session";
+import { assertAdmin } from "@/lib/auth/session";
 import { recordSlugRename } from "@/lib/data/redirects";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
@@ -46,7 +46,7 @@ export async function saveNews(
 ): Promise<ActionState> {
   let savedId = id;
   try {
-    const user = await requirePermission("content");
+    const user = await assertAdmin();
     const parsed = parseForm(data);
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -114,7 +114,7 @@ export async function saveNews(
 
 export async function deleteNews(id: string): Promise<ActionState> {
   try {
-    const user = await requirePermission("content");
+    const user = await assertAdmin();
     const db = await getDb();
     const [row] = await db
       .delete(news)

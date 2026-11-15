@@ -1,6 +1,5 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import { useActionState, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,8 +11,8 @@ import { NativeSelect } from "./form";
 type Action = (prev: ActionState, data: FormData) => Promise<ActionState>;
 
 /**
- * Results are shown as toasts: the list remounts when the counts change (e.g. after deleting
- * spam), which would drop an inline message.
+ * Results are shown as toasts: the list remounts when the counts change (e.g. after a bulk
+ * status change), which would drop an inline message.
  */
 const withToast =
   (action: Action): Action =>
@@ -31,17 +30,12 @@ const withToast =
 export function ApplicationsList({
   items,
   bulkSetStatus,
-  bulkDeleteSpam,
-  isAdmin,
 }: {
   items: { id: string; label: string; content: React.ReactNode }[];
   bulkSetStatus: Action;
-  bulkDeleteSpam: Action;
-  isAdmin: boolean;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [, statusAction, statusPending] = useActionState(withToast(bulkSetStatus), {});
-  const [, deleteAction, deletePending] = useActionState(withToast(bulkDeleteSpam), {});
   const visible = items.map((i) => i.id);
   const chosen = visible.filter((id) => selected.has(id));
   const all = chosen.length === visible.length && visible.length > 0;
@@ -88,27 +82,6 @@ export function ApplicationsList({
             Төлөв солих
           </Button>
         </form>
-        {isAdmin && (
-          <form
-            action={deleteAction}
-            onSubmit={(e) => {
-              if (
-                !window.confirm("Сонгосон өргөдлүүдээс СПАМ гэж тэмдэглэснийг бүрмөсөн устгах уу?")
-              )
-                e.preventDefault();
-            }}
-          >
-            {ids}
-            <Button
-              type="submit"
-              size="sm"
-              variant="outline"
-              disabled={chosen.length === 0 || deletePending}
-            >
-              <Trash2 className="text-destructive" /> Спамыг устгах
-            </Button>
-          </form>
-        )}
       </div>
       <ul className="space-y-3">
         {items.map((item) => (

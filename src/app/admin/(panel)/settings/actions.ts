@@ -6,7 +6,7 @@ import { settings } from "@/db/schema";
 import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requirePermission } from "@/lib/auth/session";
+import { assertAdmin } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { deleteMediaUrls, isOwnMediaUrl } from "@/lib/media/server";
 import { SETTINGS_KEYS, socialPlatforms, type SiteSettings } from "@/lib/settings/types";
@@ -47,7 +47,7 @@ function removedSiteImages(
 
 export async function saveSettings(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requirePermission("admin");
+    const user = await assertAdmin();
     const year = fd.str(data, "club.foundedYear");
     const parsed = settingsInputSchema.safeParse({
       announcement: {
@@ -56,7 +56,13 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
         textEn: fd.str(data, "announcement.textEn"),
         href: fd.str(data, "announcement.href"),
       },
-      security: { requireAdminTwoFactor: fd.bool(data, "security.requireAdminTwoFactor") },
+      membership: {
+        rejectedRetentionDays: fd.int(data, "membership.rejectedRetentionDays", 90),
+        activeMemberHours:
+          fd.str(data, "membership.activeMemberHours") === ""
+            ? null
+            : Number(fd.str(data, "membership.activeMemberHours")),
+      },
       club: {
         name: fd.str(data, "club.name"),
         nameEn: fd.str(data, "club.nameEn"),
@@ -120,10 +126,7 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
       summary: changed
         ? `Сайтын тохиргоог шинэчлэв: ${Object.keys(changed).join(", ")}`
         : "Сайтын тохиргоог хадгалав (өөрчлөлтгүй)",
-      changes:
-        changed && "security" in changed
-          ? { ...changed, security: [before.security, parsed.data.security] }
-          : changed,
+      changes: changed,
     });
     revalidatePublic();
     return { ok: true, message: "Тохиргоо хадгалагдлаа." };
@@ -134,7 +137,7 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
 
 export async function saveAboutPage(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requirePermission("admin");
+    const user = await assertAdmin();
     const parsed = aboutInputSchema.safeParse({
       intro: fd.str(data, "intro"),
       introEn: fd.str(data, "introEn"),

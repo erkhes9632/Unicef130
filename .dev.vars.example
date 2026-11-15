@@ -2,16 +2,18 @@
 # Production secrets: bunx wrangler secret put <NAME>   (see README.md)
 NEXTJS_ENV=development
 
-# Better Auth — generate with: openssl rand -base64 32
-BETTER_AUTH_SECRET=
-# Local overrides of the production "vars" in wrangler.jsonc. Keep them empty locally:
-# empty SITE_URL/BETTER_AUTH_URL = inferred from the request, empty TURNSTILE_SITE_KEY = test key.
-SITE_URL=
-BETTER_AUTH_URL=
-TURNSTILE_SITE_KEY=
+# Clerk (sign-in) — Development instance keys: Clerk dashboard → API keys.
+# The publishable key is public; the secret key must stay out of git and chat.
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+# Webhook signing secret (Clerk dashboard → Webhooks → endpoint). Optional locally: without it
+# the site still mirrors users on their first signed-in request.
+# CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 
-# Comma-separated origins allowed to call /api/auth (dev server + local preview).
-BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8787,http://localhost:8799
+# Local overrides of the production "vars" in wrangler.jsonc. Keep them empty locally:
+# empty SITE_URL = inferred from the request, empty TURNSTILE_SITE_KEY = test key.
+SITE_URL=
+TURNSTILE_SITE_KEY=
 
 # Cloudflare Turnstile (optional locally). Empty → Cloudflare test keys (always pass).
 # TURNSTILE_SECRET_KEY=
@@ -23,7 +25,3 @@ BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8787,http://l
 # GOOGLE_SHEET_ID=1AbC...   (from the sheet URL: /spreadsheets/d/<ID>/edit)
 # GOOGLE_SHEET_TAB=Applications
 
-# Optional email provider for invitation links (https://resend.com). Without both values the
-# admin copies the link by hand and nothing is sent.
-# RESEND_API_KEY=
-# EMAIL_FROM="UNICEF клуб <no-reply@your-domain.mn>"

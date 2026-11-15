@@ -204,8 +204,7 @@
       "Gain volunteering experience"
     ],
     "privacyTitle": "Your privacy",
-    "privacy": "We only collect what the club needs for registration. We never share your data with third parties.",
-    "checkStatus": "Check application status",
+    "privacy": "Only the club leaders see your information; it is never shared. Data of applications that were not accepted is deleted automatically {days} days after the intake closes.",
     "closedTitle": "Recruitment is currently closed",
     "closedBody": "The club accepts new members during recruitment periods. The next one will be announced on this page.",
     "closedHint": "The next recruitment period has not been announced yet.",
@@ -216,7 +215,38 @@
     "seeEvents": "See events",
     "openUntil": "Open until {date}",
     "timeLeft": "Time left",
-    "placesLeft": "{count, plural, one {# place left} other {# places left}}"
+    "placesLeft": "{count, plural, one {# place left} other {# places left}}",
+    "statusTitle": "Your application",
+    "submittedOn": "Sent on {date}",
+    "messageFromClub": "Message from the club",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Not accepted",
+      "waitlist": "Waiting list"
+    },
+    "statusBody": {
+      "pending": "The club leaders are reviewing your application. The decision will appear here.",
+      "accepted": "Congratulations! You are now a club member.",
+      "rejected": "You were not accepted in this intake. You can apply again when the next intake opens.",
+      "waitlist": "All places are taken, so you are on the waiting list. We'll let you know if a place opens."
+    },
+    "pendingSteps": [
+      "The club leaders read your application.",
+      "They contact you if needed.",
+      "You see the decision on this page."
+    ],
+    "signInFirstTitle": "Sign in first",
+    "signInFirstBody": "Sign in with Google or e-mail to apply. You can then check your application's status at any time.",
+    "signInToApply": "Sign in to apply",
+    "memberTitle": "You are a club member",
+    "memberBody": "See your volunteer hours and events in your member page.",
+    "adminTitle": "You are an admin",
+    "adminBody": "Review applications in the admin panel.",
+    "goToMe": "Go to my page",
+    "goToAdmin": "Go to admin",
+    "blockedTitle": "You can't apply",
+    "blockedBody": "New applications from this account are not possible. Please contact the club if you have questions."
   },
   "Contact": {
     "metaTitle": "Contact",
@@ -292,7 +322,6 @@
     "phone": "Phone number",
     "phonePlaceholder": "8-digit number",
     "email": "Email",
-    "emailPlaceholder": "Your email address",
     "optional": "(optional)",
     "reason": "Why do you want to join the club?",
     "reasonPlaceholder": "Tell us a little about yourself",
@@ -305,7 +334,6 @@
     "submit": "Send",
     "submitting": "Sending...",
     "joinSuccessTitle": "Thank you! We've received your application.",
-    "joinSuccessBody": "What happens next:",
     "contactSuccessTitle": "Message sent!",
     "contactSuccessBody": "We'll reply as soon as we can.",
     "sendAnother": "Send another",
@@ -323,13 +351,6 @@
       "nameCyrillic": "Please write your family name and given name in Cyrillic (e.g. Батын Анужин)",
       "noLinks": "Links are not allowed"
     },
-    "joinNextSteps": [
-      "The club leaders will read your application.",
-      "They will contact you using the phone number (or email) you gave.",
-      "You can check the status any time with your tracking code."
-    ],
-    "joinSeeEvents": "See events",
-    "joinSeeNews": "Read news",
     "turnstileLoadError": "The security check couldn't load. Check your connection and reload the page.",
     "unavailableTitle": "Form temporarily unavailable",
     "unavailable": "The form is temporarily closed while spam protection is being set up. Please try again later.",
@@ -340,18 +361,15 @@
     "joinClosedError": "Recruitment has closed.",
     "joinFullError": "All places have been taken.",
     "rateError": "An application was sent from this network a moment ago. Please wait a little and try again.",
-    "tooFastError": "Please review the form once more and send it again.",
-    "staleError": "This page has been open for a long time. Please reload it and send again.",
     "validationError": "Please fix the highlighted fields.",
-    "duplicateTitle": "You have already applied",
     "duplicateBody": "An application with this phone number already exists for this recruitment period. You can check its status.",
-    "checkStatus": "Check application status",
     "waitlistNotice": "All places are taken, so your application will be added to the waiting list.",
     "joinWaitlistTitle": "You are on the waiting list",
-    "trackingCodeLabel": "Your tracking code",
-    "trackingCodeHint": "Keep this code — you need it to check your status.",
-    "copy": "Copy",
-    "copied": "Copied"
+    "signInAgainError": "Please sign in again.",
+    "alreadyMemberError": "You are already a club member.",
+    "applyBlockedError": "Applications from this account are not possible.",
+    "emailFromAccount": "The e-mail of the account you signed in with.",
+    "emailPlaceholder": "Your email address"
   },
   "Errors": {
     "title": "Sorry, something went wrong",
@@ -409,44 +427,68 @@
     "cta": "Apply now",
     "label": "Announcement"
   },
-  "JoinStatus": {
-    "metaTitle": "Application status",
-    "eyebrow": "Become a member",
-    "title": "Check your application status",
-    "description": "Enter the tracking code you received and the last 4 digits of your phone number.",
-    "code": "Tracking code",
-    "last4": "Last 4 digits of your phone number",
-    "submit": "Check",
-    "greeting": "Hello, {name}",
-    "submitted": "submitted on {date}",
+  "Auth": {
+    "signIn": "Sign in",
+    "signInTitle": "Sign in",
+    "privacyNote": "We use your e-mail address and name only for the club's records.",
+    "menuAdmin": "Admin",
+    "menuMe": "My page",
+    "menuApplication": "Application",
+    "unavailable": "Sign-in is temporarily unavailable. Please try again later."
+  },
+  "Me": {
+    "title": "My page",
+    "eyebrow": "Member area",
+    "greeting": "Hi, {name}!",
+    "intro": "Your volunteer hours, events and account.",
+    "hoursTitle": "Volunteer hours",
+    "hours": "{n} h",
+    "thisYear": "School year {year}",
+    "activeGoal": "Active member goal",
+    "activeReached": "You reached this year's active member goal!",
+    "noHours": "No hours recorded yet.",
+    "hoursEntry": "Volunteer work",
+    "importedTotal": "Report total for {year}",
+    "upcomingTitle": "Upcoming events",
+    "noUpcoming": "No events with open sign-up right now.",
+    "placesLeft": "{count} places left",
+    "youAreRegistered": "You are signed up",
+    "youAreWaitlisted": "You are on the waiting list",
+    "signUp": "Sign up",
+    "signupClosed": "Sign-up closed",
+    "cancelSignup": "Cancel sign-up",
+    "signedUp": "Signed up!",
+    "signedUpWaitlist": "All places are taken: you are on the waiting list.",
+    "signupCancelled": "Sign-up cancelled.",
+    "attendedTitle": "Events you attended",
+    "profileTitle": "My details",
+    "name": "Name",
+    "team": "Team",
+    "memberSince": "Member since",
+    "class": "Class",
+    "classHint": "For example 10A. Update it when a new school year starts.",
+    "classSaved": "Class updated.",
+    "save": "Save",
+    "profileHint": "The club leaders edit your name and team.",
+    "noMemberRecord": "Your member record isn't linked yet. Please ask the club leaders.",
+    "accountTitle": "Account",
+    "deleteAccount": "Delete my account",
+    "deleteTitle": "Delete your account?",
+    "deleteBody": "Your sign-in account and personal data will be deleted. Your volunteer hours stay in the club's totals without your name. This can't be undone.",
+    "deleteConfirmLabel": "Type DELETE to confirm",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleted": "Account deleted.",
+    "adminCannotDelete": "Admins can't delete their own account. Another admin must remove your admin role first.",
     "errors": {
-      "notFound": "No application matches. Please check the code and the last 4 digits.",
-      "rate": "Too many attempts. Please try again in 10 minutes.",
-      "invalid": "Enter the code as UC-XXXX and the last 4 digits as numbers.",
-      "captcha": "Please complete the security check. If you cannot see it, reload the page.",
-      "unavailable": "The form is temporarily closed while spam protection is being set up. Please try again later."
-    },
-    "status": {
-      "received": {
-        "title": "Received",
-        "body": "We have your application. The club leaders are reviewing it."
-      },
-      "interview": {
-        "title": "Invited to an interview",
-        "body": "The club leaders will contact you to arrange a time."
-      },
-      "accepted": {
-        "title": "Accepted — welcome!",
-        "body": "You are now a club member. We will contact you about the next steps."
-      },
-      "waitlist": {
-        "title": "On the waiting list",
-        "body": "We will contact you if a place becomes available."
-      },
-      "declined": {
-        "title": "Not accepted this time",
-        "body": "Thank you for applying. You are welcome to apply again in the next recruitment period."
-      }
+      "unauthenticated": "Please sign in again.",
+      "forbidden": "You can't do this.",
+      "invalid": "Write the class like 10A.",
+      "closed": "Sign-up is closed.",
+      "notFound": "Not found.",
+      "adminSelfDelete": "Admins can't delete their own account.",
+      "confirm": "Type DELETE exactly.",
+      "server": "Something went wrong. Please try again."
     }
   }
 }

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { PeriodForm } from "@/components/admin/period-form";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { savePeriod } from "../actions";
 
 export const metadata: Metadata = { title: "Элсэлт зарлах" };
 
 export default async function NewPeriodPage() {
-  await requireUser("admin");
+  await requireAdmin();
   return (
     <>
       <AdminPageHeader

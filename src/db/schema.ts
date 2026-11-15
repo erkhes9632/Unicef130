@@ -3,10 +3,12 @@ import {
   type AnySQLiteColumn,
   index,
   integer,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { appRoles } from "@/lib/auth/roles";
 import type { RichTextDoc } from "@/lib/types";
 
 /**
@@ -28,12 +30,34 @@ const id = () =>
     .$defaultFn(() => crypto.randomUUID());
 
 // ---------------------------------------------------------------------------
-// Auth (Better Auth core tables + admin plugin fields)
+// Accounts (Clerk is the identity provider; this is the D1 mirror)
 // ---------------------------------------------------------------------------
 
-/** admin: everything · editor: news, events, gallery, members · reviewer: applications only. */
-export const userRoles = ["admin", "editor", "reviewer"] as const;
-export type UserRole = (typeof userRoles)[number];
+/**
+ * One row per Clerk user, keyed by the Clerk user id. Kept in sync by the Clerk webhook and by a
+ * lazy upsert on the first signed-in request. `role`: admin | member | null (= applicant).
+ */
+export const users = sqliteTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull().default(""),
+    name: text("name").notNull().default(""),
+    role: text("role", { enum: appRoles }),
+    /** Banned in Clerk: cannot sign in; data kept; reversible. */
+    banned: integer("banned", { mode: "boolean" }).notNull().default(false),
+    /** Admin ticked "дахин өргөдөл гаргахыг хориглох" (abuse). */
+    applyBlocked: integer("apply_blocked", { mode: "boolean" }).notNull().default(false),
+    twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
+    lastSignInAt: integer("last_sign_in_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [index("users_email_idx").on(t.email), index("users_role_idx").on(t.role)],
+);
+
+// ---------------------------------------------------------------------------
+// Legacy Better Auth tables — no code uses them any more; dropped by a separate migration.
+// ---------------------------------------------------------------------------
 
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
@@ -195,7 +219,7 @@ export const news = sqliteTable(
       .notNull()
       .default("draft"),
     publishedAt: integer("published_at", { mode: "timestamp_ms" }),
-    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
     /** UN Sustainable Development Goals (1–17) the post relates to. */
     sdgs: text("sdgs", { mode: "json" })
       .$type<number[]>()
@@ -257,6 +281,12 @@ export const events = sqliteTable(
       .default(sql`'[]'`),
     /** Admin-only note (e.g. data issues in the source report). Never shown publicly. */
     adminNote: text("admin_note").notNull().default(""),
+    // Volunteer sign-up for members (/me). Off unless an admin enables it.
+    signupEnabled: integer("signup_enabled", { mode: "boolean" }).notNull().default(false),
+    /** Places for volunteers; null = no limit (extra sign-ups go to the waitlist when full). */
+    signupCapacity: integer("signup_capacity"),
+    /** Sign-up closes at this instant; null = when the event starts. */
+    signupDeadline: integer("signup_deadline", { mode: "timestamp_ms" }),
     ...timestamps,
   },
   (t) => [
@@ -288,9 +318,72 @@ export const members = sqliteTable(
     /** Volunteer hours (admin only; used for the aggregate stat, never shown per person). */
     volunteerHours: integer("volunteer_hours"),
     schoolYear: text("school_year"),
+    /** The member's own account (approved applicant or linked by an admin). */
+    userId: text("user_id").references((): AnySQLiteColumn => users.id, { onDelete: "set null" }),
+    /** Admin-only: lets an admin offer "link account to member" when this address signs up. */
+    email: text("email"),
+    team: text("team").notNull().default(""),
+    /** Personal data removed (account deleted); hours stay as anonymous totals. */
+    anonymized: integer("anonymized", { mode: "boolean" }).notNull().default(false),
     ...timestamps,
   },
-  (t) => [index("members_order_idx").on(t.group, t.sortOrder)],
+  (t) => [
+    index("members_order_idx").on(t.group, t.sortOrder),
+    uniqueIndex("members_user_idx").on(t.userId),
+  ],
+);
+
+export const signupStatuses = [
+  "registered",
+  "waitlist",
+  "cancelled",
+  "attended",
+  "absent",
+] as const;
+export type SignupStatus = (typeof signupStatuses)[number];
+
+/** A member volunteering for an event (one row per event and account). */
+export const eventSignups = sqliteTable(
+  "event_signups",
+  {
+    id: id(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", { enum: signupStatuses }).notNull().default("registered"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("event_signups_event_user_idx").on(t.eventId, t.userId),
+    index("event_signups_user_idx").on(t.userId),
+  ],
+);
+
+/**
+ * Volunteer hours log. Rows survive a deleted account: the member row is anonymized, so the
+ * yearly totals don't drop. `members.volunteer_hours` holds the imported yearly report total.
+ */
+export const volunteerHours = sqliteTable(
+  "volunteer_hours",
+  {
+    id: id(),
+    memberId: text("member_id").references(() => members.id, { onDelete: "set null" }),
+    eventId: text("event_id").references(() => events.id, { onDelete: "set null" }),
+    schoolYear: text("school_year").notNull(),
+    hours: real("hours").notNull(),
+    /** Day the work was done. */
+    date: integer("date", { mode: "timestamp_ms" }).notNull(),
+    note: text("note").notNull().default(""),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    index("volunteer_hours_member_idx").on(t.memberId, t.schoolYear),
+    index("volunteer_hours_year_idx").on(t.schoolYear),
+  ],
 );
 
 export const albums = sqliteTable(
@@ -379,9 +472,6 @@ export const recruitmentPeriods = sqliteTable(
       .default(sql`'[]'`),
     /** Show the site-wide "recruitment is open" banner while this period is open. */
     showBanner: integer("show_banner", { mode: "boolean" }).notNull().default(true),
-    /** Anti-spam limits per network address (a whole school may share one address). */
-    ipLimitPer10Min: integer("ip_limit_per_10_min").notNull().default(1),
-    ipLimitPerDay: integer("ip_limit_per_day").notNull().default(10),
     ...timestamps,
   },
   (t) => [index("recruitment_periods_window_idx").on(t.opensAt, t.closesAt)],
@@ -394,46 +484,42 @@ export const applicationStatuses = [
   "accepted",
   "rejected",
   "waitlist",
-  "spam",
 ] as const;
 export type ApplicationStatus = (typeof applicationStatuses)[number];
 
+/**
+ * Join applications. Applicants sign in first: one application per account per period. Rejected
+ * applications are deleted automatically N days after their period closes (setting).
+ */
 export const applications = sqliteTable(
   "applications",
   {
     id: id(),
+    /** Null only for applications sent before sign-in was required. */
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    periodId: text("period_id").references(() => recruitmentPeriods.id, { onDelete: "set null" }),
     fullName: text("full_name").notNull(),
     className: text("class_name").notNull(),
     phone: text("phone").notNull(),
     email: text("email"),
     reason: text("reason").notNull(),
     helpWith: text("help_with", { mode: "json" }).$type<string[]>().notNull(),
-    consentAt: integer("consent_at", { mode: "timestamp_ms" }).notNull(),
-    status: text("status", { enum: applicationStatuses }).notNull().default("new"),
-    notes: text("notes").notNull().default(""),
-    sheetsSyncedAt: integer("sheets_synced_at", { mode: "timestamp_ms" }),
-    sheetsError: text("sheets_error"),
-    // Recruitment system
-    periodId: text("period_id").references(() => recruitmentPeriods.id, { onDelete: "set null" }),
-    /** Shown to the applicant after submitting, e.g. "UC-7K3M" (status lookup). */
-    trackingCode: text("tracking_code"),
-    /** 8 digits; one application per phone per period. */
-    phoneNormalized: text("phone_normalized"),
-    /** Salted hash of the sender's address (never the address itself). */
-    ipHash: text("ip_hash"),
-    spamScore: integer("spam_score").notNull().default(0),
-    /** Signals behind the score, e.g. ["fast_fill", "repeated_text"]. */
-    spamFlags: text("spam_flags", { mode: "json" })
-      .$type<string[]>()
-      .notNull()
-      .default(sql`'[]'`),
     /** Answers to the period's custom questions, keyed by question id. */
     answers: text("answers", { mode: "json" })
       .$type<Record<string, string | boolean>>()
       .notNull()
       .default(sql`'{}'`),
-    reviewerId: text("reviewer_id").references(() => user.id, { onDelete: "set null" }),
-    /** Member record created when the application was accepted. */
+    consentAt: integer("consent_at", { mode: "timestamp_ms" }).notNull(),
+    status: text("status", { enum: applicationStatuses }).notNull().default("new"),
+    /** Internal admin notes (never shown to the applicant). */
+    notes: text("notes").notNull().default(""),
+    /** Optional message the applicant sees with the decision on /join. */
+    decisionMessage: text("decision_message").notNull().default(""),
+    decidedBy: text("decided_by").references(() => users.id, { onDelete: "set null" }),
+    decidedAt: integer("decided_at", { mode: "timestamp_ms" }),
+    sheetsSyncedAt: integer("sheets_synced_at", { mode: "timestamp_ms" }),
+    sheetsError: text("sheets_error"),
+    /** Member record created or linked when the application was accepted. */
     memberId: text("member_id").references((): AnySQLiteColumn => members.id, {
       onDelete: "set null",
     }),
@@ -441,26 +527,9 @@ export const applications = sqliteTable(
   },
   (t) => [
     index("applications_status_created_idx").on(t.status, t.createdAt),
-    uniqueIndex("applications_tracking_idx").on(t.trackingCode),
-    uniqueIndex("applications_period_phone_idx").on(t.periodId, t.phoneNormalized),
-    index("applications_ip_idx").on(t.ipHash, t.createdAt),
+    uniqueIndex("applications_user_period_idx").on(t.userId, t.periodId),
+    index("applications_period_idx").on(t.periodId),
   ],
-);
-
-/** Phones / network addresses an admin blocked from applying for a while. */
-export const applicationBlocks = sqliteTable(
-  "application_blocks",
-  {
-    id: id(),
-    kind: text("kind", { enum: ["phone", "ip"] }).notNull(),
-    /** Normalized phone (8 digits) or the salted address hash. */
-    value: text("value").notNull(),
-    reason: text("reason").notNull().default(""),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
-    createdAt: timestamps.createdAt,
-  },
-  (t) => [uniqueIndex("application_blocks_value_idx").on(t.kind, t.value)],
 );
 
 export const contactMessages = sqliteTable(
@@ -521,7 +590,7 @@ export const activityLog = sqliteTable(
   "activity_log",
   {
     id: id(),
-    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     action: text("action").notNull(), // e.g. "news.create"
     entityType: text("entity_type").notNull(),
     entityId: text("entity_id"),

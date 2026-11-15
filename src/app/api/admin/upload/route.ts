@@ -1,21 +1,12 @@
-import { can, type Permission } from "@/lib/auth/roles";
 import { getCurrentUser } from "@/lib/auth/session";
 import { MEDIA_KINDS, type MediaKind } from "@/lib/media/constants";
 import { storeImage, UploadError } from "@/lib/media/server";
 
 /**
- * Image upload for the admin panel (editor+). Accepts multipart/form-data:
+ * Image upload for the admin panel (admins only). Accepts multipart/form-data:
  *   file: image (already resized/compressed in the browser), kind: news|events|members|gallery|site,
  *   variant?: full|thumb
  */
-const uploadPermission: Record<MediaKind, Permission> = {
-  news: "content",
-  events: "content",
-  gallery: "content",
-  members: "members",
-  site: "admin",
-};
-
 export async function POST(request: Request) {
   // CSRF: only same-origin requests (browsers always send Origin on POST).
   const origin = request.headers.get("origin");
@@ -24,6 +15,8 @@ export async function POST(request: Request) {
   }
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Нэвтрэх шаардлагатай." }, { status: 401 });
+  if (user.role !== "admin")
+    return Response.json({ error: "Танд зураг оруулах эрх байхгүй." }, { status: 403 });
 
   let form: FormData;
   try {
@@ -37,9 +30,6 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) return Response.json({ error: "Файл олдсонгүй." }, { status: 400 });
   if (typeof kind !== "string" || !MEDIA_KINDS.includes(kind as MediaKind)) {
     return Response.json({ error: "Буруу төрөл." }, { status: 400 });
-  }
-  if (!can(user.role, uploadPermission[kind as MediaKind])) {
-    return Response.json({ error: "Танд зураг оруулах эрх байхгүй." }, { status: 403 });
   }
 
   try {

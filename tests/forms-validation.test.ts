@@ -12,7 +12,6 @@ const validJoin = {
   fullName: "Батын Анужин",
   className: "10А",
   phone: "8811 2233",
-  email: "",
   reason: "Хүүхдүүдэд туслахыг хүсэж байна.",
   helpWith: ["reading"],
   answers: { q1: "Найзаасаа сонссон", q2: "Тийм", q3: true },
@@ -20,16 +19,16 @@ const validJoin = {
 };
 
 describe("join form schema (per recruitment period)", () => {
-  test("accepts a valid application (email optional)", () => {
+  test("accepts a valid application; the e-mail comes from the account, not the form", () => {
     expect(joinFormSchema.safeParse(validJoin).success).toBe(true);
-    expect(joinFormSchema.safeParse({ ...validJoin, email: "a@b.mn" }).success).toBe(true);
+    const parsed = joinFormSchema.parse({ ...validJoin, email: "someone@else.mn" });
+    expect("email" in parsed).toBe(false);
   });
   test.each([
     ["className", "abc", "className"],
     ["className", "9В", "className"], // not offered in this period
     ["phone", "123", "phone"],
     ["phone", "5511 2233", "phone"],
-    ["email", "not-an-email", "email"],
     ["reason", "short", "tooShort"],
     ["reason", "Манай сайтыг үзээрэй http://spam.example", "noLinks"],
     ["fullName", "", "required"],

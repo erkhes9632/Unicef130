@@ -24,8 +24,6 @@ export function actionError(err: unknown): ActionState {
       message: {
         forbidden: "Танд энэ үйлдлийг хийх эрх байхгүй.",
         unauthenticated: "Дахин нэвтэрнэ үү.",
-        two_factor_required:
-          "Эхлээд 2 шатлалт баталгаажуулалтаа тохируулна уу (Миний профайл → 2FA).",
       }[err.code],
     };
   }

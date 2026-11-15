@@ -2,11 +2,28 @@
  * Security response headers. The Content-Security-Policy uses a per-request nonce (set by the
  * middleware; Next.js adds it to its own scripts), so no inline script runs without it.
  *
- * Allowed third parties: Cloudflare Turnstile (script + frame) and Google Maps (contact page
- * iframe). Images may come from the site itself (R2 via /media), data/blob previews and https
- * (images inside rich text).
+ * Allowed third parties: Clerk (sign-in: its Frontend API serves the scripts and the session
+ * requests; bot protection runs Cloudflare Turnstile), Cloudflare Turnstile (contact form) and
+ * Google Maps (contact page iframe). Images may come from the site itself (R2 via /media),
+ * data/blob previews and https (rich text images, Clerk avatars from img.clerk.com).
  */
-export function buildCsp({ nonce, dev, https }: { nonce: string; dev: boolean; https: boolean }) {
+export function buildCsp({
+  nonce,
+  dev,
+  https,
+  clerkFrontendApi,
+}: {
+  nonce: string;
+  dev: boolean;
+  https: boolean;
+  /** e.g. https://clerk.example.mn (from the publishable key); omitted when Clerk is not set up. */
+  clerkFrontendApi?: string | null;
+}) {
+  const clerk = clerkFrontendApi ? [clerkFrontendApi] : [];
+  // Clerk's bot / fraud protection probes run on these hosts (any port).
+  const clerkProtect = clerkFrontendApi
+    ? ["https://*.protect.clerk.com", "https://*.protect.clerk.com:*"]
+    : [];
   const directives: [string, string[]][] = [
     ["default-src", ["'self'"]],
     [
@@ -16,6 +33,7 @@ export function buildCsp({ nonce, dev, https }: { nonce: string; dev: boolean; h
         `'nonce-${nonce}'`,
         "'strict-dynamic'",
         "https://challenges.cloudflare.com",
+        ...clerk,
         // React Fast Refresh needs eval in development only.
         ...(dev ? ["'unsafe-eval'"] : []),
       ],
@@ -24,8 +42,22 @@ export function buildCsp({ nonce, dev, https }: { nonce: string; dev: boolean; h
     ["style-src", ["'self'", "'unsafe-inline'"]],
     ["img-src", ["'self'", "data:", "blob:", "https:"]],
     ["font-src", ["'self'", "data:"]],
-    ["connect-src", ["'self'", "https://challenges.cloudflare.com", ...(dev ? ["ws:"] : [])]],
-    ["frame-src", ["https://challenges.cloudflare.com", "https://www.google.com"]],
+    [
+      "connect-src",
+      [
+        "'self'",
+        "https://challenges.cloudflare.com",
+        ...clerk,
+        ...clerkProtect,
+        ...(dev ? ["ws:"] : []),
+      ],
+    ],
+    [
+      "frame-src",
+      ["https://challenges.cloudflare.com", "https://www.google.com", ...clerkProtect.slice(0, 1)],
+    ],
+    // Clerk keeps its session timers in a blob worker.
+    ["worker-src", ["'self'", "blob:"]],
     ["frame-ancestors", ["'none'"]],
     ["form-action", ["'self'"]],
     ["base-uri", ["'self'"]],

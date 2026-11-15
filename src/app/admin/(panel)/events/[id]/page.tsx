@@ -8,7 +8,7 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { toUbInputValue } from "@/lib/dates/ub-input";
 import { saveEvent } from "../actions";
 
@@ -18,7 +18,7 @@ export default async function EditEventPage({
   params,
   searchParams,
 }: PageProps<"/admin/events/[id]">) {
-  await requireUser("content");
+  await requireAdmin();
   const { id } = await params;
   const sp = await searchParams;
   const db = await getDb();
@@ -69,6 +69,9 @@ export default async function EditEventPage({
           beneficiaries: row.beneficiaries,
           sdgs: row.sdgs,
           adminNote: row.adminNote,
+          signupEnabled: row.signupEnabled,
+          signupCapacity: row.signupCapacity,
+          signupDeadline: toUbInputValue(row.signupDeadline),
         }}
       />
     </>

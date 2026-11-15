@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { applications, recruitmentPeriods } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 import { applicationStatusLabels, countedStatuses, periodPhase } from "@/lib/recruitment/logic";
 import { deletePeriod } from "./actions";
@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "Элсэлт" };
 const phaseLabel = { upcoming: "Удахгүй нээгдэнэ", open: "Нээлттэй", closed: "Хаагдсан" } as const;
 
 export default async function RecruitmentPage({ searchParams }: PageProps<"/admin/recruitment">) {
-  await requireUser("admin");
+  await requireAdmin();
   const sp = await searchParams;
   const db = await getDb();
   const [periods, counts] = await Promise.all([

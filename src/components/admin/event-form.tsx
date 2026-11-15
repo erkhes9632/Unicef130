@@ -34,6 +34,9 @@ export type EventFormValues = {
   contentEn: RichTextDoc | null;
   published: boolean;
   allDay: boolean;
+  signupEnabled: boolean;
+  signupCapacity: number | null;
+  signupDeadline: string;
   direction: string | null;
   schoolYear: string | null;
   reachInPerson: string | null;
@@ -179,6 +182,49 @@ export function EventForm({
             <Label htmlFor="published">Сайт дээр нийтлэх</Label>
           </div>
           <SubmitButton className="w-full" />
+        </FormSection>
+        <FormSection
+          title="Сайн дурын бүртгэл"
+          description="Асаавал гишүүд «Миний хэсэг»-ээс бүртгүүлнэ. Орон дүүрвэл хүлээлгийн жагсаалтад орно."
+        >
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="signupEnabled"
+              name="signupEnabled"
+              defaultChecked={initial?.signupEnabled ?? false}
+              className="mt-0.5"
+            />
+            <Label htmlFor="signupEnabled" className="leading-snug">
+              Гишүүдэд бүртгэл нээх
+            </Label>
+          </div>
+          <AdminField
+            label="Орон тоо"
+            htmlFor="signupCapacity"
+            hint="Хоосон бол хязгааргүй."
+            errors={e.signupCapacity}
+          >
+            <Input
+              id="signupCapacity"
+              name="signupCapacity"
+              inputMode="numeric"
+              defaultValue={initial?.signupCapacity ?? ""}
+              className="max-w-24"
+            />
+          </AdminField>
+          <AdminField
+            label="Бүртгэл хаагдах"
+            htmlFor="signupDeadline"
+            hint="Хоосон бол арга хэмжээ эхлэх үед хаагдана."
+            errors={e.signupDeadline}
+          >
+            <Input
+              id="signupDeadline"
+              name="signupDeadline"
+              type="datetime-local"
+              defaultValue={initial?.signupDeadline}
+            />
+          </AdminField>
         </FormSection>
         <FormSection
           title="Нүүр зураг"

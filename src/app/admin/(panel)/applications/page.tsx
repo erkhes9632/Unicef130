@@ -1,14 +1,13 @@
-import { count, desc, eq, gt, isNull, or } from "drizzle-orm";
-import { Download, Mail, Phone, TriangleAlert, UserCheck } from "lucide-react";
+import { count, desc, eq, inArray, isNull } from "drizzle-orm";
+import { Ban, Download, Mail, Phone, UserCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ApplicationNotesForm,
   ApplicationStatusSelect,
-  BlockButtons,
+  ApplyBlockToggle,
+  DecisionMessageForm,
   RetrySyncButton,
-  ReviewerSelect,
-  UnblockButton,
 } from "@/components/admin/application-controls";
 import { ApplicationsList } from "@/components/admin/applications-list";
 import { ConfirmAction } from "@/components/admin/confirm-action";
@@ -18,32 +17,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/db";
-import {
-  applicationBlocks,
-  applications,
-  applicationStatuses,
-  recruitmentPeriods,
-  user,
-} from "@/db/schema";
+import { applications, applicationStatuses, recruitmentPeriods, users } from "@/db/schema";
 import { helpOptionLabels } from "@/lib/admin/labels";
 import { isSheetsConfigured } from "@/lib/applications/sheets-sync";
-import { can } from "@/lib/auth/roles";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
 import { parseApplicationFilters, queryApplications } from "@/lib/recruitment/admin-query";
-import { applicationStatusLabels, SPAM_THRESHOLD, spamFlagLabels } from "@/lib/recruitment/logic";
+import { applicationStatusLabels } from "@/lib/recruitment/logic";
 import { cn } from "@/lib/utils";
 import {
-  assignReviewer,
-  blockSender,
-  bulkDeleteSpam,
   bulkSetStatus,
   deleteApplication,
-  removeBlock,
   retryApplicationSync,
   saveApplicationNotes,
+  saveDecisionMessage,
   setApplicationStatus,
+  setApplyBlocked,
 } from "./actions";
 
 export const metadata: Metadata = { title: "Өргөдлүүд" };
@@ -53,8 +43,7 @@ const PAGE_SIZE = 25;
 export default async function AdminApplicationsPage({
   searchParams,
 }: PageProps<"/admin/applications">) {
-  const me = await requireUser("applications");
-  const isAdmin = can(me.role, "admin");
+  await requireAdmin();
   const sp = await searchParams;
   const filters = parseApplicationFilters(sp);
   const page = Math.max(1, Number.parseInt(String(sp.page ?? "1"), 10) || 1);
@@ -66,7 +55,7 @@ export default async function AdminApplicationsPage({
       : filters.period
         ? eq(applications.periodId, filters.period)
         : undefined;
-  const [matched, counts, periods, classes, staff, blocks, sheetsOn, settings] = await Promise.all([
+  const [matched, counts, periods, classes, sheetsOn, settings] = await Promise.all([
     queryApplications(filters),
     db
       .select({ status: applications.status, n: count() })
@@ -82,33 +71,29 @@ export default async function AdminApplicationsPage({
       .from(recruitmentPeriods)
       .orderBy(desc(recruitmentPeriods.opensAt)),
     db.selectDistinct({ c: applications.className }).from(applications),
-    db
-      .select({ id: user.id, name: user.name, role: user.role })
-      .from(user)
-      .where(or(eq(user.banned, false), isNull(user.banned))),
-    isAdmin
-      ? db
-          .select()
-          .from(applicationBlocks)
-          .where(gt(applicationBlocks.expiresAt, new Date()))
-          .orderBy(desc(applicationBlocks.createdAt))
-      : Promise.resolve([]),
     isSheetsConfigured(),
     getSiteSettings(),
   ]);
-  const reviewers = staff.filter((u) => can(u.role, "applications"));
   const helpLabel = helpOptionLabels(settings.helpOptions);
   const periodName = new Map(periods.map((p) => [p.id, p.name]));
   const questionLabel = new Map(
     periods.flatMap((p) => p.questions.map((q) => [q.id, q.label] as const)),
   );
   const countBy = Object.fromEntries(counts.map((c) => [c.status, c.n])) as Record<string, number>;
-  const spamCount = countBy.spam ?? 0;
-  const mainTotal = counts.filter((c) => c.status !== "spam").reduce((a, c) => a + c.n, 0);
+  const total = counts.reduce((a, c) => a + c.n, 0);
 
   const pageCount = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const rows = matched.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  // Account flags for the rows on this page (applications sent before sign-in have none).
+  const accountIds = [...new Set(rows.flatMap((r) => (r.userId ? [r.userId] : [])))];
+  const accounts = accountIds.length
+    ? await db
+        .select({ id: users.id, applyBlocked: users.applyBlocked, role: users.role })
+        .from(users)
+        .where(inArray(users.id, accountIds))
+    : [];
+  const accountOf = new Map(accounts.map((a) => [a.id, a]));
 
   const href = (overrides: Record<string, string>) => {
     const q = new URLSearchParams(
@@ -127,11 +112,12 @@ export default async function AdminApplicationsPage({
   };
   const exportHref = href({}).replace("/admin/applications", "/admin/applications/export");
   const tabs = [
-    { value: "", label: "Үндсэн жагсаалт", n: mainTotal },
-    ...applicationStatuses
-      .filter((s) => s !== "spam")
-      .map((s) => ({ value: s, label: applicationStatusLabels[s], n: countBy[s] ?? 0 })),
-    { value: "spam", label: "Сэжигтэй / спам", n: spamCount },
+    { value: "", label: "Бүгд", n: total },
+    ...applicationStatuses.map((s) => ({
+      value: s,
+      label: applicationStatusLabels[s],
+      n: countBy[s] ?? 0,
+    })),
   ];
   const when = (d: Date) => `${formatDate("mn", d, "long")} ${formatDate("mn", d, "time")}`;
 
@@ -143,20 +129,11 @@ export default async function AdminApplicationsPage({
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 [&::-webkit-details-marker]:hidden">
           <span className="font-bold">{a.fullName}</span>
           <Badge variant="secondary">{a.className}</Badge>
-          <Badge variant={a.status === "spam" ? "destructive" : "outline"}>
-            {applicationStatusLabels[a.status]}
-          </Badge>
-          {a.trackingCode && (
-            <span className="font-mono text-xs text-muted-foreground">{a.trackingCode}</span>
-          )}
-          {a.spamScore >= SPAM_THRESHOLD / 2 && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 text-xs font-semibold",
-                a.spamScore >= SPAM_THRESHOLD ? "text-destructive" : "text-brand-gold-strong",
-              )}
-            >
-              <TriangleAlert className="size-3.5" aria-hidden="true" /> спам оноо {a.spamScore}
+          <Badge variant="outline">{applicationStatusLabels[a.status]}</Badge>
+          {!a.userId && <span className="text-xs text-muted-foreground">хуучин (бүртгэлгүй)</span>}
+          {a.userId && accountOf.get(a.userId)?.applyBlocked && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-destructive">
+              <Ban className="size-3.5" aria-hidden="true" /> өргөдөл гаргахыг хориглосон
             </span>
           )}
           {a.memberId && (
@@ -209,45 +186,38 @@ export default async function AdminApplicationsPage({
               ))}
             </dl>
           )}
-          {a.spamFlags.length > 0 && (
-            <p className="text-xs text-brand-gold-strong">
-              Дохио: {a.spamFlags.map((f) => spamFlagLabels[f] ?? f).join(" · ")}
-            </p>
-          )}
           <div className="flex flex-wrap items-center gap-2">
             <ApplicationStatusSelect
               value={a.status}
               action={setApplicationStatus.bind(null, a.id)}
             />
-            <ReviewerSelect
-              value={a.reviewerId}
-              reviewers={reviewers}
-              action={assignReviewer.bind(null, a.id)}
-            />
-            {a.memberId && can(me.role, "members") && (
+            {a.memberId && (
               <Button asChild size="sm" variant="outline">
                 <Link href={`/admin/members/${a.memberId}`}>Гишүүний бүртгэл</Link>
               </Button>
             )}
-            {sheetsOn && !a.sheetsSyncedAt && a.status !== "spam" && (
+            {sheetsOn && !a.sheetsSyncedAt && (
               <RetrySyncButton action={retryApplicationSync.bind(null, a.id)} />
             )}
-            {isAdmin && (
-              <>
-                <BlockButtons
-                  hasPhone={Boolean(a.phoneNormalized)}
-                  hasIp={Boolean(a.ipHash)}
-                  action={blockSender.bind(null, a.id)}
-                />
-                <ConfirmAction
-                  action={deleteApplication.bind(null, a.id)}
-                  description="Энэ өргөдлийг (хувийн мэдээллийн хамт) бүрмөсөн устгах уу?"
-                />
-              </>
+            {a.userId && (
+              <ApplyBlockToggle
+                blocked={accountOf.get(a.userId)?.applyBlocked ?? false}
+                action={setApplyBlocked.bind(null, a.userId)}
+              />
             )}
+            <ConfirmAction
+              action={deleteApplication.bind(null, a.id)}
+              description="Энэ өргөдлийг (хувийн мэдээллийн хамт) бүрмөсөн устгах уу?"
+            />
           </div>
           {a.sheetsError && (
             <p className="text-xs text-destructive">Sheets алдаа: {a.sheetsError}</p>
+          )}
+          {a.userId && (
+            <DecisionMessageForm
+              message={a.decisionMessage}
+              action={saveDecisionMessage.bind(null, a.id)}
+            />
           )}
           <ApplicationNotesForm notes={a.notes} action={saveApplicationNotes.bind(null, a.id)} />
         </div>
@@ -259,7 +229,7 @@ export default async function AdminApplicationsPage({
     <>
       <AdminPageHeader
         title="Өргөдлүүд"
-        description="Элсэлтийн өргөдлүүд. Хувийн мэдээлэл тул зөвхөн админ, өргөдөл хянагч харна."
+        description="Элсэлтийн өргөдлүүд (хувийн мэдээлэл — зөвхөн админ харна). «Тэнцсэн» болгоход гишүүний эрх автоматаар олгогдоно. Тэнцээгүй өргөдлийг элсэлт хаагдсанаас хойш тохиргоонд заасан хугацааны дараа автоматаар устгана."
         actions={
           <Button asChild variant="outline">
             <a href={exportHref}>
@@ -291,8 +261,8 @@ export default async function AdminApplicationsPage({
       <form className="mb-6 grid gap-3 rounded-2xl bg-card p-4 ring-1 ring-border sm:grid-cols-2 lg:grid-cols-6">
         <input type="hidden" name="status" value={filters.status} />
         <label className="space-y-1 text-xs font-semibold lg:col-span-2">
-          <span>Хайх (нэр, утас, өргөдлийн дугаар)</span>
-          <Input name="q" defaultValue={filters.q} placeholder="Анужин / 8811 / UC-7K3M" />
+          <span>Хайх (нэр, утас, и-мэйл)</span>
+          <Input name="q" defaultValue={filters.q} placeholder="Анужин / 8811 / name@gmail.com" />
         </label>
         <label className="space-y-1 text-xs font-semibold">
           <span>Элсэлт</span>
@@ -334,7 +304,6 @@ export default async function AdminApplicationsPage({
             <option value="new">Шинэ нь эхэндээ</option>
             <option value="old">Хуучин нь эхэндээ</option>
             <option value="class">Ангиар</option>
-            <option value="score">Спам оноогоор</option>
           </NativeSelect>
         </label>
         <div className="flex items-end gap-2 lg:col-span-2">
@@ -357,8 +326,6 @@ export default async function AdminApplicationsPage({
           key={`${current}-${filters.status}-${matched.length}`}
           items={items}
           bulkSetStatus={bulkSetStatus}
-          bulkDeleteSpam={bulkDeleteSpam}
-          isAdmin={isAdmin}
         />
       )}
       {pageCount > 1 && (
@@ -381,27 +348,6 @@ export default async function AdminApplicationsPage({
             <span />
           )}
         </nav>
-      )}
-
-      {isAdmin && blocks.length > 0 && (
-        <section className="mt-10" aria-labelledby="blocks-title">
-          <h2 id="blocks-title" className="mb-2 font-bold">
-            Идэвхтэй блокууд
-          </h2>
-          <ul className="divide-y overflow-hidden rounded-2xl bg-card text-sm ring-1 ring-border">
-            {blocks.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
-                <span>
-                  {b.kind === "phone" ? `Утас ••••${b.value.slice(-4)}` : "Сүлжээний хаяг"} ·{" "}
-                  <span className="text-muted-foreground">
-                    {b.reason} · {formatDate("mn", b.expiresAt, "long")} хүртэл
-                  </span>
-                </span>
-                <UnblockButton action={removeBlock.bind(null, b.id)} />
-              </li>
-            ))}
-          </ul>
-        </section>
       )}
     </>
   );

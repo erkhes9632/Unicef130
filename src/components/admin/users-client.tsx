@@ -1,244 +1,221 @@
 "use client";
 
-import { Copy, KeyRound, Loader2, LogOut, ShieldOff, Trash2 } from "lucide-react";
-import { useActionState, useState, useTransition } from "react";
+import {
+  Ban,
+  Link2,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  UserMinus,
+  UserRound,
+} from "lucide-react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { UserRole } from "@/db/schema";
 import type { ActionState } from "@/lib/admin/action-state";
-import { roleDescriptions, roleLabels } from "@/lib/auth/roles";
-import { AdminField, FormAlert, FormSection, NativeSelect, SubmitButton } from "./form";
+import type { AppRole } from "@/lib/auth/roles";
 
-type LinkState = ActionState & { link?: string; email?: string; emailed?: boolean };
-const roles = Object.keys(roleLabels) as UserRole[];
+type Run = () => Promise<ActionState>;
 
-/** A freshly created one-time link: shown once, with a copy button. */
-function LinkReveal({ state }: { state: LinkState }) {
-  if (!state.link) return null;
-  const link = state.link;
+function useRun() {
+  const [pending, start] = useTransition();
+  const run = (fn: Run, confirmText?: string) =>
+    start(async () => {
+      if (confirmText && !window.confirm(confirmText)) return;
+      const res = await fn();
+      if (res.ok) toast.success(res.message ?? "OK");
+      else toast.error(res.message ?? "Алдаа гарлаа.");
+    });
+  return { pending, run };
+}
+
+/** Strong confirmation: the admin retypes the account's e-mail before a permanent delete. */
+function DeleteAccountDialog({
+  email,
+  action,
+}: {
+  email: string;
+  action: (confirmEmail: string) => Promise<ActionState>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [pending, start] = useTransition();
+  const matches = typed.trim().toLowerCase() === email.toLowerCase() && email !== "";
   return (
-    <div className="space-y-2 rounded-xl bg-brand-gold-soft p-3 text-sm">
-      <p className="font-semibold">{state.email}</p>
-      <div className="flex flex-wrap items-center gap-2">
-        <code className="min-w-0 flex-1 rounded bg-background px-2 py-1 font-mono text-xs break-all">
-          {link}
-        </code>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setTyped("");
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-destructive">
+          <Trash2 /> Бүр мөсөн устгах
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Бүртгэлийг бүр мөсөн устгах уу?</DialogTitle>
+          <DialogDescription>
+            Clerk бүртгэл устаж, нэвтрэх боломжгүй болно. Өргөдөл болон хувийн мэдээлэл устгагдана;
+            гишүүний бүртгэл нэргүй болж, сайн дурын цаг нь нийт дүнд үлдэнэ. Буцаах боломжгүй.
+          </DialogDescription>
+        </DialogHeader>
+        <label className="space-y-1.5 text-sm">
+          <span className="font-semibold">
+            Баталгаажуулахын тулд <span className="font-mono">{email}</span> гэж бичнэ үү
+          </span>
+          <Input
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            autoComplete="off"
+            aria-label="Баталгаажуулах и-мэйл"
+          />
+        </label>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Болих
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!matches || pending}
+            onClick={() =>
+              start(async () => {
+                const res = await action(typed);
+                if (res.ok) {
+                  toast.success(res.message ?? "Устгагдлаа.");
+                  setOpen(false);
+                } else toast.error(res.message ?? "Алдаа гарлаа.");
+              })
+            }
+          >
+            {pending && <Loader2 className="animate-spin" />} Устгах
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export type UserRowView = {
+  id: string;
+  email: string;
+  role: AppRole | null;
+  banned: boolean;
+  isSelf: boolean;
+  /** Imported member records with this e-mail that are not linked to an account yet. */
+  linkCandidates: { id: string; name: string }[];
+};
+
+/** Account actions for one row. The server re-checks every guard (self, last admin). */
+export function UserRowActions({
+  row,
+  changeRole,
+  setBanned,
+  deleteAccount,
+  linkMember,
+  refresh,
+}: {
+  row: UserRowView;
+  changeRole: (action: string) => Promise<ActionState>;
+  setBanned: (banned: boolean) => Promise<ActionState>;
+  deleteAccount: (confirmEmail: string) => Promise<ActionState>;
+  linkMember: (memberId: string) => Promise<ActionState>;
+  refresh: Run;
+}) {
+  const { pending, run } = useRun();
+  if (row.isSelf) {
+    return (
+      <p className="text-xs text-muted-foreground">Өөрийн бүртгэлийн эрхийг өөр админ өөрчилнө.</p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {row.linkCandidates.map((m) => (
         <Button
-          type="button"
+          key={m.id}
           size="sm"
-          variant="outline"
+          disabled={pending}
           onClick={() =>
-            navigator.clipboard.writeText(link).then(
-              () => toast.success("Холбоос хуулагдлаа"),
-              () => toast.error("Хуулж чадсангүй — гараар сонгож хуулна уу"),
+            run(
+              () => linkMember(m.id),
+              `Энэ бүртгэлийг «${m.name}» гишүүнтэй холбож, гишүүний эрх олгох уу?`,
             )
           }
         >
-          <Copy /> Хуулах
+          <Link2 /> Гишүүнтэй холбох: {m.name}
         </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        72 цаг хүчинтэй, нэг л удаа ашиглагдана. Зөвхөн тухайн хүнд нь (жишээ нь Messenger-ээр)
-        илгээнэ үү.
-      </p>
-    </div>
-  );
-}
-
-export function InviteUserForm({
-  action,
-}: {
-  action: (prev: LinkState, data: FormData) => Promise<LinkState>;
-}) {
-  const [state, formAction] = useActionState(action, {});
-  const e = state.fieldErrors ?? {};
-  return (
-    <FormSection
-      title="Хэрэглэгч урих"
-      description="Нийтийн бүртгэл хаалттай. Урилгын холбоосоор орсон хүн нууц үгээ өөрөө тохируулна."
-    >
-      <form action={formAction} className="space-y-4">
-        <FormAlert state={state} />
-        <LinkReveal state={state} />
-        <AdminField label="И-мэйл" htmlFor="invite-email" required errors={e.email}>
-          <Input id="invite-email" name="email" type="email" required autoComplete="off" />
-        </AdminField>
-        <AdminField label="Эрх" htmlFor="invite-role" errors={e.role}>
-          <NativeSelect id="invite-role" name="role" defaultValue="editor">
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {roleLabels[r]} — {roleDescriptions[r]}
-              </option>
-            ))}
-          </NativeSelect>
-        </AdminField>
-        <SubmitButton>Урих</SubmitButton>
-      </form>
-    </FormSection>
-  );
-}
-
-export type UserRow = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  banned: boolean | null;
-  twoFactorEnabled: boolean | null;
-  sessions: number;
-};
-
-export function UserRowActions({
-  row,
-  isSelf,
-  setRole,
-  setDisabled,
-  createResetLink,
-  revokeSessions,
-  resetTwoFactor,
-}: {
-  row: UserRow;
-  isSelf: boolean;
-  setRole: (role: UserRole) => Promise<ActionState>;
-  setDisabled: (disabled: boolean) => Promise<ActionState>;
-  createResetLink: () => Promise<LinkState>;
-  revokeSessions: () => Promise<ActionState>;
-  resetTwoFactor: () => Promise<ActionState>;
-}) {
-  const [pending, start] = useTransition();
-  const [reveal, setReveal] = useState<LinkState>({});
-  const run = (fn: () => Promise<LinkState>) =>
-    start(async () => {
-      const res = await fn();
-      if (res.ok) toast.success(res.message ?? "Амжилттай");
-      else toast.error(res.message ?? "Алдаа гарлаа");
-      if (res.link) setReveal(res);
-    });
-  const role = roles.includes(row.role as UserRole) ? (row.role as UserRole) : null;
-
-  return (
-    <li className="space-y-2 p-3 sm:p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold">
-            {row.name} {isSelf && <span className="text-xs text-muted-foreground">(та)</span>}
-          </p>
-          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="break-all">{row.email}</span>
-            <Badge variant={row.role === "admin" ? "default" : "secondary"}>
-              {role ? roleLabels[role] : row.role}
-            </Badge>
-            <Badge variant="outline">{row.twoFactorEnabled ? "2FA идэвхтэй" : "2FA-гүй"}</Badge>
-            {row.sessions > 0 && <span>{row.sessions} идэвхтэй session</span>}
-            {row.banned && <Badge variant="destructive">Идэвхгүй</Badge>}
-          </p>
-        </div>
-        {pending && <Loader2 className="size-4 animate-spin" aria-label="Түр хүлээнэ үү" />}
-        {!isSelf && (
-          <div className="flex flex-wrap gap-2">
-            <NativeSelect
-              aria-label={`Эрх солих: ${row.email}`}
-              className="h-8 w-auto"
-              value={role ?? ""}
-              disabled={pending}
-              onChange={(e) => run(() => setRole(e.target.value as UserRole))}
-            >
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {roleLabels[r]}
-                </option>
-              ))}
-            </NativeSelect>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={pending}
-              onClick={() => run(createResetLink)}
-            >
-              <KeyRound /> Нууц үг сэргээх холбоос
-            </Button>
-            {row.sessions > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => run(revokeSessions)}
-              >
-                <LogOut /> Албадан гаргах
-              </Button>
-            )}
-            {row.twoFactorEnabled && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => {
-                  if (window.confirm(`${row.email} хэрэглэгчийн 2FA-г арилгах уу?`))
-                    run(resetTwoFactor);
-                }}
-              >
-                <ShieldOff /> 2FA арилгах
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant={row.banned ? "outline" : "destructive"}
-              disabled={pending}
-              onClick={() => run(() => setDisabled(!row.banned))}
-            >
-              {row.banned ? "Идэвхжүүлэх" : "Идэвхгүй болгох"}
-            </Button>
-          </div>
-        )}
-      </div>
-      <LinkReveal state={reveal} />
-    </li>
-  );
-}
-
-export type PendingLink = {
-  id: string;
-  kind: "invite" | "reset";
-  email: string;
-  role: string | null;
-  expiresLabel: string;
-};
-
-export function PendingLinkRow({
-  link,
-  revoke,
-}: {
-  link: PendingLink;
-  revoke: () => Promise<ActionState>;
-}) {
-  const [pending, start] = useTransition();
-  const role = roles.includes(link.role as UserRole) ? roleLabels[link.role as UserRole] : null;
-  return (
-    <li className="flex flex-wrap items-center gap-3 p-3 text-sm sm:p-4">
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold break-all">{link.email}</p>
-        <p className="text-xs text-muted-foreground">
-          {link.kind === "invite" ? `Урилга${role ? ` · ${role}` : ""}` : "Нууц үг сэргээх холбоос"}{" "}
-          · {link.expiresLabel} хүртэл хүчинтэй
-        </p>
-      </div>
+      ))}
+      {row.role !== "admin" && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() =>
+            run(() => changeRole("make-admin"), "Админ эрх олгох уу? Бүх эрхтэй болно.")
+          }
+        >
+          <ShieldCheck /> Админ болгох
+        </Button>
+      )}
+      {row.role !== "member" && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() => run(() => changeRole("make-member"))}
+        >
+          <UserRound /> Гишүүн болгох
+        </Button>
+      )}
+      {row.role && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() => run(() => changeRole("remove-role"), "Эрхийг хасах уу?")}
+        >
+          <UserMinus /> Эрх хасах
+        </Button>
+      )}
       <Button
         size="sm"
-        variant="ghost"
+        variant="outline"
         disabled={pending}
         onClick={() =>
-          start(async () => {
-            const res = await revoke();
-            if (res.ok) toast.success(res.message ?? "Цуцлагдлаа");
-            else toast.error(res.message ?? "Алдаа гарлаа");
-          })
+          run(
+            () => setBanned(!row.banned),
+            row.banned
+              ? undefined
+              : "Идэвхгүй болгох уу? Нэвтрэх боломжгүй болно, мэдээлэл хадгалагдана.",
+          )
         }
       >
-        {pending ? <Loader2 className="animate-spin" /> : <Trash2 className="text-destructive" />}
-        Цуцлах
+        <Ban /> {row.banned ? "Идэвхжүүлэх" : "Идэвхгүй болгох"}
       </Button>
-    </li>
+      <DeleteAccountDialog email={row.email} action={deleteAccount} />
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        disabled={pending}
+        aria-label="Clerk-ээс шинэчлэх"
+        title="Clerk-ээс шинэчлэх"
+        onClick={() => run(refresh)}
+      >
+        {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+      </Button>
+    </div>
   );
 }

@@ -9,7 +9,7 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import {
   addAlbumImages,
   deleteAlbumImage,
@@ -25,7 +25,7 @@ export default async function EditAlbumPage({
   params,
   searchParams,
 }: PageProps<"/admin/gallery/[id]">) {
-  await requireUser("content");
+  await requireAdmin();
   const { id } = await params;
   const sp = await searchParams;
   const db = await getDb();

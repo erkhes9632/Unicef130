@@ -72,23 +72,9 @@ export const periodInputSchema = z
         error: "Асуултын дугаар давхардсан байна.",
       }),
     showBanner: z.boolean(),
-    ipLimitPer10Min: z
-      .number({ error: "10 минутын хязгаар: тоо оруулна." })
-      .int()
-      .min(1, { error: "10 минутын хязгаар дор хаяж 1." })
-      .max(200),
-    ipLimitPerDay: z
-      .number({ error: "Өдрийн хязгаар: тоо оруулна." })
-      .int()
-      .min(1, { error: "Өдрийн хязгаар дор хаяж 1." })
-      .max(2000),
   })
   .refine((p) => p.closesAt > p.opensAt, {
     path: ["closesAt"],
     error: "Хаагдах цаг нь нээгдэх цагаас хойш байх ёстой.",
-  })
-  .refine((p) => p.ipLimitPerDay >= p.ipLimitPer10Min, {
-    path: ["ipLimitPerDay"],
-    error: "Өдрийн хязгаар нь 10 минутын хязгаараас багагүй байна.",
   });
 export type PeriodInput = z.output<typeof periodInputSchema>;

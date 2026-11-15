@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
 import { categoryLabel } from "@/lib/admin/labels";
-import { requireUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 import { cn } from "@/lib/utils";
 import { deleteNews } from "./actions";
@@ -23,7 +23,7 @@ const filters = [
 ] as const;
 
 export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/news">) {
-  await requireUser("content");
+  await requireAdmin();
   const sp = await searchParams;
   const status = sp.status === "draft" || sp.status === "published" ? sp.status : undefined;
   const db = await getDb();

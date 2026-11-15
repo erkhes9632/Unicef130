@@ -1,8 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { isBlockedAuthPath } from "@/lib/auth/signup-guard";
-import { isBlocked, LOGIN_MAX_PER_EMAIL, LOGIN_WINDOW_MS } from "@/lib/auth/login-limit";
 import {
   isTestSecretKey,
   isTestSiteKey,
@@ -57,126 +55,86 @@ describe("Turnstile production key guard", () => {
   });
 });
 
-describe("public sign-up is closed", () => {
-  test("every sign-up path is blocked before Better Auth", () => {
-    for (const p of [
-      "/api/auth/sign-up/email",
-      "/api/auth/sign-up",
-      "/api/auth/SIGN-UP/email",
-      "/api/auth/signup",
-      "/api/auth/register",
-    ])
-      expect(isBlockedAuthPath(p)).toBe(true);
-    for (const p of [
-      "/api/auth/sign-in/email",
-      "/api/auth/sign-out",
-      "/api/auth/get-session",
-      "/api/auth/ok",
-    ])
-      expect(isBlockedAuthPath(p)).toBe(false);
-  });
-
-  test("Better Auth config keeps disableSignUp and D1 rate limiting", () => {
-    const src = readFileSync("src/lib/auth/index.ts", "utf8");
-    expect(src).toMatch(/disableSignUp:\s*true/);
-    expect(src).toMatch(/storage:\s*"database"/);
-    expect(src).toMatch(/httpOnly:\s*true/);
-    expect(src).toMatch(/sameSite:\s*"lax"/);
-  });
-
-  test("accounts are only created by an accepted invitation or the admin script", () => {
-    const files: string[] = [];
-    const walk = (dir: string) => {
-      for (const f of readdirSync(dir)) {
-        const p = join(dir, f);
-        if (statSync(p).isDirectory()) walk(p);
-        else if (/\.(ts|tsx)$/.test(f)) files.push(p);
-      }
-    };
-    walk("src");
-    walk("scripts");
-    const creators = files.filter((f) => {
-      const s = readFileSync(f, "utf8");
-      return /insert\(user\)|INSERT INTO "user"|insert\("user"|signUpEmail|createUser\(/.test(s);
-    });
-    expect(creators.sort()).toEqual(
-      ["scripts/lib/admin-account.ts", "src/app/admin/token-actions.ts"].sort(),
-    );
-  });
-});
-
-describe("admin login limiter", () => {
-  const now = 1_800_000_000_000;
-  test("blocks after the max failures inside the window, then expires", () => {
-    expect(isBlocked(undefined, LOGIN_MAX_PER_EMAIL, now)).toBe(false);
-    expect(
-      isBlocked({ count: LOGIN_MAX_PER_EMAIL - 1, lastRequest: now }, LOGIN_MAX_PER_EMAIL, now),
-    ).toBe(false);
-    expect(
-      isBlocked({ count: LOGIN_MAX_PER_EMAIL, lastRequest: now }, LOGIN_MAX_PER_EMAIL, now),
-    ).toBe(true);
-    expect(
-      isBlocked({ count: 99, lastRequest: now - LOGIN_WINDOW_MS }, LOGIN_MAX_PER_EMAIL, now),
-    ).toBe(false);
-  });
-});
-
-describe("every admin Server Action checks permissions first", () => {
-  const actionFiles = () => {
-    const files: string[] = [];
-    const walk = (d: string) => {
-      for (const f of readdirSync(d)) {
-        const p = join(d, f);
-        if (statSync(p).isDirectory()) walk(p);
-        else if (f === "actions.ts") files.push(p);
-      }
-    };
-    walk("src/app/admin");
-    return files;
+const walkFiles = (dir: string, keep: (name: string) => boolean) => {
+  const out: string[] = [];
+  const walk = (d: string) => {
+    for (const f of readdirSync(d)) {
+      const p = join(d, f);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (keep(f)) out.push(p);
+    }
   };
-  const exportedActions = (src: string) =>
-    [...src.matchAll(/export async function (\w+)\([^]*?\n}\n/g)].map(([body, name]) => ({
-      body: body!,
-      name: name!,
-    }));
+  walk(dir);
+  return out;
+};
+const exportedActions = (src: string) =>
+  [...src.matchAll(/export async function (\w+)\([^]*?\n}\n/g)].map(([body, name]) => ({
+    body: body!,
+    name: name!,
+  }));
 
-  test("panel actions call requirePermission; profile actions call requireSession", () => {
+describe("every Server Action checks the role on the server", () => {
+  test("admin panel actions call assertAdmin() first", () => {
+    const files = walkFiles("src/app/admin", (f) => f === "actions.ts");
     const missing: string[] = [];
-    const files = actionFiles();
     for (const f of files) {
-      const src = readFileSync(f, "utf8");
-      if (!src.startsWith('"use server"')) continue;
-      if (f === "src/app/admin/actions.ts") continue; // login / second factor / logout
-      const guard = f.includes("/profile/") ? /requireSession\(/ : /requirePermission\(/;
-      for (const { body, name } of exportedActions(src)) {
-        if (!guard.test(body)) missing.push(`${f}: ${name}`);
-      }
+      for (const { body, name } of exportedActions(readFileSync(f, "utf8")))
+        if (!/assertAdmin\(\)/.test(body)) missing.push(`${f}: ${name}`);
     }
     expect(missing).toEqual([]);
     expect(files.length).toBeGreaterThan(8);
   });
 
-  test("every panel page checks the session on the server", () => {
-    const pages: string[] = [];
-    const walk = (d: string) => {
-      for (const f of readdirSync(d)) {
-        const p = join(d, f);
-        if (statSync(p).isDirectory()) walk(p);
-        else if (f === "page.tsx" || f === "route.ts") pages.push(p);
-      }
-    };
-    walk("src/app/admin/(panel)");
-    const unguarded = pages.filter(
-      (p) => !/requireUser\(|getCurrentUser\(/.test(readFileSync(p, "utf8")),
-    );
-    expect(unguarded).toEqual([]);
+  test("member-area actions call assertMember() or assertSignedIn()", () => {
+    const src = readFileSync("src/app/[locale]/me/actions.ts", "utf8");
+    const actions = exportedActions(src);
+    expect(actions.length).toBeGreaterThanOrEqual(4);
+    for (const { body, name } of actions)
+      expect(`${name}: ${/assert(Member|SignedIn)\(\)/.test(body)}`).toBe(`${name}: true`);
   });
 
-  test("one-time link actions are rate-limited and consume the token atomically", () => {
-    const src = readFileSync("src/app/admin/token-actions.ts", "utf8");
-    for (const { body, name } of exportedActions(src)) {
-      expect(`${name}: ${/tooManyAttempts\(/.test(body)}`).toBe(`${name}: true`);
-      expect(`${name}: ${/consumeAuthToken\(/.test(body)}`).toBe(`${name}: true`);
+  test("every admin page and route checks the session on the server", () => {
+    const pages = walkFiles("src/app/admin/(panel)", (f) => f === "page.tsx" || f === "route.ts");
+    const unguarded = pages.filter(
+      (p) => !/requireAdmin\(|getCurrentUser\(/.test(readFileSync(p, "utf8")),
+    );
+    expect(unguarded).toEqual([]);
+    expect(pages.length).toBeGreaterThan(15);
+  });
+
+  test('"use server" files export only async functions (anything else becomes an endpoint or breaks the module)', () => {
+    const files = walkFiles("src", (f) => /\.tsx?$/.test(f)).filter((f) =>
+      readFileSync(f, "utf8").startsWith('"use server"'),
+    );
+    const bad: string[] = [];
+    for (const f of files) {
+      for (const line of readFileSync(f, "utf8").split("\n"))
+        if (/^export (?!async function |type |interface )/.test(line)) bad.push(`${f}: ${line}`);
     }
+    expect(bad).toEqual([]);
+    expect(files.length).toBeGreaterThan(10);
+  });
+
+  test("helpers that trust their arguments are not Server Actions", () => {
+    for (const f of ["src/lib/recruitment/admin-ops.ts", "src/lib/users/delete.ts"]) {
+      const src = readFileSync(f, "utf8");
+      expect(src.startsWith('"use server"')).toBe(false);
+      expect(src).toContain('import "server-only"');
+    }
+  });
+
+  test("the middleware gates /admin and /me by the session's role claim", () => {
+    const src = readFileSync("src/middleware.ts", "utf8");
+    expect(src).toContain("clerkMiddleware(");
+    expect(src).toMatch(/decideAccess\(area/);
+    expect(src).toContain("redirectToSignIn");
+  });
+
+  test("the previous password-based auth library is gone (code and package.json)", () => {
+    // Built from parts so this test itself doesn't match a repository-wide search.
+    const old = new RegExp(["better", "-auth|better", "Auth"].join(""), "i");
+    const files = walkFiles("src", (f) => /\.(ts|tsx)$/.test(f));
+    expect(files.filter((f) => old.test(readFileSync(f, "utf8")))).toEqual([]);
+    expect(old.test(readFileSync("package.json", "utf8"))).toBe(false);
   });
 });

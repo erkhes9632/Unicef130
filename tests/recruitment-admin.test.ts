@@ -4,7 +4,7 @@ import { matchesSearch, parseApplicationFilters } from "@/lib/recruitment/admin-
 import { periodInputSchema } from "@/lib/validation/recruitment";
 
 describe("parseApplicationFilters", () => {
-  test("empty params → main list defaults (spam hidden, newest first)", () => {
+  test("empty params → every status, newest first", () => {
     expect(parseApplicationFilters({})).toEqual({
       period: "",
       status: "",
@@ -19,25 +19,26 @@ describe("parseApplicationFilters", () => {
   test("accepts known values from a record or URLSearchParams", () => {
     const expected = {
       period: "p1",
-      status: "spam",
+      status: "waitlist",
       className: "10А",
       from: "2026-09-01",
       to: "2026-09-30",
       q: "Анужин",
-      sort: "score",
+      sort: "class",
     };
     const raw = {
       period: "p1",
-      status: "spam",
+      status: "waitlist",
       class: " 10А ",
       from: "2026-09-01",
       to: "2026-09-30",
       q: "  Анужин ",
-      sort: "score",
+      sort: "class",
     };
     expect(parseApplicationFilters(raw)).toEqual(expected as never);
     expect(parseApplicationFilters(new URLSearchParams(raw))).toEqual(expected as never);
-    expect(parseApplicationFilters({ status: "all" }).status).toBe("all");
+    expect(parseApplicationFilters({ status: "spam" }).status).toBe("");
+    expect(parseApplicationFilters({ sort: "score" }).sort).toBe("new");
     expect(parseApplicationFilters({ period: "none" }).period).toBe("none");
   });
 
@@ -62,7 +63,7 @@ describe("parseApplicationFilters", () => {
 });
 
 describe("matchesSearch", () => {
-  const row = { fullName: "Батын Анужин", phone: "+97688112233", trackingCode: "UC-7KQ2" };
+  const row = { fullName: "Батын Анужин", phone: "+97688112233", email: "anujin@gmail.com" };
 
   test("empty query matches everything", () => {
     expect(matchesSearch(row, "")).toBe(true);
@@ -81,10 +82,9 @@ describe("matchesSearch", () => {
     expect(matchesSearch(row, "9999")).toBe(false);
   });
 
-  test("tracking code: case and spaces ignored; missing code never matches", () => {
-    expect(matchesSearch(row, "uc-7kq2")).toBe(true);
-    expect(matchesSearch(row, "UC- 7KQ2")).toBe(true);
-    expect(matchesSearch({ ...row, trackingCode: null }, "uc-7kq2")).toBe(false);
+  test("e-mail: case-insensitive; missing e-mail never matches", () => {
+    expect(matchesSearch(row, "ANUJIN@gmail")).toBe(true);
+    expect(matchesSearch({ ...row, email: null }, "anujin@gmail")).toBe(false);
   });
 });
 
@@ -116,8 +116,6 @@ describe("periodInputSchema", () => {
       },
     ],
     showBanner: true,
-    ipLimitPer10Min: 1,
-    ipLimitPerDay: 10,
   };
   const issues = (input: unknown) => {
     const r = periodInputSchema.safeParse(input);
@@ -174,15 +172,5 @@ describe("periodInputSchema", () => {
     expect(issues({ ...valid, schoolYear: "2026" })).toEqual([
       "schoolYear: Хичээлийн жилийг 2026-2027 хэлбэрээр бичнэ.",
     ]);
-  });
-
-  test("address limits: at least 1, and the daily limit not below the 10-minute one", () => {
-    expect(issues({ ...valid, ipLimitPer10Min: 0 })).toEqual([
-      "ipLimitPer10Min: 10 минутын хязгаар дор хаяж 1.",
-    ]);
-    expect(issues({ ...valid, ipLimitPer10Min: 20, ipLimitPerDay: 10 })).toEqual([
-      "ipLimitPerDay: Өдрийн хязгаар нь 10 минутын хязгаараас багагүй байна.",
-    ]);
-    expect(issues({ ...valid, ipLimitPer10Min: 200, ipLimitPerDay: 2000 })).toEqual([]);
   });
 });

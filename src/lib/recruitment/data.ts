@@ -1,13 +1,8 @@
 import "server-only";
-import { and, count, eq, gt, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { cache } from "react";
 import { getDb } from "@/db";
-import {
-  applicationBlocks,
-  applications,
-  recruitmentPeriods,
-  type RecruitmentQuestion,
-} from "@/db/schema";
+import { applications, recruitmentPeriods, type RecruitmentQuestion } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import { pick } from "@/lib/data/localize";
 import { countedStatuses, findNextPeriod, findOpenPeriod, intakeFor, type Intake } from "./logic";
@@ -100,21 +95,22 @@ export const getRecruitmentState = cache(async (locale: Locale): Promise<Recruit
   };
 });
 
-/** True when the phone or the address was blocked by an admin and the block has not expired. */
-export async function isBlocked(phone: string, ipHash: string) {
+/** The account's applications, newest first (what /join shows as "your status"). */
+export async function listMyApplications(userId: string) {
   const db = await getDb();
-  const [row] = await db
-    .select({ id: applicationBlocks.id })
-    .from(applicationBlocks)
-    .where(
-      and(
-        gt(applicationBlocks.expiresAt, new Date()),
-        or(
-          and(eq(applicationBlocks.kind, "phone"), eq(applicationBlocks.value, phone)),
-          and(eq(applicationBlocks.kind, "ip"), eq(applicationBlocks.value, ipHash)),
-        ),
-      ),
-    )
-    .limit(1);
-  return !!row;
+  return db
+    .select({
+      id: applications.id,
+      periodId: applications.periodId,
+      periodName: recruitmentPeriods.name,
+      periodNameEn: recruitmentPeriods.nameEn,
+      status: applications.status,
+      decisionMessage: applications.decisionMessage,
+      fullName: applications.fullName,
+      createdAt: applications.createdAt,
+    })
+    .from(applications)
+    .leftJoin(recruitmentPeriods, eq(applications.periodId, recruitmentPeriods.id))
+    .where(eq(applications.userId, userId))
+    .orderBy(desc(applications.createdAt));
 }

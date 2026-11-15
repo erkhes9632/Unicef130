@@ -1,8 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, CheckCircle2, Copy, Loader2, Newspaper, Search } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -11,11 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link } from "@/i18n/navigation";
 import { buildJoinSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { cn } from "@/lib/utils";
 import { FormField, translateError } from "./form-field";
-import { Turnstile } from "./turnstile";
 
 export type JoinFormQuestion = {
   id: string;
@@ -28,41 +27,39 @@ export type JoinFormQuestion = {
 const selectClass =
   "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
+/**
+ * Join form for a signed-in applicant. The account's e-mail is shown, not asked; the name is
+ * prefilled from the account when it is already written in Cyrillic. After a successful submit
+ * the page refreshes and shows the application's status instead of the form.
+ */
 export function JoinForm({
-  turnstileSiteKey,
   helpOptions,
   classes,
   questions,
-  formToken,
   waitlist,
+  accountEmail,
+  defaultName,
 }: {
-  turnstileSiteKey: string;
   /** Locale-resolved options from admin settings. */
   helpOptions: { key: string; label: string }[];
   /** Classes offered in this recruitment period (empty → free text). */
   classes: string[];
   questions: JoinFormQuestion[];
-  /** Signed render time: lets the server measure how long filling the form took. */
-  formToken: string;
   /** Capacity reached: new applications join the waiting list. */
   waitlist: boolean;
+  accountEmail: string;
+  defaultName: string;
 }) {
   const t = useTranslations("Forms");
-  const [done, setDone] = useState<{ code: string | null; waitlisted: boolean } | null>(null);
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [duplicate, setDuplicate] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [token, setToken] = useState("");
-  const [website, setWebsite] = useState("");
-  // Bumping the key remounts the widget → fresh token (tokens are single-use).
-  const [widgetKey, setWidgetKey] = useState(0);
 
   const schema = useMemo(() => buildJoinSchema({ classes, questions }), [classes, questions]);
   const defaultValues: JoinFormValues = {
-    fullName: "",
+    fullName: defaultName,
     className: "",
     phone: "",
-    email: "",
     reason: "",
     helpWith: [],
     answers: Object.fromEntries(questions.map((q) => [q.id, q.type === "checkbox" ? false : ""])),
@@ -73,39 +70,28 @@ export function JoinForm({
   const errors = formState.errors;
 
   const serverMessages = {
-    captcha: t("captchaError"),
-    unavailable: t("unavailable"),
+    unauthenticated: t("signInAgainError"),
+    member: t("alreadyMemberError"),
+    blocked: t("applyBlockedError"),
+    duplicate: t("duplicateBody"),
     closed: t("joinClosedError"),
     full: t("joinFullError"),
     rate: t("rateError"),
-    tooFast: t("tooFastError"),
-    stale: t("staleError"),
     validation: t("validationError"),
     server: t("genericError"),
   } as const;
 
   const onSubmit = handleSubmit((values) => {
     setServerError(null);
-    setDuplicate(false);
-    if (!token) {
-      setServerError(t("captchaError"));
-      return;
-    }
     startTransition(async () => {
-      const res = await submitJoinApplication({
-        ...values,
-        turnstileToken: token,
-        website,
-        formToken,
-      });
-      setToken("");
-      setWidgetKey((k) => k + 1);
+      const res = await submitJoinApplication(values);
       if (res.ok) {
-        setDone({ code: res.trackingCode, waitlisted: res.waitlisted });
+        toast.success(res.waitlisted ? t("joinWaitlistTitle") : t("joinSuccessTitle"));
+        router.refresh();
         return;
       }
-      if (res.error === "duplicate") {
-        setDuplicate(true);
+      if (res.error === "duplicate" || res.error === "member") {
+        router.refresh();
         return;
       }
       if (res.error === "validation" && res.fieldErrors) {
@@ -116,73 +102,6 @@ export function JoinForm({
       setServerError(serverMessages[res.error]);
     });
   });
-
-  if (done) {
-    const steps = t.raw("joinNextSteps") as string[];
-    return (
-      <div
-        role="status"
-        tabIndex={-1}
-        ref={(el) => el?.focus()}
-        className="flex flex-col items-center gap-5 rounded-3xl bg-brand-green-soft p-6 text-center outline-none sm:p-10"
-      >
-        <CheckCircle2 className="size-14 text-brand-green-strong" aria-hidden="true" />
-        <h2 className="text-2xl font-extrabold">
-          {done.waitlisted ? t("joinWaitlistTitle") : t("joinSuccessTitle")}
-        </h2>
-        {done.code && (
-          <div className="w-full max-w-sm rounded-2xl bg-background p-4 ring-1 ring-border">
-            <p className="text-sm text-muted-foreground">{t("trackingCodeLabel")}</p>
-            <p className="my-1 font-mono text-3xl font-extrabold tracking-widest">{done.code}</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                navigator.clipboard.writeText(done.code!).then(
-                  () => toast.success(t("copied")),
-                  () => undefined,
-                )
-              }
-            >
-              <Copy /> {t("copy")}
-            </Button>
-            <p className="mt-2 text-xs text-muted-foreground">{t("trackingCodeHint")}</p>
-          </div>
-        )}
-        <div className="w-full max-w-md text-left">
-          <p className="mb-3 font-semibold">{t("joinSuccessBody")}</p>
-          <ol className="space-y-3">
-            {steps.map((step, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background font-bold text-brand-green-strong ring-1 ring-border">
-                  {i + 1}
-                </span>
-                <span className="pt-0.5">{step}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild>
-            <Link href="/join/status">
-              <Search /> {t("checkStatus")}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="bg-background">
-            <Link href="/events">
-              <CalendarDays /> {t("joinSeeEvents")}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="bg-background">
-            <Link href="/news">
-              <Newspaper /> {t("joinSeeNews")}
-            </Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const answerError = (id: string) =>
     (errors.answers as Record<string, { message?: string }> | undefined)?.[id]?.message;
@@ -240,18 +159,14 @@ export function JoinForm({
             />
           )}
         </FormField>
-        <FormField id="join-email" label={t("email")} optional error={errors.email?.message}>
-          {(a) => (
-            <Input
-              {...a}
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder={t("emailPlaceholder")}
-              {...register("email")}
-            />
-          )}
-        </FormField>
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold">{t("email")}</p>
+          <p className="flex h-10 items-center gap-2 rounded-lg bg-muted/60 px-3 text-sm">
+            <Mail className="size-4 text-muted-foreground" aria-hidden="true" />
+            <span className="truncate">{accountEmail}</span>
+          </p>
+          <p className="text-xs text-muted-foreground">{t("emailFromAccount")}</p>
+        </div>
       </div>
 
       <FormField id="join-reason" label={t("reason")} error={errors.reason?.message}>
@@ -391,38 +306,6 @@ export function JoinForm({
         )}
       />
 
-      {/* Honeypot: invisible to people (and assistive tech), tempting for form-filling scripts. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
-        <label>
-          Website
-          <input
-            type="text"
-            name="website"
-            tabIndex={-1}
-            autoComplete="off"
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-          />
-        </label>
-      </div>
-
-      <Turnstile
-        key={widgetKey}
-        siteKey={turnstileSiteKey}
-        onToken={setToken}
-        onError={() => setServerError(t("turnstileLoadError"))}
-        action="join"
-      />
-
-      {duplicate && (
-        <div role="alert" className="space-y-2 rounded-2xl bg-brand-gold-soft p-4 text-sm">
-          <p className="font-semibold">{t("duplicateTitle")}</p>
-          <p>{t("duplicateBody")}</p>
-          <Link href="/join/status" className="font-semibold text-brand-cyan-strong underline">
-            {t("checkStatus")}
-          </Link>
-        </div>
-      )}
       {serverError && (
         <p
           role="alert"

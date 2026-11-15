@@ -1,18 +1,18 @@
 import "server-only";
-import { and, asc, desc, eq, gte, isNull, lt, ne, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lt, type SQL } from "drizzle-orm";
 import { getDb } from "@/db";
 import { applications, applicationStatuses, type ApplicationStatus } from "@/db/schema";
 
 /** Filters of the admin applications list (also used by the CSV export). */
 export type ApplicationFilters = {
   period: string;
-  /** "" = every status except spam (the main list); "all" = including spam. */
-  status: ApplicationStatus | "" | "all";
+  /** "" = every status. */
+  status: ApplicationStatus | "";
   className: string;
   from: string;
   to: string;
   q: string;
-  sort: "new" | "old" | "class" | "score";
+  sort: "new" | "old" | "class";
 };
 
 type Params = Record<string, string | string[] | undefined> | URLSearchParams;
@@ -28,21 +28,20 @@ export function parseApplicationFilters(params: Params): ApplicationFilters {
   const sort = get("sort");
   return {
     period: get("period").slice(0, 64),
-    status:
-      status === "all" || (applicationStatuses as readonly string[]).includes(status)
-        ? (status as ApplicationFilters["status"])
-        : "",
+    status: (applicationStatuses as readonly string[]).includes(status)
+      ? (status as ApplicationStatus)
+      : "",
     className: get("class").slice(0, 10),
     from: isDate(get("from")) ? get("from") : "",
     to: isDate(get("to")) ? get("to") : "",
     q: get("q").slice(0, 80),
-    sort: sort === "old" || sort === "class" || sort === "score" ? sort : "new",
+    sort: sort === "old" || sort === "class" ? sort : "new",
   };
 }
 
-/** Case-insensitive match on name / phone / tracking code (JS: SQLite cannot fold Cyrillic). */
+/** Case-insensitive match on name / phone / e-mail (JS: SQLite cannot fold Cyrillic). */
 export function matchesSearch(
-  row: { fullName: string; phone: string; trackingCode: string | null },
+  row: { fullName: string; phone: string; email: string | null },
   q: string,
 ) {
   if (!q) return true;
@@ -51,7 +50,7 @@ export function matchesSearch(
   return (
     row.fullName.toLocaleLowerCase("mn").includes(needle) ||
     (digits.length >= 3 && row.phone.replace(/\D/g, "").includes(digits)) ||
-    (row.trackingCode ?? "").toLowerCase().includes(needle.replace(/\s/g, ""))
+    (row.email ?? "").toLowerCase().includes(needle.trim())
   );
 }
 
@@ -60,8 +59,7 @@ export async function queryApplications(f: ApplicationFilters) {
   const where: SQL[] = [];
   if (f.period === "none") where.push(isNull(applications.periodId));
   else if (f.period) where.push(eq(applications.periodId, f.period));
-  if (f.status === "") where.push(ne(applications.status, "spam"));
-  else if (f.status !== "all") where.push(eq(applications.status, f.status));
+  if (f.status) where.push(eq(applications.status, f.status));
   if (f.className) where.push(eq(applications.className, f.className));
   if (f.from) where.push(gte(applications.createdAt, new Date(`${f.from}T00:00:00+08:00`)));
   if (f.to)
@@ -72,7 +70,6 @@ export async function queryApplications(f: ApplicationFilters) {
     new: [desc(applications.createdAt)],
     old: [asc(applications.createdAt)],
     class: [asc(applications.className), asc(applications.fullName)],
-    score: [desc(applications.spamScore), desc(applications.createdAt)],
   }[f.sort];
   const db = await getDb();
   const rows = await db

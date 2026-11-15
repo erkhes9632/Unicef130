@@ -7,7 +7,7 @@ import { members } from "@/db/schema";
 import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requirePermission } from "@/lib/auth/session";
+import { assertAdmin } from "@/lib/auth/session";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { memberInputSchema } from "@/lib/validation/admin";
 
@@ -17,7 +17,7 @@ export async function saveMember(
   data: FormData,
 ): Promise<ActionState> {
   try {
-    const user = await requirePermission("members");
+    const user = await assertAdmin();
     const parsed = memberInputSchema.safeParse({
       name: fd.str(data, "name"),
       nameEn: fd.str(data, "nameEn"),
@@ -32,6 +32,8 @@ export async function saveMember(
       showPublicly: fd.bool(data, "showPublicly"),
       schoolYear: fd.str(data, "schoolYear"),
       volunteerHours: fd.str(data, "volunteerHours") === "" ? null : fd.int(data, "volunteerHours"),
+      team: fd.str(data, "team"),
+      email: fd.str(data, "email"),
     });
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -62,6 +64,7 @@ export async function saveMember(
               "showPhoto",
               "schoolYear",
               "volunteerHours",
+              "team",
             ])
           : undefined,
       });
@@ -82,7 +85,7 @@ export async function saveMember(
 
 export async function deleteMember(id: string): Promise<ActionState> {
   try {
-    const user = await requirePermission("members");
+    const user = await assertAdmin();
     const db = await getDb();
     const [row] = await db
       .delete(members)
@@ -105,7 +108,7 @@ export async function deleteMember(id: string): Promise<ActionState> {
 /** Bulk show/hide members on the public site (after consent has been collected). */
 export async function setMembersPublic(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requirePermission("admin");
+    const user = await assertAdmin();
     const ids = data.getAll("ids").filter((v): v is string => typeof v === "string" && !!v);
     const show = fd.str(data, "show") === "1";
     if (ids.length === 0) return { ok: false, message: "Гишүүн сонгоно уу." };

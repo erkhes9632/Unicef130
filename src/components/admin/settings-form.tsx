@@ -573,18 +573,35 @@ export function SettingsForm({
       </FormSection>
 
       <FormSection
-        title="Аюулгүй байдал"
-        description="Админ эрхтэй хэрэглэгч нэвтэрсний дараа authenticator апп-аар 2 шатлалт баталгаажуулалт тохируулах хүртэл админ хэсгийг ашиглаж чадахгүй."
+        title="Гишүүнчлэл ба нууцлал"
+        description="Тэнцээгүй өргөдлийн хувийн мэдээллийг элсэлт хаагдсанаас хойш заасан хоногийн дараа автоматаар устгана (элсэлтийн хуудсанд энэ тухай бичигдэнэ). Идэвхтэй гишүүний босго хоосон бол гишүүний хэсэгт явцын мөр харагдахгүй."
       >
-        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-          <input
-            type="checkbox"
-            name="security.requireAdminTwoFactor"
-            defaultChecked={initial.security.requireAdminTwoFactor}
-            className="size-4 accent-[var(--brand-cyan)]"
-          />
-          Админ эрхэд 2 шатлалт баталгаажуулалт (2FA) заавал шаардах
-        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <AdminField
+            label="Тэнцээгүй өргөдлийг устгах хугацаа (хоног)"
+            htmlFor="membership.rejectedRetentionDays"
+          >
+            <Input
+              id="membership.rejectedRetentionDays"
+              name="membership.rejectedRetentionDays"
+              type="number"
+              min={7}
+              max={730}
+              required
+              defaultValue={initial.membership.rejectedRetentionDays}
+            />
+          </AdminField>
+          <AdminField label="Идэвхтэй гишүүний жилийн цаг" htmlFor="membership.activeMemberHours">
+            <Input
+              id="membership.activeMemberHours"
+              name="membership.activeMemberHours"
+              type="number"
+              min={1}
+              step="0.5"
+              defaultValue={initial.membership.activeMemberHours ?? ""}
+            />
+          </AdminField>
+        </div>
       </FormSection>
 
       <SubmitButton />

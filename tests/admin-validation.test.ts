@@ -67,6 +67,9 @@ describe("admin schemas", () => {
       beneficiaries: [],
       sdgs: [],
       adminNote: "",
+      signupEnabled: false,
+      signupCapacity: null,
+      signupDeadline: null,
       startsAt: new Date(2026, 1, 1),
       endsAt: null,
     };
@@ -98,6 +101,9 @@ describe("admin schemas", () => {
       beneficiaries: [],
       sdgs: [1],
       adminNote: "",
+      signupEnabled: false,
+      signupCapacity: null,
+      signupDeadline: null,
     };
     expect(
       eventInputSchema.safeParse({
@@ -124,7 +130,7 @@ describe("admin schemas", () => {
         mapLng: "",
       },
       announcement: { enabled: false, text: "", textEn: "", href: "/join" },
-      security: { requireAdminTwoFactor: true },
+      membership: { rejectedRetentionDays: 90, activeMemberHours: null },
       club: {
         name: "",
         nameEn: "",

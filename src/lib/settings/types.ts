@@ -106,9 +106,11 @@ export type AboutContent = {
   values: ValueItem[];
 };
 
-export type SecuritySettings = {
-  /** Admins must enrol an authenticator app before they can use the panel. */
-  requireAdminTwoFactor: boolean;
+export type MembershipSettings = {
+  /** Rejected applications are deleted this many days after their period closes. */
+  rejectedRetentionDays: number;
+  /** Yearly volunteer hours for "идэвхтэй гишүүн"; null = not set (progress bar hidden). */
+  activeMemberHours: number | null;
 };
 
 /** Manual site-wide banner (the recruitment banner appears on its own while a period is open). */
@@ -117,7 +119,7 @@ export type Announcement = { enabled: boolean; text: string; textEn: string; hre
 export type SiteSettings = {
   announcement: Announcement;
   club: ClubInfo;
-  security: SecuritySettings;
+  membership: MembershipSettings;
   branding: Branding;
   contact: ContactInfo;
   socials: SocialLink[];
@@ -139,7 +141,7 @@ export const SETTINGS_KEYS = {
   donation: "donation",
   helpOptions: "helpOptions",
   about: "page.about",
-  security: "security",
+  membership: "membership",
   announcement: "announcement",
 } as const satisfies Record<keyof SiteSettings, string>;
 
@@ -197,7 +199,7 @@ export const defaultAbout: AboutContent = {
 
 export const defaultSettings: SiteSettings = {
   announcement: { enabled: false, text: "", textEn: "", href: "" },
-  security: { requireAdminTwoFactor: true },
+  membership: { rejectedRetentionDays: 90, activeMemberHours: null },
   club: {
     name: "",
     nameEn: "",
@@ -263,7 +265,10 @@ const storedSchemas = {
     textEn: str(200),
     href: str(500),
   }),
-  security: z.object({ requireAdminTwoFactor: bool(true) }),
+  membership: z.object({
+    rejectedRetentionDays: z.number().int().min(7).max(730).catch(90),
+    activeMemberHours: z.number().min(1).max(10_000).nullable().catch(null),
+  }),
   club: z.object({
     name: str(120),
     nameEn: str(120),
@@ -361,7 +366,7 @@ export function parseSettings(rows: Map<string, unknown>): SiteSettings {
   const settings: SiteSettings = {
     announcement: read("announcement"),
     club: read("club"),
-    security: read("security"),
+    membership: read("membership"),
     branding: read("branding"),
     contact: read("contact"),
     socials: read("socials").filter((s) => s.url),

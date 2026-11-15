@@ -7,7 +7,7 @@ import { recruitmentPeriods } from "@/db/schema";
 import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requirePermission } from "@/lib/auth/session";
+import { assertAdmin } from "@/lib/auth/session";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { parseClassList, periodsOverlap } from "@/lib/recruitment/logic";
 import { periodInputSchema } from "@/lib/validation/recruitment";
@@ -20,7 +20,7 @@ export async function savePeriod(
   data: FormData,
 ): Promise<ActionState> {
   try {
-    const user = await requirePermission("admin");
+    const user = await assertAdmin();
     const questions = fd.json(data, "questions");
     const parsed = periodInputSchema.safeParse({
       name: fd.str(data, "name"),
@@ -37,8 +37,6 @@ export async function savePeriod(
       closedMessageEn: fd.str(data, "closedMessageEn"),
       questions: questions === null ? [] : questions,
       showBanner: fd.bool(data, "showBanner"),
-      ipLimitPer10Min: optInt(fd.str(data, "ipLimitPer10Min")) ?? Number.NaN,
-      ipLimitPerDay: optInt(fd.str(data, "ipLimitPerDay")) ?? Number.NaN,
     });
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -83,8 +81,6 @@ export async function savePeriod(
           "classes",
           "questions",
           "showBanner",
-          "ipLimitPer10Min",
-          "ipLimitPerDay",
         ]),
       });
     } else {
@@ -108,7 +104,7 @@ export async function savePeriod(
 /** Applications of a deleted period are kept (they just lose the link to it). */
 export async function deletePeriod(id: string): Promise<ActionState> {
   try {
-    const user = await requirePermission("admin");
+    const user = await assertAdmin();
     const db = await getDb();
     const [row] = await db
       .delete(recruitmentPeriods)

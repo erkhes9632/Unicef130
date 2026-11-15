@@ -34,8 +34,6 @@ export type PeriodFormValues = {
   closedMessageEn: string | null;
   questions: RecruitmentQuestion[];
   showBanner: boolean;
-  ipLimitPer10Min: number;
-  ipLimitPerDay: number;
 };
 
 type Row = RecruitmentQuestion & { _id: string };
@@ -340,30 +338,6 @@ export function PeriodForm({
               <option value="waitlist">Хүлээлгийн жагсаалтад бүртгэх</option>
               <option value="close">Өргөдөл авахаа зогсоох</option>
             </NativeSelect>
-          </AdminField>
-        </FormSection>
-
-        <FormSection
-          title="Спамаас хамгаалах хязгаар"
-          description="Нэг сүлжээнээс (IP) ирэх өргөдлийн тоо. Сургуулийн Wi-Fi-аас олон сурагч зэрэг бөглөх өдөр түр өсгөж болно."
-        >
-          <AdminField label="10 минутад" htmlFor="ipLimitPer10Min">
-            <Input
-              id="ipLimitPer10Min"
-              name="ipLimitPer10Min"
-              inputMode="numeric"
-              defaultValue={initial?.ipLimitPer10Min ?? 1}
-              className="max-w-24"
-            />
-          </AdminField>
-          <AdminField label="Өдөрт" htmlFor="ipLimitPerDay">
-            <Input
-              id="ipLimitPerDay"
-              name="ipLimitPerDay"
-              inputMode="numeric"
-              defaultValue={initial?.ipLimitPerDay ?? 10}
-              className="max-w-24"
-            />
           </AdminField>
         </FormSection>
       </div>
