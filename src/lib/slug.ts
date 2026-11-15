@@ -1,6 +1,8 @@
 /**
- * URL slugs with Mongolian Cyrillic → Latin transliteration (close to the common MNS 5217 style,
- * e.g. "Хүүхдийн эрх" → "khuukhdiin-erkh").
+ * URL slugs with Mongolian Cyrillic → Latin transliteration (common Mongolian romanization, close
+ * to MNS 5217): one letter per sound, no "y"-prefixed е.
+ * e.g. "Хүүхдийн эрх" → "khuukhdiin-erkh", "Волейболын тэмцээн" → "voleibolyn-temtseen",
+ * "Өгөхийн жаргал" → "ugukhiin-jargal".
  */
 const map: Record<string, string> = {
   а: "a",
@@ -8,7 +10,7 @@ const map: Record<string, string> = {
   в: "v",
   г: "g",
   д: "d",
-  е: "ye",
+  е: "e",
   ё: "yo",
   ж: "j",
   з: "z",
@@ -31,7 +33,7 @@ const map: Record<string, string> = {
   ц: "ts",
   ч: "ch",
   ш: "sh",
-  щ: "sh",
+  щ: "shch",
   ъ: "",
   ы: "y",
   ь: "i",

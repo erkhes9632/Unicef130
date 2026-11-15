@@ -6,7 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
 import { categoryOptions } from "@/lib/admin/labels";
 import type { RichTextDoc } from "@/lib/types";
-import { AdminField, FormAlert, FormSection, NativeSelect, SubmitButton } from "./form";
+import {
+  AdminField,
+  FormAlert,
+  FormSection,
+  keepValuesOnSubmit,
+  NativeSelect,
+  SubmitButton,
+} from "./form";
 import { ImageField } from "./image-field";
 import { RichTextEditor } from "./rich-text-editor";
 import { SlugField } from "./slug-field";
@@ -43,7 +50,11 @@ export function NewsForm({
   const e = state.fieldErrors ?? {};
 
   return (
-    <form action={formAction} className="grid gap-6 xl:grid-cols-[1fr_20rem]">
+    <form
+      action={formAction}
+      onSubmit={keepValuesOnSubmit(formAction)}
+      className="grid gap-6 xl:grid-cols-[1fr_20rem]"
+    >
       <div className="space-y-6">
         <FormAlert state={state} />
         <FormSection title="Үндсэн мэдээлэл">

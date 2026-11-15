@@ -14,11 +14,7 @@ export const categoryLabel: Record<string, string> = Object.fromEntries(
 
 export const memberGroupLabel = { leadership: "Удирдлага", member: "Гишүүн" } as const;
 
-export const applicationStatusLabel = {
-  new: "Шинэ",
-  accepted: "Зөвшөөрсөн",
-  rejected: "Татгалзсан",
-} as const;
+export { applicationStatusLabels as applicationStatusLabel } from "@/lib/recruitment/logic";
 
 /**
  * Mongolian labels for join-form help options, keyed by option key. Current options come from

@@ -4,10 +4,11 @@ import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
-import { logActivity } from "@/lib/admin/activity";
+import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
+import { recordSlugRename } from "@/lib/data/redirects";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { slugify, uniqueSlug } from "@/lib/slug";
@@ -67,7 +68,7 @@ export async function saveEvent(
 ): Promise<ActionState> {
   let savedId = id;
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const parsed = parseForm(data);
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -83,23 +84,37 @@ export async function saveEvent(
     const values = { ...input, slug };
 
     if (id) {
-      const [prev] = await db
-        .select({ coverUrl: events.coverUrl })
-        .from(events)
-        .where(eq(events.id, id))
-        .limit(1);
+      const [prev] = await db.select().from(events).where(eq(events.id, id)).limit(1);
       const res = await db
         .update(events)
         .set(values)
         .where(eq(events.id, id))
         .returning({ id: events.id });
       if (!res.length) return { ok: false, message: "Арга хэмжээ олдсонгүй." };
+      if (prev?.slug) await recordSlugRename("events", prev.slug, slug);
       if (prev?.coverUrl && prev.coverUrl !== input.coverUrl)
         await deleteMediaUrls([prev.coverUrl]);
       await logActivity(user, "event.update", {
         type: "event",
         id,
         summary: `«${input.title}» арга хэмжээг засав`,
+        changes: prev
+          ? diffFields(prev, values, [
+              "title",
+              "slug",
+              "startsAt",
+              "endsAt",
+              "location",
+              "published",
+              "direction",
+              "schoolYear",
+              "reachInPerson",
+              "reachOnline",
+              "donationAmount",
+              "coverUrl",
+              "content",
+            ])
+          : undefined,
       });
     } else {
       const [row] = await db.insert(events).values(values).returning({ id: events.id });
@@ -119,7 +134,7 @@ export async function saveEvent(
 
 export async function deleteEvent(id: string): Promise<ActionState> {
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const db = await getDb();
     const [row] = await db
       .delete(events)

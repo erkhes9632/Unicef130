@@ -7,7 +7,7 @@ import { saveEvent } from "../actions";
 export const metadata: Metadata = { title: "Шинэ арга хэмжээ" };
 
 export default async function NewEventPage() {
-  await requireUser();
+  await requireUser("content");
   return (
     <>
       <AdminPageHeader title="Шинэ арга хэмжээ" />

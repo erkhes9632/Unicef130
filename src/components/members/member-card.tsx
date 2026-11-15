@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import type { MemberItem } from "@/lib/data/members";
+import { initials } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
 const avatarTones = [
@@ -9,18 +10,6 @@ const avatarTones = [
   "bg-brand-blue-soft text-brand-blue-strong",
   "bg-brand-gold-soft text-brand-gold-strong",
 ];
-
-function initials(name: string) {
-  // "Б. Ану" → "БА"; "Мөнх-Эрдэнэ" → "МЭ"
-  const parts = name
-    .replace(/\./g, " ")
-    .split(/[\s-]+/)
-    .filter(Boolean);
-  return parts
-    .slice(0, 2)
-    .map((p) => p[0]!.toLocaleUpperCase())
-    .join("");
-}
 
 export async function MemberCard({
   member,

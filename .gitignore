@@ -52,6 +52,7 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 PROGRESS.md
+PROGRESS.archive.md
 .claude/
 DEPLOY_PROMPT.md
 CLAUDE_CODE_PROMPT.md

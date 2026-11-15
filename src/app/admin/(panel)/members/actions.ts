@@ -4,10 +4,10 @@ import { eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
-import { logActivity } from "@/lib/admin/activity";
+import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { memberInputSchema } from "@/lib/validation/admin";
 
@@ -17,7 +17,7 @@ export async function saveMember(
   data: FormData,
 ): Promise<ActionState> {
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("members");
     const parsed = memberInputSchema.safeParse({
       name: fd.str(data, "name"),
       nameEn: fd.str(data, "nameEn"),
@@ -30,17 +30,14 @@ export async function saveMember(
       showPhoto: fd.bool(data, "showPhoto"),
       active: fd.bool(data, "active"),
       showPublicly: fd.bool(data, "showPublicly"),
+      schoolYear: fd.str(data, "schoolYear"),
       volunteerHours: fd.str(data, "volunteerHours") === "" ? null : fd.int(data, "volunteerHours"),
     });
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
     const db = await getDb();
     if (id) {
-      const [prev] = await db
-        .select({ photoUrl: members.photoUrl })
-        .from(members)
-        .where(eq(members.id, id))
-        .limit(1);
+      const [prev] = await db.select().from(members).where(eq(members.id, id)).limit(1);
       const res = await db
         .update(members)
         .set(input)
@@ -53,6 +50,20 @@ export async function saveMember(
         type: "member",
         id,
         summary: `${input.name} гишүүний мэдээллийг засав`,
+        changes: prev
+          ? diffFields(prev, input, [
+              "name",
+              "role",
+              "className",
+              "group",
+              "sortOrder",
+              "active",
+              "showPublicly",
+              "showPhoto",
+              "schoolYear",
+              "volunteerHours",
+            ])
+          : undefined,
       });
     } else {
       const [row] = await db.insert(members).values(input).returning({ id: members.id });
@@ -71,7 +82,7 @@ export async function saveMember(
 
 export async function deleteMember(id: string): Promise<ActionState> {
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("members");
     const db = await getDb();
     const [row] = await db
       .delete(members)
@@ -94,7 +105,7 @@ export async function deleteMember(id: string): Promise<ActionState> {
 /** Bulk show/hide members on the public site (after consent has been collected). */
 export async function setMembersPublic(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const ids = data.getAll("ids").filter((v): v is string => typeof v === "string" && !!v);
     const show = fd.str(data, "show") === "1";
     if (ids.length === 0) return { ok: false, message: "Гишүүн сонгоно уу." };

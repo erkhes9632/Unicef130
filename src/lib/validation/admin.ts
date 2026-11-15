@@ -1,7 +1,8 @@
+import "@/lib/validation/zod-config";
 import { z } from "zod";
 import { SLUG_MAX, slugRegex } from "@/lib/slug";
 import { clubDirections, newsCategories } from "@/lib/types";
-import { partnerTypes, socialPlatforms, statKinds } from "@/lib/settings/types";
+import { MAX_FEATURED_STATS, partnerTypes, socialPlatforms, statKinds } from "@/lib/settings/types";
 import { richTextSchema } from "./rich-text";
 
 /** Admin-side schemas (Mongolian error messages; admin UI is Mongolian only). */
@@ -116,6 +117,13 @@ export const memberInputSchema = z.object({
   active: z.boolean(),
   showPublicly: z.boolean(),
   volunteerHours: z.number().int().min(0).max(100_000).nullable(),
+  schoolYear: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^\d{4}-\d{4}$/.test(v), {
+      error: "Хичээлийн жилийг 2026-2027 хэлбэрээр бичнэ.",
+    })
+    .transform((v) => v || null),
 });
 export type MemberInput = z.output<typeof memberInputSchema>;
 
@@ -153,9 +161,24 @@ const coordinate = (max: number, label: string) =>
     });
 
 export const settingsInputSchema = z.object({
+  announcement: z.object({
+    enabled: z.boolean(),
+    text: text(200, "Зарлалын текст"),
+    textEn: text(200, "Announcement text"),
+    href: z
+      .string()
+      .trim()
+      .max(500)
+      .refine((v) => v === "" || /^https:\/\/[^\s]+$/.test(v) || /^\/[^/\s][^\s]*$|^\/$/.test(v), {
+        error: "Зарлалын холбоос: /join гэх мэт дотоод зам эсвэл https:// хаяг оруулна.",
+      }),
+  }),
+  security: z.object({ requireAdminTwoFactor: z.boolean() }),
   club: z.object({
     name: text(120, "Клубын нэр"),
     nameEn: text(120, "Club name"),
+    shortName: text(60, "Богино нэр"),
+    shortNameEn: text(60, "Short name"),
     description: text(600, "Товч танилцуулга"),
     descriptionEn: text(600, "Short description"),
     foundedYear: z
@@ -171,6 +194,7 @@ export const settingsInputSchema = z.object({
     heroImageUrl: imageUrlText,
     heroImageAlt: text(200, "Зургийн тайлбар"),
     heroImageAltEn: text(200, "Image description"),
+    ogImageUrl: imageUrlText,
   }),
   contact: z
     .object({
@@ -203,12 +227,16 @@ export const settingsInputSchema = z.object({
           label: text(60, "Тоон үзүүлэлтийн нэр"),
           labelEn: text(60, "Stat label"),
           value: text(20, "Тоо"),
+          featured: z.boolean(),
         })
         .refine((s) => s.kind !== "custom" || (s.label !== "" && s.value !== ""), {
           error: "Тоон үзүүлэлт бүрт нэр болон тоо хоёуланг нь бөглөнө.",
         }),
     )
-    .max(12, { error: "Хамгийн ихдээ 12 тоон үзүүлэлт." }),
+    .max(12, { error: "Хамгийн ихдээ 12 тоон үзүүлэлт." })
+    .refine((list) => list.filter((s) => s.featured).length <= MAX_FEATURED_STATS, {
+      error: `Нүүр хуудсанд хамгийн ихдээ ${MAX_FEATURED_STATS} тоо онцолно.`,
+    }),
   partners: z
     .array(
       z.object({
@@ -261,18 +289,6 @@ export const aboutInputSchema = z.object({
     .max(8, { error: "Хамгийн ихдээ 8 үнэт зүйл." }),
 });
 export type AboutInput = z.output<typeof aboutInputSchema>;
-
-export const passwordSchema = z
-  .string()
-  .min(10, { error: "Нууц үг дор хаяж 10 тэмдэгт." })
-  .max(128, { error: "Нууц үг хэт урт." });
-
-export const userCreateSchema = z.object({
-  name: req(100),
-  email: z.email({ error: "И-мэйл буруу." }).max(254),
-  role: z.enum(["admin", "editor"]),
-  password: z.union([z.literal(""), passwordSchema]),
-});
 
 export const albumInputSchema = z.object({
   title: req(200),

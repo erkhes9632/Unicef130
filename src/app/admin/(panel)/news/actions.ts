@@ -4,10 +4,11 @@ import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
-import { logActivity } from "@/lib/admin/activity";
+import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
+import { recordSlugRename } from "@/lib/data/redirects";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { slugify, uniqueSlug } from "@/lib/slug";
@@ -45,7 +46,7 @@ export async function saveNews(
 ): Promise<ActionState> {
   let savedId = id;
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const parsed = parseForm(data);
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -65,23 +66,32 @@ export async function saveNews(
     const values = { ...input, slug, publishedAt };
 
     if (id) {
-      const [prev] = await db
-        .select({ coverUrl: news.coverUrl })
-        .from(news)
-        .where(eq(news.id, id))
-        .limit(1);
+      const [prev] = await db.select().from(news).where(eq(news.id, id)).limit(1);
       const res = await db
         .update(news)
         .set(values)
         .where(eq(news.id, id))
         .returning({ id: news.id });
       if (!res.length) return { ok: false, message: "Мэдээ олдсонгүй." };
+      if (prev?.slug) await recordSlugRename("news", prev.slug, slug);
       if (prev?.coverUrl && prev.coverUrl !== input.coverUrl)
         await deleteMediaUrls([prev.coverUrl]);
       await logActivity(user, "news.update", {
         type: "news",
         id,
         summary: `«${input.title}» мэдээг засав`,
+        changes: prev
+          ? diffFields(prev, values, [
+              "title",
+              "slug",
+              "category",
+              "status",
+              "publishedAt",
+              "excerpt",
+              "coverUrl",
+              "content",
+            ])
+          : undefined,
       });
     } else {
       const [row] = await db
@@ -104,7 +114,7 @@ export async function saveNews(
 
 export async function deleteNews(id: string): Promise<ActionState> {
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const db = await getDb();
     const [row] = await db
       .delete(news)

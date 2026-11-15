@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
 import {
+  MAX_FEATURED_STATS,
   socialPlatforms,
   type HelpOptionItem,
   type Partner,
@@ -13,9 +14,17 @@ import {
   type StatItem,
   type StatKind,
 } from "@/lib/settings/types";
-import { AdminField, FormAlert, FormSection, NativeSelect, SubmitButton } from "./form";
+import {
+  AdminField,
+  FormAlert,
+  FormSection,
+  keepValuesOnSubmit,
+  NativeSelect,
+  SubmitButton,
+} from "./form";
 import { ImageField } from "./image-field";
 import { ListEditor } from "./list-editor";
+import { OgImageField } from "./og-image-field";
 
 const socialLabels: Record<SocialPlatform, string> = {
   facebook: "Facebook",
@@ -30,7 +39,7 @@ const socialLabels: Record<SocialPlatform, string> = {
 const statKindLabels: Record<StatKind, string> = {
   custom: "Гараар бичих",
   members: "Автоматаар: идэвхтэй гишүүдийн тоо",
-  events: "Автоматаар: болж өнгөрсөн арга хэмжээний тоо",
+  events: "Автоматаар: үйл ажиллагааны тоо (Жилийн үр дүнгийн сүүлийн жил)",
 };
 
 /** Client-only row ids keep React state (image pickers) attached to the right row. */
@@ -94,10 +103,16 @@ export function SettingsForm({
   const [helpOptions, setHelpOptions] = useState(() =>
     withIds<HelpOptionItem>(initial.helpOptions),
   );
+  const [schoolLogo, setSchoolLogo] = useState(initial.branding.schoolLogoUrl);
+  const [unicefLogo, setUnicefLogo] = useState(initial.branding.unicefLogoUrl);
   const socialUrl = (p: SocialPlatform) => initial.socials.find((s) => s.platform === p)?.url;
 
   return (
-    <form action={formAction} className="max-w-3xl space-y-6">
+    <form
+      action={formAction}
+      onSubmit={keepValuesOnSubmit(formAction)}
+      className="max-w-3xl space-y-6"
+    >
       <FormAlert state={state} />
       {state.fieldErrors && (
         <ul className="list-disc rounded-xl bg-destructive/10 p-3 pl-8 text-sm text-destructive">
@@ -111,6 +126,40 @@ export function SettingsForm({
         бол англи хувилбарт монгол текст гарна.
       </p>
 
+      <FormSection
+        title="Зарлалын тууз"
+        description="Сайтын хамгийн дээр бүх хуудсанд харагдана. Элсэлт нээлттэй үед «Элсэлт нээлттэй» зар автоматаар гардаг (Элсэлт хэсгээс тохируулна). Энэ зарлалыг асаавал тэр автомат зарын оронд гарна — элсэлтийн үеэр унтраахаа мартуузай."
+      >
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            name="announcement.enabled"
+            defaultChecked={initial.announcement.enabled}
+            className="size-4 accent-[var(--brand-cyan)]"
+          />
+          Зарлалыг харуулах
+        </label>
+        <Pair
+          id="announcement.text"
+          label="Зарлалын текст"
+          labelEn="Announcement (English)"
+          value={initial.announcement.text}
+          valueEn={initial.announcement.textEn}
+          max={200}
+        />
+        <AdminField
+          label="Холбоос (заавал биш)"
+          htmlFor="announcement.href"
+          hint="Жишээ: /events эсвэл https://..."
+        >
+          <Input
+            id="announcement.href"
+            name="announcement.href"
+            defaultValue={initial.announcement.href}
+          />
+        </AdminField>
+      </FormSection>
+
       <FormSection title="Клубын мэдээлэл">
         <Pair
           id="club.name"
@@ -119,7 +168,16 @@ export function SettingsForm({
           value={initial.club.name}
           valueEn={initial.club.nameEn}
           max={120}
-          hint="Хоосон бол «130 UNICEF клуб»."
+          hint="Сайт даяар (header, footer, хуваалцах карт) энэ нэр харагдана."
+        />
+        <Pair
+          id="club.shortName"
+          label="Богино нэр (хуудасны гарчигт)"
+          labelEn="Short name (English)"
+          value={initial.club.shortName}
+          valueEn={initial.club.shortNameEn}
+          max={60}
+          hint="Жишээ: 130 UNICEF клуб. Хоосон бол бүтэн нэр ашиглана."
         />
         <Pair
           id="club.description"
@@ -161,6 +219,7 @@ export function SettingsForm({
               fit="contain"
               maxEdge={1024}
               label="Сургуулийн лого"
+              onChange={setSchoolLogo}
             />
           </AdminField>
           <AdminField label="UNICEF лого" htmlFor="branding.unicefLogoUrl">
@@ -172,9 +231,21 @@ export function SettingsForm({
               fit="contain"
               maxEdge={1024}
               label="UNICEF лого"
+              onChange={setUnicefLogo}
             />
           </AdminField>
         </div>
+        <AdminField
+          label="Хуваалцах зураг (Facebook гэх мэт)"
+          htmlFor="branding.ogImageUrl"
+          hint="Лого солигдоход автоматаар шинэчлэгдэнэ. Сургуулийн лого нь мөн хөтчийн icon (favicon) болно."
+        >
+          <OgImageField
+            schoolLogo={schoolLogo}
+            unicefLogo={unicefLogo}
+            initial={initial.branding.ogImageUrl}
+          />
+        </AdminField>
         <AdminField
           label="Нүүр хуудасны зураг (жишээ: клубын хамтын зураг)"
           htmlFor="branding.heroImageUrl"
@@ -304,6 +375,7 @@ export function SettingsForm({
             label: "",
             labelEn: "",
             value: "",
+            featured: stats.filter((x) => x.featured).length < MAX_FEATURED_STATS,
           })}
           itemLabel={(s) => s.label || statKindLabels[s.kind]}
           renderItem={(s, update, i) => (
@@ -342,6 +414,16 @@ export function SettingsForm({
                   onChange={(e) => update({ labelEn: e.target.value })}
                 />
               </AdminField>
+              <label className="flex items-center gap-2 text-sm font-semibold sm:col-span-2">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[var(--brand-cyan)]"
+                  checked={s.featured}
+                  onChange={(e) => update({ featured: e.target.checked })}
+                />
+                Нүүр хуудсанд онцлох (хамгийн ихдээ {MAX_FEATURED_STATS}; бүгд «Үр дүн» хуудсанд
+                харагдана)
+              </label>
               {s.kind === "custom" && (
                 <AdminField label="Тоо" htmlFor={`stat-value-${i}`} hint="Жишээ: 25 эсвэл 120+">
                   <Input
@@ -488,6 +570,21 @@ export function SettingsForm({
           )}
         />
         <input type="hidden" name="helpOptions" value={JSON.stringify(stripIds(helpOptions))} />
+      </FormSection>
+
+      <FormSection
+        title="Аюулгүй байдал"
+        description="Админ эрхтэй хэрэглэгч нэвтэрсний дараа authenticator апп-аар 2 шатлалт баталгаажуулалт тохируулах хүртэл админ хэсгийг ашиглаж чадахгүй."
+      >
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            name="security.requireAdminTwoFactor"
+            defaultChecked={initial.security.requireAdminTwoFactor}
+            className="size-4 accent-[var(--brand-cyan)]"
+          />
+          Админ эрхэд 2 шатлалт баталгаажуулалт (2FA) заавал шаардах
+        </label>
       </FormSection>
 
       <SubmitButton />

@@ -9,9 +9,13 @@
  * Production: run the generated SQL yourself (see README):
  *   bunx wrangler d1 execute DB --remote --file private/seed-report-2025-2026.sql
  *
- * Idempotent: rows have deterministic ids. Members, posts and events use ON CONFLICT DO NOTHING
- * (admin edits, uploaded photos and consent toggles are kept on re-runs). Impact numbers and the
- * report's settings keys (club, stats, partners, page.about) are overwritten with the report values.
+ * Idempotent and safe after admin edits (rows have deterministic ids):
+ * - members: inserted once (consent toggles, edits kept);
+ * - posts/events: inserted once; text and slug are refreshed only while the row is untouched
+ *   (updated_at = created_at), and a changed slug gets a permanent redirect;
+ * - impact numbers: refreshed only while untouched in admin;
+ * - settings (club, stats, partners, page.about): refreshed only if no admin settings save has
+ *   happened since they were written (checked against activity_log).
  * Privacy: members are imported with show_publicly = 0 (leadership = 1); hours are stored for the
  * aggregate only. No phone numbers exist in the input and none are written.
  */
@@ -124,18 +128,11 @@ export function ubNoon(ddmmyyyy: string) {
 const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 const compact = (n: number) => (n >= 1000 ? `${Math.floor(n / 1000)}K+` : fmt(n));
 
-/** "~500" → "ойролцоогоор 500", "50+" → "50 гаруй"; non-numbers are returned as written. */
-function reachMn(v: string) {
-  if (/^~\s*[\d,]+$/.test(v)) return `ойролцоогоор ${v.replace(/^~\s*/, "")}`;
-  if (/^[\d,]+\+$/.test(v)) return `${v.slice(0, -1)} гаруй`;
-  return v;
-}
+/** "~500" → "about 500" for the English facts box; other values are returned as written. */
 function reachEn(v: string) {
   if (/^~\s*[\d,]+$/.test(v)) return `about ${v.replace(/^~\s*/, "")}`;
   return v;
 }
-const isCount = (v: string) => /^[~\s\d,+]+$/.test(v);
-
 const sentences = (text: string) =>
   text
     .split(/(?<=[.!?])\s+/)
@@ -149,73 +146,26 @@ function doc(paragraphs: string[]) {
   };
 }
 
-const mnDirection = { advocacy: "Нөлөөлөл", education: "Боловсрол", fundraising: "Хандив" };
-const enDirection = { advocacy: "advocacy", education: "education", fundraising: "fundraising" };
-const MN_MONTH = (m: number) => `${m}-р сарын`;
-
-function dateMn(start: string, end: string | null) {
-  const [d1, m1, y1] = start.split("/").map(Number) as [number, number, number];
-  if (!end) return `${y1} оны ${MN_MONTH(m1)} ${d1}-нд`;
-  const [d2, m2] = end.split("/").map(Number) as [number, number, number];
-  return `${y1} оны ${MN_MONTH(m1)} ${d1}-нээс ${MN_MONTH(m2)} ${d2} хүртэл`;
-}
-function dateEn(start: string, end: string | null) {
-  const f = (s: string) =>
-    new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" }).format(
-      new Date(ubNoon(s)),
-    );
-  return end ? `from ${f(start)} to ${f(end)}` : `on ${f(start)}`;
-}
-
 /**
- * Post/event body: only facts from the report. Paragraphs: what happened (report text, split in
- * two when long), when and in which direction, and the reach/fundraising numbers.
+ * Post/event body: the report text after the lead sentence (the lead is the excerpt shown in the
+ * header). Dates, direction and numbers are shown by the page header and the facts box, so the
+ * body never repeats them.
  */
 export function buildBody(a: (typeof report.activities)[number]) {
   const s = sentences(a.text);
   const se = sentences(a.textEn);
-  const mn: string[] =
-    s.length > 2 ? [s.slice(0, 2).join(" "), s.slice(2).join(" ")] : [s.join(" ")];
-  const en: string[] =
-    se.length > 2 ? [se.slice(0, 2).join(" "), se.slice(2).join(" ")] : [se.join(" ")];
+  const para = (list: string[]) =>
+    list.length === 0
+      ? []
+      : list.length > 2
+        ? [list.slice(0, 2).join(" "), list.slice(2).join(" ")]
+        : [list.join(" ")];
+  return { mn: para(s.slice(1)), en: para(se.slice(1)), summaryMn: s[0]!, summaryEn: se[0]! };
+}
 
-  mn.push(
-    `Энэ үйл ажиллагаа ${dateMn(a.start, a.end)} клубын «${mnDirection[a.direction]}» чиглэлийн хүрээнд болсон.`,
-  );
-  en.push(
-    `This activity took place ${dateEn(a.start, a.end)} as part of the club's ${enDirection[a.direction]} work.`,
-  );
-
-  const reachMnParts: string[] = [];
-  const reachEnParts: string[] = [];
-  if (a.inPerson) {
-    if (isCount(a.inPerson)) {
-      reachMnParts.push(`биечлэн ${reachMn(a.inPerson)} хүнд`);
-      reachEnParts.push(`${reachEn(a.inPerson)} people in person`);
-    } else {
-      reachMnParts.push(`биечлэн ${a.inPerson.toLocaleLowerCase("mn")}д`);
-      reachEnParts.push(`the ${(a.inPersonEn ?? a.inPerson).toLowerCase()} in person`);
-    }
-  }
-  if (a.online && a.online > 0) {
-    reachMnParts.push(`онлайнаар ${fmt(a.online)} хүнд`);
-    reachEnParts.push(`${fmt(a.online)} people online`);
-  }
-  const extraMn: string[] = [];
-  const extraEn: string[] = [];
-  if (reachMnParts.length) {
-    extraMn.push(`Тайлангаар ${reachMnParts.join(", ")} хүрсэн.`);
-    extraEn.push(`According to the report, it reached ${reachEnParts.join(" and ")}.`);
-  }
-  if (a.donationMnt) {
-    extraMn.push(`Цуглуулсан хандив: ${fmt(a.donationMnt)}₮.`);
-    extraEn.push(`Funds raised: ${fmt(a.donationMnt)}₮.`);
-  }
-  if (extraMn.length) {
-    mn.push(extraMn.join(" "));
-    en.push(extraEn.join(" "));
-  }
-  return { mn, en, summaryMn: s[0]!, summaryEn: se[0]! };
+/** Slug as produced by the first import (е → "ye"), used to redirect old URLs. */
+function legacySlugify(input: string) {
+  return slugify(input.replace(/е/g, "ye").replace(/Е/g, "Ye"));
 }
 
 // ---------------------------------------------------------------------------
@@ -256,8 +206,9 @@ const out: string[] = [
 ];
 const insertIgnore = (table: string, row: Record<string, unknown>) =>
   insert(table, row as never).replace(/^INSERT INTO/, "INSERT OR IGNORE INTO");
+/** Refreshes a settings row unless an admin saved settings after it was written. */
 const upsertSetting = (key: string, value: unknown) =>
-  `INSERT INTO "settings" ("key", "value", "updated_at") VALUES (${sqlValue(key)}, ${sqlValue(JSON.stringify(value))}, ${now}) ON CONFLICT("key") DO UPDATE SET "value" = excluded."value", "updated_at" = excluded."updated_at";`;
+  `INSERT INTO "settings" ("key", "value", "updated_at") VALUES (${sqlValue(key)}, ${sqlValue(JSON.stringify(value))}, ${now}) ON CONFLICT("key") DO UPDATE SET "value" = excluded."value", "updated_at" = excluded."updated_at" WHERE NOT EXISTS (SELECT 1 FROM "activity_log" WHERE "entity_type" = 'settings' AND "created_at" >= "settings"."updated_at");`;
 
 // Members
 report.leadership.forEach((l, i) => {
@@ -308,6 +259,7 @@ for (const a of report.activities) {
   const nn = String(a.n).padStart(2, "0");
   const startYear = a.start.slice(6);
   const slug = `${slugify(a.title)}-${startYear}`;
+  const oldSlug = `${legacySlugify(a.title)}-${startYear}`;
   const body = buildBody(a);
   const sdgs = normalizeSdgs(a.sdgs);
   const key = directionKey[a.direction];
@@ -362,6 +314,25 @@ for (const a of report.activities) {
       updated_at: now,
     }),
   );
+  // Refresh text of untouched rows (fixes earlier imports) and move old slugs with a redirect.
+  for (const [table, id, kind] of [
+    ["events", eventId, "events"],
+    ["news", `n${yy}-${nn}`, "news"],
+  ] as const) {
+    const textCols =
+      table === "news"
+        ? `"excerpt" = ${sqlValue(body.summaryMn)}, "excerpt_en" = ${sqlValue(body.summaryEn)}`
+        : `"summary" = ${sqlValue(body.summaryMn)}, "summary_en" = ${sqlValue(body.summaryEn)}`;
+    out.push(
+      `UPDATE "${table}" SET ${textCols}, "content" = ${sqlValue(doc(body.mn))}, "content_en" = ${sqlValue(doc(body.en))} WHERE "id" = ${sqlValue(id)} AND "updated_at" = "created_at";`,
+    );
+    if (oldSlug !== slug) {
+      out.push(
+        `INSERT OR IGNORE INTO "slug_redirects" ("id", "kind", "from_slug", "to_slug", "created_at") SELECT ${sqlValue(`r${yy}-${kind}-${nn}`)}, ${sqlValue(kind)}, "slug", ${sqlValue(slug)}, ${now} FROM "${table}" WHERE "id" = ${sqlValue(id)} AND "slug" = ${sqlValue(oldSlug)};`,
+        `UPDATE "${table}" SET "slug" = ${sqlValue(slug)} WHERE "id" = ${sqlValue(id)} AND "slug" = ${sqlValue(oldSlug)};`,
+      );
+    }
+  }
 }
 
 // Impact numbers (official report values; overwritten on re-run)
@@ -374,7 +345,7 @@ const noteKey = {
 };
 for (const r of report.impactTotals) {
   out.push(
-    `INSERT INTO "impact_stats" ("id", "school_year", "direction", "activities", "in_person", "in_person_label", "online", "total", "donation_amount", "notes", "created_at", "updated_at") VALUES (${sqlValue(`i${yy}-${impactDir[r.direction]}`)}, ${sqlValue(year)}, ${sqlValue(impactDir[r.direction])}, ${r.activities}, ${r.inPerson}, ${sqlValue(r.inPersonLabel)}, ${r.online}, ${r.total}, ${r.donationMnt}, ${sqlValue(report.impactNotes[noteKey[r.direction]] ?? "")}, ${now}, ${now}) ON CONFLICT("school_year", "direction") DO UPDATE SET "activities" = excluded."activities", "in_person" = excluded."in_person", "in_person_label" = excluded."in_person_label", "online" = excluded."online", "total" = excluded."total", "donation_amount" = excluded."donation_amount", "notes" = excluded."notes", "updated_at" = excluded."updated_at";`,
+    `INSERT INTO "impact_stats" ("id", "school_year", "direction", "activities", "in_person", "in_person_label", "online", "total", "donation_amount", "notes", "created_at", "updated_at") VALUES (${sqlValue(`i${yy}-${impactDir[r.direction]}`)}, ${sqlValue(year)}, ${sqlValue(impactDir[r.direction])}, ${r.activities}, ${r.inPerson}, ${sqlValue(r.inPersonLabel)}, ${r.online}, ${r.total}, ${r.donationMnt}, ${sqlValue(report.impactNotes[noteKey[r.direction]] ?? "")}, ${now}, ${now}) ON CONFLICT("school_year", "direction") DO NOTHING;`,
   );
 }
 
@@ -384,8 +355,10 @@ out.push(
   upsertSetting(SETTINGS_KEYS.club, {
     name: report.club.name,
     nameEn: report.club.nameEn,
-    description: `UNICEF Club Mongolia сүлжээний ${y1}–${y2} оны хөтөлбөрт хамрагддаг ${report.club.name}.`,
-    descriptionEn: `The ${report.club.nameEn}, part of the UNICEF Club Mongolia ${y1}–${y2} programme.`,
+    shortName: "",
+    shortNameEn: "",
+    description: "UNICEF Club Mongolia сүлжээний гишүүн клуб.",
+    descriptionEn: "A member club of the UNICEF Club Mongolia network.",
     foundedYear: Number(y1),
   }),
   upsertSetting(SETTINGS_KEYS.stats, [
@@ -394,37 +367,50 @@ out.push(
       label: "Нийт элссэн гишүүн",
       labelEn: "Members joined",
       value: fmt(report.membership.totalJoined),
+      featured: true,
     },
     {
       kind: "custom",
       label: "Идэвхтэй гишүүн (сертификаттай)",
       labelEn: "Active members (certified)",
       value: fmt(report.membership.active),
+      featured: false,
     },
-    { kind: "custom", label: "Сайн дурын цаг", labelEn: "Volunteer hours", value: fmt(hoursTotal) },
+    {
+      kind: "custom",
+      label: "Сайн дурын цаг",
+      labelEn: "Volunteer hours",
+      value: fmt(hoursTotal),
+      featured: true,
+    },
     {
       kind: "custom",
       label: "Биечлэн хүрсэн хүн",
       labelEn: "People reached in person",
       value: fmt(totals.inPerson),
+      featured: true,
     },
     {
       kind: "custom",
       label: "Онлайнаар хүрсэн",
       labelEn: "People reached online",
       value: compact(totals.online),
+      featured: false,
     },
     {
       kind: "custom",
       label: "Хандиваар цуглуулсан",
       labelEn: "Funds raised",
       value: `${fmt(totals.donationMnt)}₮`,
+      featured: true,
     },
+    // Count comes from the official impact total (one source on every page).
     {
       kind: "events",
       label: "Зохион байгуулсан үйл ажиллагаа",
       labelEn: "Activities organised",
       value: "",
+      featured: false,
     },
   ]),
   upsertSetting(

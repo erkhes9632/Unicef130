@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
+import { displayYear } from "@/lib/data/impact";
 import { listMembers } from "@/lib/data/members";
+import { cn } from "@/lib/utils";
 
 export async function generateMetadata({
   params,
@@ -24,10 +26,17 @@ export async function generateMetadata({
   });
 }
 
-export default async function MembersPage({ params }: PageProps<"/[locale]/members">) {
+export default async function MembersPage({
+  params,
+  searchParams,
+}: PageProps<"/[locale]/members">) {
   const locale = await resolveLocale(params);
   const t = await getTranslations();
-  const { leadership, members, hiddenCount } = await listMembers(locale);
+  const requested = (await searchParams).year;
+  const { leadership, leadershipYear, leadershipYears, members, hiddenCount } = await listMembers(
+    locale,
+    { leadershipYear: typeof requested === "string" ? requested : undefined },
+  );
   const isEmpty = leadership.length === 0 && members.length === 0;
 
   return (
@@ -40,7 +49,36 @@ export default async function MembersPage({ params }: PageProps<"/[locale]/membe
       />
       {leadership.length > 0 && (
         <Section>
-          <SectionHeading title={t("Members.leadership")} />
+          <SectionHeading
+            title={
+              leadershipYear
+                ? t("Members.leadershipOfYear", { year: displayYear(leadershipYear) })
+                : t("Members.leadership")
+            }
+          />
+          {leadershipYears.length > 1 && (
+            <nav aria-label={t("Members.otherYears")} className="-mt-4 mb-6">
+              <ul className="flex flex-wrap gap-2 text-sm">
+                {leadershipYears.map((y) => (
+                  <li key={y}>
+                    <Link
+                      href={{
+                        pathname: "/members",
+                        query: y === leadershipYears[0] ? {} : { year: y },
+                      }}
+                      aria-current={y === leadershipYear ? "page" : undefined}
+                      className={cn(
+                        "inline-flex h-8 items-center rounded-full px-3 font-semibold ring-1 ring-border hover:bg-muted",
+                        y === leadershipYear && "bg-brand-green-soft",
+                      )}
+                    >
+                      {displayYear(y)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
               <MemberCard key={m.id} member={m} index={i} size="large" />

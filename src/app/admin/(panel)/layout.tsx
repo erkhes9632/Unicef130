@@ -6,13 +6,13 @@ import { BrandLockup } from "@/components/brand/brand-lockup";
 import { ThemeToggleAdmin } from "@/components/admin/theme-toggle-admin";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
-import { roleLabels } from "@/lib/auth/roles";
+import { permissionsOf, roleLabels } from "@/lib/auth/roles";
 import { logoutAction } from "../actions";
 
 /** Protected admin shell. Every page below is server-checked here AND in each Server Action. */
 export default async function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
-  const user = await requireUser();
-  const isAdmin = user.role === "admin";
+  const user = await requireUser(undefined, { allowWithoutTwoFactor: true });
+  const granted = permissionsOf(user.role);
 
   return (
     <div className="flex flex-1">
@@ -21,12 +21,13 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
           <Link href="/admin">
             <BrandLockup
               size={28}
+              wrapText
               className="[&_span]:text-[11px] [&>span:last-child>span:first-child]:text-sm"
             />
           </Link>
         </div>
         <nav aria-label="Админ цэс" className="flex-1 overflow-y-auto p-3">
-          <AdminNav isAdmin={isAdmin} />
+          <AdminNav granted={granted} />
         </nav>
         <div className="border-t p-3 text-xs text-muted-foreground">
           <Link
@@ -41,7 +42,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur sm:px-6">
-          <AdminMobileNav isAdmin={isAdmin} />
+          <AdminMobileNav granted={granted} />
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right text-xs sm:block">
               <p className="font-semibold">{user.name}</p>

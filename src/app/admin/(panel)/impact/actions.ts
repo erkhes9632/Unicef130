@@ -7,7 +7,7 @@ import { impactDirections, impactStats } from "@/db/schema";
 import { logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
 
 const yearSchema = z
   .string()
@@ -46,7 +46,7 @@ export async function saveImpactYear(
   data: FormData,
 ): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const year = yearSchema.safeParse(schoolYear);
     if (!year.success) return validationError(year.error);
     const parsed = z.array(rowSchema).safeParse(
@@ -92,7 +92,7 @@ export async function saveImpactYear(
 
 export async function createImpactYear(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const year = yearSchema.safeParse(fd.str(data, "schoolYear"));
     if (!year.success) return validationError(year.error);
     const db = await getDb();
@@ -113,7 +113,7 @@ export async function createImpactYear(_prev: ActionState, data: FormData): Prom
 
 export async function deleteImpactYear(schoolYear: string): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const db = await getDb();
     const res = await db
       .delete(impactStats)

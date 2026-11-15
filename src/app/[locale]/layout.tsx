@@ -2,25 +2,15 @@ import type { Metadata } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { SiteHeader } from "@/components/layout/site-header";
 import { routing } from "@/i18n/routing";
-import { getBranding } from "@/lib/branding";
+import { clientNamespaces } from "@/i18n/client-namespaces";
+import { getBranding, getClubNames } from "@/lib/branding";
 import { getSiteSettings } from "@/lib/data/settings";
 import { getSiteUrl, jsonLd } from "@/lib/seo";
-
-/** Message namespaces used by client components ("use client" + useTranslations). */
-const clientNamespaces = [
-  "Common",
-  "Nav",
-  "Theme",
-  "Locale",
-  "Forms",
-  "Share",
-  "Gallery",
-  "Errors",
-] as const;
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -28,10 +18,15 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale: locale as "mn" | "en", namespace: "Metadata" });
+  const loc = locale as "mn" | "en";
+  const [t, names] = await Promise.all([
+    getTranslations({ locale: loc, namespace: "Metadata" }),
+    getClubNames(loc),
+  ]);
   return {
-    title: { default: t("title"), template: t("titleTemplate") },
+    title: { default: names.name, template: `%s | ${names.short}` },
     description: t("description"),
+    applicationName: names.short,
   };
 }
 
@@ -53,8 +48,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: settings.club.name || "130 UNICEF клуб",
-    alternateName: settings.club.nameEn || "130 UNICEF Club",
+    name: settings.club.name || "130-р сургуулийн UNICEF клуб",
+    alternateName: settings.club.nameEn || "UNICEF Club of School No. 130",
     url: siteUrl,
     ...(branding.schoolLogo ? { logo: new URL(branding.schoolLogo, siteUrl).toString() } : {}),
     ...(settings.club.foundedYear ? { foundingDate: String(settings.club.foundedYear) } : {}),
@@ -73,6 +68,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       >
         {t("skipToContent")}
       </a>
+      <AnnouncementBanner />
       <SiteHeader />
       <main id="main" className="flex flex-1 flex-col">
         {children}

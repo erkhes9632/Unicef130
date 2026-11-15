@@ -21,8 +21,12 @@ export function actionError(err: unknown): ActionState {
   if (err instanceof AuthError) {
     return {
       ok: false,
-      message:
-        err.code === "forbidden" ? "Танд энэ үйлдлийг хийх эрх байхгүй." : "Дахин нэвтэрнэ үү.",
+      message: {
+        forbidden: "Танд энэ үйлдлийг хийх эрх байхгүй.",
+        unauthenticated: "Дахин нэвтэрнэ үү.",
+        two_factor_required:
+          "Эхлээд 2 шатлалт баталгаажуулалтаа тохируулна уу (Миний профайл → 2FA).",
+      }[err.code],
     };
   }
   if (isNextSignal(err)) throw err;

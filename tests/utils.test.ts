@@ -4,7 +4,6 @@ import { formatDate, formatTimeRange, fromIsoDate } from "@/lib/dates/format";
 import { buildIcs } from "@/lib/dates/ics";
 import { parseUbInputValue, toUbInputValue } from "@/lib/dates/ub-input";
 import { monthGrid, parseMonth, shiftMonth } from "@/lib/dates/ub-time";
-import { hasRole } from "@/lib/auth/roles";
 
 describe("csv", () => {
   test("quotes and guards formulas", () => {
@@ -64,14 +63,5 @@ describe("dates (Ulaanbaatar, UTC+8)", () => {
     expect(ics).toContain("DESCRIPTION:x\\ny");
     for (const line of ics.split("\r\n"))
       expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
-  });
-});
-
-describe("roles", () => {
-  test("admin ≥ editor", () => {
-    expect(hasRole("admin", "editor")).toBe(true);
-    expect(hasRole("editor", "admin")).toBe(false);
-    expect(hasRole("user", "editor")).toBe(false);
-    expect(hasRole(undefined, "editor")).toBe(false);
   });
 });

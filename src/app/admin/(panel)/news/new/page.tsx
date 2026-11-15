@@ -7,7 +7,7 @@ import { saveNews } from "../actions";
 export const metadata: Metadata = { title: "Шинэ мэдээ" };
 
 export default async function NewNewsPage() {
-  await requireUser();
+  await requireUser("content");
   return (
     <>
       <AdminPageHeader title="Шинэ мэдээ" />

@@ -5,8 +5,9 @@
  */
 
 export const siteConfig = {
-  name: "130 UNICEF клуб",
-  shortName: "130 UNICEF",
+  /** Fallbacks only: the real names come from admin → Сайтын тохиргоо → Клубын мэдээлэл. */
+  name: "130-р сургуулийн UNICEF клуб",
+  shortName: "130-р сургуулийн UNICEF клуб",
   schoolName: "130-р сургууль",
 } as const;
 

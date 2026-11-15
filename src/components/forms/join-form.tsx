@@ -1,63 +1,111 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, CheckCircle2, Loader2, Newspaper } from "lucide-react";
+import { CalendarDays, CheckCircle2, Copy, Loader2, Newspaper, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { submitJoinApplication } from "@/app/actions/forms";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "@/i18n/navigation";
-import { joinFormSchema, type JoinFormValues } from "@/lib/validation/forms";
+import { buildJoinSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { cn } from "@/lib/utils";
-import { Turnstile } from "./turnstile";
 import { FormField, translateError } from "./form-field";
+import { Turnstile } from "./turnstile";
 
-const defaultValues: JoinFormValues = {
-  fullName: "",
-  className: "",
-  phone: "",
-  email: "",
-  reason: "",
-  helpWith: [],
-  consent: false as unknown as true,
+export type JoinFormQuestion = {
+  id: string;
+  type: "text" | "choice" | "checkbox";
+  label: string;
+  options: string[];
+  required: boolean;
 };
+
+const selectClass =
+  "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 export function JoinForm({
   turnstileSiteKey,
   helpOptions,
+  classes,
+  questions,
+  formToken,
+  waitlist,
 }: {
   turnstileSiteKey: string;
   /** Locale-resolved options from admin settings. */
   helpOptions: { key: string; label: string }[];
+  /** Classes offered in this recruitment period (empty → free text). */
+  classes: string[];
+  questions: JoinFormQuestion[];
+  /** Signed render time: lets the server measure how long filling the form took. */
+  formToken: string;
+  /** Capacity reached: new applications join the waiting list. */
+  waitlist: boolean;
 }) {
   const t = useTranslations("Forms");
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<{ code: string | null; waitlisted: boolean } | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [token, setToken] = useState("");
+  const [website, setWebsite] = useState("");
   // Bumping the key remounts the widget → fresh token (tokens are single-use).
   const [widgetKey, setWidgetKey] = useState(0);
-  const form = useForm<JoinFormValues>({ resolver: zodResolver(joinFormSchema), defaultValues });
-  const { register, control, handleSubmit, formState, setError, reset } = form;
+
+  const schema = useMemo(() => buildJoinSchema({ classes, questions }), [classes, questions]);
+  const defaultValues: JoinFormValues = {
+    fullName: "",
+    className: "",
+    phone: "",
+    email: "",
+    reason: "",
+    helpWith: [],
+    answers: Object.fromEntries(questions.map((q) => [q.id, q.type === "checkbox" ? false : ""])),
+    consent: false as unknown as true,
+  };
+  const form = useForm<JoinFormValues>({ resolver: zodResolver(schema), defaultValues });
+  const { register, control, handleSubmit, formState, setError } = form;
   const errors = formState.errors;
+
+  const serverMessages = {
+    captcha: t("captchaError"),
+    unavailable: t("unavailable"),
+    closed: t("joinClosedError"),
+    full: t("joinFullError"),
+    rate: t("rateError"),
+    tooFast: t("tooFastError"),
+    stale: t("staleError"),
+    validation: t("validationError"),
+    server: t("genericError"),
+  } as const;
 
   const onSubmit = handleSubmit((values) => {
     setServerError(null);
+    setDuplicate(false);
     if (!token) {
       setServerError(t("captchaError"));
       return;
     }
     startTransition(async () => {
-      const res = await submitJoinApplication({ ...values, turnstileToken: token });
+      const res = await submitJoinApplication({
+        ...values,
+        turnstileToken: token,
+        website,
+        formToken,
+      });
       setToken("");
       setWidgetKey((k) => k + 1);
       if (res.ok) {
-        setDone(true);
-        reset(defaultValues);
+        setDone({ code: res.trackingCode, waitlisted: res.waitlisted });
+        return;
+      }
+      if (res.error === "duplicate") {
+        setDuplicate(true);
         return;
       }
       if (res.error === "validation" && res.fieldErrors) {
@@ -65,7 +113,7 @@ export function JoinForm({
           setError(field as keyof JoinFormValues, { message: messages?.[0] ?? "required" });
         }
       }
-      setServerError(res.error === "captcha" ? t("captchaError") : t("genericError"));
+      setServerError(serverMessages[res.error]);
     });
   });
 
@@ -79,7 +127,29 @@ export function JoinForm({
         className="flex flex-col items-center gap-5 rounded-3xl bg-brand-green-soft p-6 text-center outline-none sm:p-10"
       >
         <CheckCircle2 className="size-14 text-brand-green-strong" aria-hidden="true" />
-        <h2 className="text-2xl font-extrabold">{t("joinSuccessTitle")}</h2>
+        <h2 className="text-2xl font-extrabold">
+          {done.waitlisted ? t("joinWaitlistTitle") : t("joinSuccessTitle")}
+        </h2>
+        {done.code && (
+          <div className="w-full max-w-sm rounded-2xl bg-background p-4 ring-1 ring-border">
+            <p className="text-sm text-muted-foreground">{t("trackingCodeLabel")}</p>
+            <p className="my-1 font-mono text-3xl font-extrabold tracking-widest">{done.code}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                navigator.clipboard.writeText(done.code!).then(
+                  () => toast.success(t("copied")),
+                  () => undefined,
+                )
+              }
+            >
+              <Copy /> {t("copy")}
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">{t("trackingCodeHint")}</p>
+          </div>
+        )}
         <div className="w-full max-w-md text-left">
           <p className="mb-3 font-semibold">{t("joinSuccessBody")}</p>
           <ol className="space-y-3">
@@ -95,6 +165,11 @@ export function JoinForm({
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button asChild>
+            <Link href="/join/status">
+              <Search /> {t("checkStatus")}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="bg-background">
             <Link href="/events">
               <CalendarDays /> {t("joinSeeEvents")}
             </Link>
@@ -109,10 +184,23 @@ export function JoinForm({
     );
   }
 
+  const answerError = (id: string) =>
+    (errors.answers as Record<string, { message?: string }> | undefined)?.[id]?.message;
+
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
+      {waitlist && (
+        <p role="status" className="rounded-2xl bg-brand-gold-soft p-4 text-sm font-medium">
+          {t("waitlistNotice")}
+        </p>
+      )}
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField id="join-fullName" label={t("fullName")} error={errors.fullName?.message}>
+        <FormField
+          id="join-fullName"
+          label={t("fullName")}
+          error={errors.fullName?.message}
+          hint={t("fullNameHint")}
+        >
           {(a) => (
             <Input
               {...a}
@@ -123,9 +211,22 @@ export function JoinForm({
           )}
         </FormField>
         <FormField id="join-className" label={t("className")} error={errors.className?.message}>
-          {(a) => (
-            <Input {...a} placeholder={t("classNamePlaceholder")} {...register("className")} />
-          )}
+          {(a) =>
+            classes.length > 0 ? (
+              <select {...a} className={selectClass} defaultValue="" {...register("className")}>
+                <option value="" disabled>
+                  {t("classNameSelect")}
+                </option>
+                {classes.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input {...a} placeholder={t("classNamePlaceholder")} {...register("className")} />
+            )
+          }
         </FormField>
         <FormField id="join-phone" label={t("phone")} error={errors.phone?.message}>
           {(a) => (
@@ -201,6 +302,67 @@ export function JoinForm({
         )}
       </fieldset>
 
+      {questions.map((q) => {
+        const id = `join-q-${q.id}`;
+        const name = `answers.${q.id}` as `answers.${string}`;
+        if (q.type === "checkbox") {
+          return (
+            <Controller
+              key={q.id}
+              control={control}
+              name={name}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 text-sm">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={field.value === true}
+                      onCheckedChange={(v) => field.onChange(v === true)}
+                      aria-invalid={Boolean(answerError(q.id))}
+                    />
+                    <span>
+                      {q.label}
+                      {!q.required && (
+                        <span className="text-muted-foreground"> {t("optional")}</span>
+                      )}
+                    </span>
+                  </label>
+                  {answerError(q.id) && (
+                    <p role="alert" className="text-sm font-medium text-destructive">
+                      {translateError(t, answerError(q.id)!)}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          );
+        }
+        return (
+          <FormField
+            key={q.id}
+            id={id}
+            label={q.label}
+            optional={!q.required}
+            error={answerError(q.id)}
+          >
+            {(a) =>
+              q.type === "choice" ? (
+                <select {...a} className={selectClass} defaultValue="" {...register(name)}>
+                  <option value="">{t("choose")}</option>
+                  {q.options.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Textarea {...a} rows={2} maxLength={500} {...register(name)} />
+              )
+            }
+          </FormField>
+        );
+      })}
+
       <Controller
         control={control}
         name="consent"
@@ -229,6 +391,21 @@ export function JoinForm({
         )}
       />
 
+      {/* Honeypot: invisible to people (and assistive tech), tempting for form-filling scripts. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
+        <label>
+          Website
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </label>
+      </div>
+
       <Turnstile
         key={widgetKey}
         siteKey={turnstileSiteKey}
@@ -237,6 +414,15 @@ export function JoinForm({
         action="join"
       />
 
+      {duplicate && (
+        <div role="alert" className="space-y-2 rounded-2xl bg-brand-gold-soft p-4 text-sm">
+          <p className="font-semibold">{t("duplicateTitle")}</p>
+          <p>{t("duplicateBody")}</p>
+          <Link href="/join/status" className="font-semibold text-brand-cyan-strong underline">
+            {t("checkStatus")}
+          </Link>
+        </div>
+      )}
       {serverError && (
         <p
           role="alert"

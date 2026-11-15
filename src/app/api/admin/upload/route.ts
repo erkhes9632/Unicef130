@@ -1,3 +1,4 @@
+import { can, type Permission } from "@/lib/auth/roles";
 import { getCurrentUser } from "@/lib/auth/session";
 import { MEDIA_KINDS, type MediaKind } from "@/lib/media/constants";
 import { storeImage, UploadError } from "@/lib/media/server";
@@ -7,6 +8,14 @@ import { storeImage, UploadError } from "@/lib/media/server";
  *   file: image (already resized/compressed in the browser), kind: news|events|members|gallery|site,
  *   variant?: full|thumb
  */
+const uploadPermission: Record<MediaKind, Permission> = {
+  news: "content",
+  events: "content",
+  gallery: "content",
+  members: "members",
+  site: "admin",
+};
+
 export async function POST(request: Request) {
   // CSRF: only same-origin requests (browsers always send Origin on POST).
   const origin = request.headers.get("origin");
@@ -28,6 +37,9 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) return Response.json({ error: "Файл олдсонгүй." }, { status: 400 });
   if (typeof kind !== "string" || !MEDIA_KINDS.includes(kind as MediaKind)) {
     return Response.json({ error: "Буруу төрөл." }, { status: 400 });
+  }
+  if (!can(user.role, uploadPermission[kind as MediaKind])) {
+    return Response.json({ error: "Танд зураг оруулах эрх байхгүй." }, { status: 403 });
   }
 
   try {

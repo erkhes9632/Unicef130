@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import {
-  contactFormSchema,
-  joinFormSchema,
-  normalizeClassName,
-  normalizePhone,
-} from "@/lib/validation/forms";
+import { buildJoinSchema, contactFormSchema } from "@/lib/validation/forms";
+
+const questions = [
+  { id: "q1", type: "text" as const, options: [], required: true },
+  { id: "q2", type: "choice" as const, options: ["Тийм", "Үгүй"], required: false },
+  { id: "q3", type: "checkbox" as const, options: [], required: true },
+];
+const joinFormSchema = buildJoinSchema({ classes: ["10А", "10Б", "11А"], questions });
 
 const validJoin = {
   fullName: "Батын Анужин",
@@ -13,21 +15,27 @@ const validJoin = {
   email: "",
   reason: "Хүүхдүүдэд туслахыг хүсэж байна.",
   helpWith: ["reading"],
+  answers: { q1: "Найзаасаа сонссон", q2: "Тийм", q3: true },
   consent: true,
 };
 
-describe("join form schema", () => {
+describe("join form schema (per recruitment period)", () => {
   test("accepts a valid application (email optional)", () => {
     expect(joinFormSchema.safeParse(validJoin).success).toBe(true);
     expect(joinFormSchema.safeParse({ ...validJoin, email: "a@b.mn" }).success).toBe(true);
   });
   test.each([
     ["className", "abc", "className"],
+    ["className", "9В", "className"], // not offered in this period
     ["phone", "123", "phone"],
+    ["phone", "5511 2233", "phone"],
     ["email", "not-an-email", "email"],
     ["reason", "short", "tooShort"],
+    ["reason", "Манай сайтыг үзээрэй http://spam.example", "noLinks"],
     ["fullName", "", "required"],
-  ])("rejects bad %s", (field, value, code) => {
+    ["fullName", "Anujin Bat", "nameCyrillic"],
+    ["fullName", "Анужин", "nameCyrillic"],
+  ])("rejects bad %s (%s)", (field, value, code) => {
     const r = joinFormSchema.safeParse({ ...validJoin, [field]: value });
     expect(r.success).toBe(false);
     expect(r.error!.issues.find((i) => i.path[0] === field)?.message).toBe(code);
@@ -37,17 +45,22 @@ describe("join form schema", () => {
     expect(joinFormSchema.safeParse({ ...validJoin, helpWith: [] }).success).toBe(false);
     expect(joinFormSchema.safeParse({ ...validJoin, helpWith: ["<script>"] }).success).toBe(false);
   });
-  test("accepts common class/phone formats", () => {
-    for (const c of ["10А", "10 а", "9-Б", "11A", "8"])
-      expect(joinFormSchema.safeParse({ ...validJoin, className: c }).success).toBe(true);
-    for (const p of ["88112233", "+976 8811 2233", "976-8811-2233", "8811-2233"])
-      expect(joinFormSchema.safeParse({ ...validJoin, phone: p }).success).toBe(true);
+  test("custom questions: required, choice from the list, no links", () => {
+    const withAnswers = (answers: Record<string, string | boolean>) =>
+      joinFormSchema.safeParse({ ...validJoin, answers }).success;
+    expect(withAnswers({ q1: "", q2: "", q3: true })).toBe(false); // required text
+    expect(withAnswers({ q1: "ok", q2: "", q3: false })).toBe(false); // required checkbox
+    expect(withAnswers({ q1: "ok", q2: "Магадгүй", q3: true })).toBe(false); // not an option
+    expect(withAnswers({ q1: "www.spam.com", q2: "", q3: true })).toBe(false);
+    expect(withAnswers({ q1: "ok", q2: "", q3: true })).toBe(true); // optional choice left empty
   });
-  test("normalizers", () => {
-    expect(normalizePhone("8811 2233")).toBe("+97688112233");
-    expect(normalizePhone("+976-8811-2233")).toBe("+97688112233");
-    expect(normalizeClassName("10 а")).toBe("10А");
-    expect(normalizeClassName("9-б")).toBe("9Б");
+  test("class list is matched case-insensitively; free text when the period has no list", () => {
+    expect(joinFormSchema.safeParse({ ...validJoin, className: "10 а" }).success).toBe(true);
+    const open = buildJoinSchema({ classes: [], questions: [] });
+    for (const c of ["10А", "9-Б", "11A", "8"])
+      expect(open.safeParse({ ...validJoin, answers: {}, className: c }).success).toBe(true);
+    for (const p of ["88112233", "+976 8811 2233", "976-8811-2233", "8811-2233"])
+      expect(open.safeParse({ ...validJoin, answers: {}, phone: p }).success).toBe(true);
   });
 });
 

@@ -13,7 +13,7 @@ import { deleteMember, setMembersPublic } from "./actions";
 export const metadata: Metadata = { title: "Гишүүд" };
 
 export default async function AdminMembersPage({ searchParams }: PageProps<"/admin/members">) {
-  const user = await requireUser();
+  const user = await requireUser("members");
   const sp = await searchParams;
   const db = await getDb();
   const rows = await db

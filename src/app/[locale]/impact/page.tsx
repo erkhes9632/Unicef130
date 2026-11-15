@@ -251,6 +251,16 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
               </tbody>
             </table>
           </div>
+          {impact.total &&
+            impact.total.activities !== activities.length &&
+            activities.length > 0 && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {t("activitiesFootnote", {
+                  reported: impact.total.activities,
+                  listed: activities.length,
+                })}
+              </p>
+            )}
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <Bars
               title={t("chartInPerson")}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: { default: "Админ | 130 UNICEF клуб", template: "%s | Админ" },
+  title: { default: "Админ хэсэг", template: "%s | Админ" },
   robots: { index: false, follow: false },
 };
 

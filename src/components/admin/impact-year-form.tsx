@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
-import { FormAlert, SubmitButton } from "./form";
+import { FormAlert, keepValuesOnSubmit, SubmitButton } from "./form";
 
 export type ImpactFormRow = {
   direction: "activity" | "education" | "charity" | "total";
@@ -46,7 +46,7 @@ export function ImpactYearForm({
 }) {
   const [state, formAction] = useActionState(action, {});
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} onSubmit={keepValuesOnSubmit(formAction)} className="space-y-4">
       <FormAlert state={state} />
       {state.fieldErrors && (
         <ul className="list-disc rounded-xl bg-destructive/10 p-3 pl-8 text-sm text-destructive">

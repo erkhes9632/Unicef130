@@ -7,7 +7,7 @@ import { albums, images } from "@/db/schema";
 import { logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
 import { deleteMediaUrls, isOwnMediaUrl } from "@/lib/media/server";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { albumImagesSchema, albumInputSchema } from "@/lib/validation/admin";
@@ -19,7 +19,7 @@ export async function saveAlbum(
 ): Promise<ActionState> {
   let savedId = id;
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const parsed = albumInputSchema.safeParse({
       title: fd.str(data, "title"),
       titleEn: fd.str(data, "titleEn"),
@@ -73,7 +73,7 @@ export async function saveAlbum(
 
 export async function deleteAlbum(id: string): Promise<ActionState> {
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const db = await getDb();
     const imgs = await db
       .select({ url: images.url, thumbUrl: images.thumbUrl })
@@ -100,7 +100,7 @@ export async function deleteAlbum(id: string): Promise<ActionState> {
 /** Registers images that the browser already uploaded to R2 (via /api/admin/upload). */
 export async function addAlbumImages(albumId: string, input: unknown): Promise<ActionState> {
   try {
-    const user = await requireRole("editor");
+    const user = await requirePermission("content");
     const parsed = albumImagesSchema.safeParse(input);
     if (!parsed.success) return validationError(parsed.error);
     if (
@@ -137,7 +137,7 @@ export async function addAlbumImages(albumId: string, input: unknown): Promise<A
 
 export async function deleteAlbumImage(imageId: string): Promise<ActionState> {
   try {
-    await requireRole("editor");
+    await requirePermission("content");
     const db = await getDb();
     const [img] = await db.delete(images).where(eq(images.id, imageId)).returning();
     if (!img) return { ok: false, message: "Зураг олдсонгүй." };
@@ -159,7 +159,7 @@ export async function moveAlbumImage(
   direction: "up" | "down",
 ): Promise<ActionState> {
   try {
-    await requireRole("editor");
+    await requirePermission("content");
     const db = await getDb();
     const [img] = await db.select().from(images).where(eq(images.id, imageId)).limit(1);
     if (!img) return { ok: false, message: "Зураг олдсонгүй." };
@@ -190,7 +190,7 @@ export async function moveAlbumImage(
 
 export async function updateImageAlt(imageId: string, alt: string): Promise<ActionState> {
   try {
-    await requireRole("editor");
+    await requirePermission("content");
     const db = await getDb();
     await db
       .update(images)
@@ -205,7 +205,7 @@ export async function updateImageAlt(imageId: string, alt: string): Promise<Acti
 
 export async function setAlbumCover(albumId: string, imageId: string): Promise<ActionState> {
   try {
-    await requireRole("editor");
+    await requirePermission("content");
     const db = await getDb();
     const [img] = await db
       .select({ thumbUrl: images.thumbUrl })

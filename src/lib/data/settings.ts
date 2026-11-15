@@ -5,7 +5,9 @@ import { getDb } from "@/db";
 import { events, members, settings } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import { formatNumber } from "@/lib/dates/format";
+import { getLatestImpact } from "@/lib/data/impact";
 import {
+  MAX_FEATURED_STATS,
   defaultSettings,
   parseSettings,
   type ContactInfo,
@@ -111,36 +113,34 @@ export function safeImageUrl(url: string): string | null {
 export type PublicStat = { label: string; value: string };
 
 /**
- * Home page stats in admin order. Auto items count rows in D1; an item with no value (or a
- * count of 0) is left out, and an empty list hides the stats band.
+ * Stats in admin order. `members` counts active members in D1; `events` is the activity count of
+ * the latest school year in the official report (impact_stats), falling back to the number of
+ * published past activities when no report exists. An item without a value is left out.
  */
 export async function getHomeStats(
   locale: Locale,
   s: SiteSettings,
   autoLabels: { members: string; events: string },
+  { featuredOnly = false }: { featuredOnly?: boolean } = {},
 ): Promise<PublicStat[]> {
-  if (s.stats.length === 0) return [];
-  const needs = new Set(s.stats.map((i) => i.kind));
+  const items = (featuredOnly ? s.stats.filter((i) => i.featured) : s.stats).slice(
+    0,
+    featuredOnly ? MAX_FEATURED_STATS : undefined,
+  );
+  if (items.length === 0) return [];
+  const needs = new Set(items.map((i) => i.kind));
   const counts = { members: 0, events: 0 };
   try {
     const db = await getDb();
-    const [m, e] = await Promise.all([
-      needs.has("members")
-        ? db.select({ n: count() }).from(members).where(eq(members.active, true))
-        : Promise.resolve([{ n: 0 }]),
-      needs.has("events")
-        ? db
-            .select({ n: count() })
-            .from(events)
-            .where(and(eq(events.published, true), lt(events.startsAt, new Date())))
-        : Promise.resolve([{ n: 0 }]),
-    ]);
-    counts.members = m[0]?.n ?? 0;
-    counts.events = e[0]?.n ?? 0;
+    if (needs.has("members")) {
+      const [m] = await db.select({ n: count() }).from(members).where(eq(members.active, true));
+      counts.members = m?.n ?? 0;
+    }
+    if (needs.has("events")) counts.events = await getActivityCount();
   } catch (err) {
     console.error("[settings] stats count failed", err);
   }
-  return s.stats
+  return items
     .map((item) => {
       if (item.kind === "custom") {
         return { label: pick(locale, item.label, item.labelEn), value: item.value };
@@ -152,6 +152,18 @@ export async function getHomeStats(
       };
     })
     .filter((i) => i.label && i.value);
+}
+
+/** The one source for "activities organised": latest official report, else published activities. */
+export async function getActivityCount(): Promise<number> {
+  const impact = await getLatestImpact();
+  if (impact?.total) return impact.total.activities;
+  const db = await getDb();
+  const [e] = await db
+    .select({ n: count() })
+    .from(events)
+    .where(and(eq(events.published, true), lt(events.startsAt, new Date())));
+  return e?.n ?? 0;
 }
 
 /** Splits admin text into paragraphs (blank line = new paragraph). */

@@ -22,3 +22,8 @@ BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8787,http://l
 # GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 # GOOGLE_SHEET_ID=1AbC...   (from the sheet URL: /spreadsheets/d/<ID>/edit)
 # GOOGLE_SHEET_TAB=Applications
+
+# Optional email provider for invitation links (https://resend.com). Without both values the
+# admin copies the link by hand and nothing is sent.
+# RESEND_API_KEY=
+# EMAIL_FROM="UNICEF клуб <no-reply@your-domain.mn>"

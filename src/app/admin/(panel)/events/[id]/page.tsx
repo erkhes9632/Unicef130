@@ -18,7 +18,7 @@ export default async function EditEventPage({
   params,
   searchParams,
 }: PageProps<"/admin/events/[id]">) {
-  await requireUser();
+  await requireUser("content");
   const { id } = await params;
   const sp = await searchParams;
   const db = await getDb();

@@ -4,13 +4,13 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { contactMessages } from "@/db/schema";
-import { logActivity } from "@/lib/admin/activity";
+import { logActivity, shortId } from "@/lib/admin/activity";
 import { actionError, type ActionState } from "@/lib/admin/action-state";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
 
 export async function setMessageRead(id: string, read: boolean): Promise<ActionState> {
   try {
-    await requireRole("editor");
+    await requirePermission("messages");
     const db = await getDb();
     await db
       .update(contactMessages)
@@ -25,17 +25,16 @@ export async function setMessageRead(id: string, read: boolean): Promise<ActionS
 
 export async function deleteMessage(id: string): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const db = await getDb();
     const [row] = await db
       .delete(contactMessages)
       .where(eq(contactMessages.id, id))
-      .returning({ name: contactMessages.name });
+      .returning({ id: contactMessages.id });
     if (!row) return { ok: false, message: "Зурвас олдсонгүй." };
     await logActivity(user, "message.delete", {
       type: "message",
-      id,
-      summary: `${row.name}-ийн зурвасыг устгав`,
+      summary: `Зурвас #${shortId(id)} устгав`,
     });
     revalidatePath("/admin/messages");
     return { ok: true, message: "Зурвас устгагдлаа." };

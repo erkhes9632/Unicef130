@@ -49,8 +49,8 @@
     "SITE_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
     "BETTER_AUTH_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
     "BETTER_AUTH_TRUSTED_ORIGINS": "https://unicef-club-130.erkhes-labs.workers.dev",
-    // Public Turnstile site key (not a secret). TODO(deploy): set after creating the widget.
-    "TURNSTILE_SITE_KEY": "",
+    // Public Turnstile site key (not a secret). Cloudflare's test keys are refused in production.
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGAxVpYS2hRdPPVO",
     "GOOGLE_SHEET_TAB": "Applications",
   },
   // Custom domain later: add it in the dashboard, or uncomment and redeploy (see README).

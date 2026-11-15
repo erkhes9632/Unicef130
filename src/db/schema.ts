@@ -31,7 +31,8 @@ const id = () =>
 // Auth (Better Auth core tables + admin plugin fields)
 // ---------------------------------------------------------------------------
 
-export const userRoles = ["admin", "editor"] as const;
+/** admin: everything · editor: news, events, gallery, members · reviewer: applications only. */
+export const userRoles = ["admin", "editor", "reviewer"] as const;
 export type UserRole = (typeof userRoles)[number];
 
 export const user = sqliteTable("user", {
@@ -45,6 +46,8 @@ export const user = sqliteTable("user", {
   banned: integer("banned", { mode: "boolean" }).default(false),
   banReason: text("ban_reason"),
   banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
+  // two-factor plugin
+  twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).default(false),
   ...timestamps,
 });
 
@@ -96,6 +99,75 @@ export const verification = sqliteTable(
     ...timestamps,
   },
   (t) => [index("verification_identifier_idx").on(t.identifier)],
+);
+
+/** TOTP secret + backup codes (encrypted by Better Auth's two-factor plugin). */
+export const twoFactor = sqliteTable(
+  "two_factor",
+  {
+    id: text("id").primaryKey(),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verified: integer("verified", { mode: "boolean" }).default(true),
+    failedVerificationCount: integer("failed_verification_count").default(0),
+    lockedUntil: integer("locked_until", { mode: "timestamp_ms" }),
+  },
+  (t) => [index("two_factor_user_id_idx").on(t.userId)],
+);
+
+/**
+ * One-time links created by admins: an invitation to join the admin panel, or a password reset
+ * for an existing user. Only the SHA-256 hash of the token is stored; links expire and work once.
+ */
+export const authTokenKinds = ["invite", "reset"] as const;
+export type AuthTokenKind = (typeof authTokenKinds)[number];
+
+export const authTokens = sqliteTable(
+  "auth_tokens",
+  {
+    id: id(),
+    kind: text("kind", { enum: authTokenKinds }).notNull(),
+    tokenHash: text("token_hash").notNull(),
+    /** Invite: the address being invited. Reset: the user's email (for display). */
+    email: text("email").notNull(),
+    /** Invite only: role the new account gets. */
+    role: text("role"),
+    /** Reset only: the account whose password is reset. */
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    usedAt: integer("used_at", { mode: "timestamp_ms" }),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [uniqueIndex("auth_tokens_hash_idx").on(t.tokenHash)],
+);
+
+/**
+ * Rate-limit counters shared by all Worker isolates (Better Auth `rateLimit.storage: "database"`
+ * and the admin login Server Action). Columns follow Better Auth's `rateLimit` model.
+ */
+export const rateLimit = sqliteTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  /** ms timestamp of the last counted request */
+  lastRequest: integer("last_request").notNull(),
+});
+
+/** Old slug → current slug, so renamed posts/events keep working (permanent redirect). */
+export const slugRedirects = sqliteTable(
+  "slug_redirects",
+  {
+    id: id(),
+    kind: text("kind", { enum: ["news", "events"] }).notNull(),
+    fromSlug: text("from_slug").notNull(),
+    toSlug: text("to_slug").notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [uniqueIndex("slug_redirects_from_idx").on(t.kind, t.fromSlug)],
 );
 
 // ---------------------------------------------------------------------------
@@ -261,7 +333,69 @@ export const images = sqliteTable(
 // Submissions
 // ---------------------------------------------------------------------------
 
-export const applicationStatuses = ["new", "accepted", "rejected"] as const;
+/** One custom question on the join form of a recruitment period. */
+export type RecruitmentQuestion = {
+  id: string;
+  type: "text" | "choice" | "checkbox";
+  label: string;
+  labelEn: string;
+  /** `choice` only */
+  options: { label: string; labelEn: string }[];
+  required: boolean;
+};
+
+/**
+ * A recruitment window. The join form is open only while `opens_at <= now < closes_at` of one
+ * period (periods never overlap). Times are stored as UTC ms; the admin edits them in
+ * Asia/Ulaanbaatar time.
+ */
+export const recruitmentPeriods = sqliteTable(
+  "recruitment_periods",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    nameEn: text("name_en"),
+    /** e.g. "2026-2027": accepted applicants become members of this school year. */
+    schoolYear: text("school_year").notNull(),
+    opensAt: integer("opens_at", { mode: "timestamp_ms" }).notNull(),
+    closesAt: integer("closes_at", { mode: "timestamp_ms" }).notNull(),
+    /** Max applications that count (new / reviewing / interview / accepted); null = unlimited. */
+    capacity: integer("capacity"),
+    whenFull: text("when_full", { enum: ["close", "waitlist"] })
+      .notNull()
+      .default("waitlist"),
+    /** Classes offered in the dropdown, e.g. ["6а", "6б", …, "12г"]. */
+    classes: text("classes", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    introText: text("intro_text").notNull().default(""),
+    introTextEn: text("intro_text_en"),
+    closedMessage: text("closed_message").notNull().default(""),
+    closedMessageEn: text("closed_message_en"),
+    questions: text("questions", { mode: "json" })
+      .$type<RecruitmentQuestion[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    /** Show the site-wide "recruitment is open" banner while this period is open. */
+    showBanner: integer("show_banner", { mode: "boolean" }).notNull().default(true),
+    /** Anti-spam limits per network address (a whole school may share one address). */
+    ipLimitPer10Min: integer("ip_limit_per_10_min").notNull().default(1),
+    ipLimitPerDay: integer("ip_limit_per_day").notNull().default(10),
+    ...timestamps,
+  },
+  (t) => [index("recruitment_periods_window_idx").on(t.opensAt, t.closesAt)],
+);
+
+export const applicationStatuses = [
+  "new",
+  "reviewing",
+  "interview",
+  "accepted",
+  "rejected",
+  "waitlist",
+  "spam",
+] as const;
 export type ApplicationStatus = (typeof applicationStatuses)[number];
 
 export const applications = sqliteTable(
@@ -279,9 +413,54 @@ export const applications = sqliteTable(
     notes: text("notes").notNull().default(""),
     sheetsSyncedAt: integer("sheets_synced_at", { mode: "timestamp_ms" }),
     sheetsError: text("sheets_error"),
+    // Recruitment system
+    periodId: text("period_id").references(() => recruitmentPeriods.id, { onDelete: "set null" }),
+    /** Shown to the applicant after submitting, e.g. "UC-7K3M" (status lookup). */
+    trackingCode: text("tracking_code"),
+    /** 8 digits; one application per phone per period. */
+    phoneNormalized: text("phone_normalized"),
+    /** Salted hash of the sender's address (never the address itself). */
+    ipHash: text("ip_hash"),
+    spamScore: integer("spam_score").notNull().default(0),
+    /** Signals behind the score, e.g. ["fast_fill", "repeated_text"]. */
+    spamFlags: text("spam_flags", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    /** Answers to the period's custom questions, keyed by question id. */
+    answers: text("answers", { mode: "json" })
+      .$type<Record<string, string | boolean>>()
+      .notNull()
+      .default(sql`'{}'`),
+    reviewerId: text("reviewer_id").references(() => user.id, { onDelete: "set null" }),
+    /** Member record created when the application was accepted. */
+    memberId: text("member_id").references((): AnySQLiteColumn => members.id, {
+      onDelete: "set null",
+    }),
     ...timestamps,
   },
-  (t) => [index("applications_status_created_idx").on(t.status, t.createdAt)],
+  (t) => [
+    index("applications_status_created_idx").on(t.status, t.createdAt),
+    uniqueIndex("applications_tracking_idx").on(t.trackingCode),
+    uniqueIndex("applications_period_phone_idx").on(t.periodId, t.phoneNormalized),
+    index("applications_ip_idx").on(t.ipHash, t.createdAt),
+  ],
+);
+
+/** Phones / network addresses an admin blocked from applying for a while. */
+export const applicationBlocks = sqliteTable(
+  "application_blocks",
+  {
+    id: id(),
+    kind: text("kind", { enum: ["phone", "ip"] }).notNull(),
+    /** Normalized phone (8 digits) or the salted address hash. */
+    value: text("value").notNull(),
+    reason: text("reason").notNull().default(""),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [uniqueIndex("application_blocks_value_idx").on(t.kind, t.value)],
 );
 
 export const contactMessages = sqliteTable(
@@ -347,7 +526,12 @@ export const activityLog = sqliteTable(
     entityType: text("entity_type").notNull(),
     entityId: text("entity_id"),
     summary: text("summary").notNull().default(""),
+    /** Changed fields as `{ field: [before, after] }` (no personal data of applicants). */
+    details: text("details", { mode: "json" }).$type<Record<string, [unknown, unknown]>>(),
     createdAt: timestamps.createdAt,
   },
-  (t) => [index("activity_created_idx").on(t.createdAt)],
+  (t) => [
+    index("activity_created_idx").on(t.createdAt),
+    index("activity_entity_idx").on(t.entityType, t.entityId),
+  ],
 );

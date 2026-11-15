@@ -1,3 +1,4 @@
+import "@/lib/validation/zod-config";
 import { z } from "zod";
 import type { RichTextDoc, RichTextNode } from "@/lib/types";
 

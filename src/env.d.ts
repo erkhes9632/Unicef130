@@ -13,6 +13,9 @@ interface CloudflareEnv {
   GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;
   GOOGLE_SHEET_ID?: string;
+  /** Optional email provider (both needed): Resend API key and the From address. */
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
   /** Sheet tab name, default "Applications". */
   GOOGLE_SHEET_TAB?: string;
 }

@@ -1,7 +1,8 @@
 /**
  * Seeds the LOCAL D1 database with sample content (from src/lib/mock/*) for development.
  * Safe to re-run: content tables are cleared first. Site settings and users are NOT touched —
- * fill settings in admin, create a local admin with `bun run admin:create:local`.
+ * fill settings in admin, create a local admin with
+ * `bun run admin:create:local -- you@example.com`.
  * Never run this against production.
  *
  *   bun run db:migrate:local && bun run db:seed:local

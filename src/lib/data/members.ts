@@ -25,7 +25,15 @@ function toItem(locale: Locale, m: Row): MemberItem {
   };
 }
 
-export async function listMembers(locale: Locale) {
+/**
+ * Public member lists. Leadership is year-scoped: the latest school year that has public leaders
+ * is shown (or `leadershipYear` when given and valid). Leaders without a school year are used only
+ * when no year-scoped leaders exist.
+ */
+export async function listMembers(
+  locale: Locale,
+  { leadershipYear }: { leadershipYear?: string } = {},
+) {
   const db = await getDb();
   const rows = await db
     .select()
@@ -33,12 +41,24 @@ export async function listMembers(locale: Locale) {
     // Minors' names are only listed after consent (show_publicly), never by default.
     .where(and(eq(members.active, true), eq(members.showPublicly, true)))
     .orderBy(asc(members.sortOrder), asc(members.name));
+  const leaders = rows.filter((m) => m.group === "leadership");
+  const years = [...new Set(leaders.map((m) => m.schoolYear).filter((y): y is string => !!y))]
+    .sort()
+    .reverse();
+  const year =
+    leadershipYear && years.includes(leadershipYear) ? leadershipYear : (years[0] ?? null);
   const [{ hidden } = { hidden: 0 }] = await db
     .select({ hidden: count() })
     .from(members)
     .where(and(eq(members.active, true), eq(members.showPublicly, false)));
   return {
-    leadership: rows.filter((m) => m.group === "leadership").map((m) => toItem(locale, m)),
+    leadership: leaders
+      .filter((m) => (year ? m.schoolYear === year : !m.schoolYear))
+      .map((m) => toItem(locale, m)),
+    /** School year of the leadership shown ("2025-2026"), null for undated leaders. */
+    leadershipYear: year,
+    /** All years with public leaders, newest first. */
+    leadershipYears: years,
     members: rows.filter((m) => m.group === "member").map((m) => toItem(locale, m)),
     /** Active members whose names are not public (no consent yet). */
     hiddenCount: hidden,

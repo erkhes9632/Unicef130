@@ -18,7 +18,7 @@ export default async function EditNewsPage({
   params,
   searchParams,
 }: PageProps<"/admin/news/[id]">) {
-  await requireUser();
+  await requireUser("content");
   const { id } = await params;
   const sp = await searchParams;
   const db = await getDb();

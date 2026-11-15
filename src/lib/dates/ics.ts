@@ -40,7 +40,7 @@ export function buildIcs(e: {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//130 UNICEF Club//Events//MN",
+    "PRODID:-//UNICEF Club of School No. 130//Events//MN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

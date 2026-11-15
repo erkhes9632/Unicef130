@@ -49,7 +49,15 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
           setError(field as keyof ContactFormValues, { message: messages?.[0] ?? "required" });
         }
       }
-      setServerError(res.error === "captcha" ? t("captchaError") : t("genericError"));
+      setServerError(
+        res.error === "captcha"
+          ? t("captchaError")
+          : res.error === "unavailable"
+            ? t("unavailable")
+            : res.error === "rate"
+              ? t("rateError")
+              : t("genericError"),
+      );
     });
   });
 

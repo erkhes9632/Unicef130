@@ -23,7 +23,7 @@ const filters = [
 ] as const;
 
 export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/news">) {
-  await requireUser();
+  await requireUser("content");
   const sp = await searchParams;
   const status = sp.status === "draft" || sp.status === "published" ? sp.status : undefined;
   const db = await getDb();

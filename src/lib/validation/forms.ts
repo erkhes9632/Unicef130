@@ -1,4 +1,11 @@
+import "./zod-config";
 import { z } from "zod";
+import {
+  containsUrl,
+  isCyrillicFullName,
+  normalizeClass,
+  normalizeMnPhone,
+} from "@/lib/recruitment/logic";
 
 /**
  * Shared schemas for public forms (client + server). Error messages are i18n keys under
@@ -17,34 +24,81 @@ const trimmed = (min: number, max: number) =>
     .min(min, { error: "tooShort" })
     .max(max, { error: "tooLong" });
 
-// "10А", "10 а", "9-Б", "11A"
+// "10А", "10 а", "9-Б", "11A" — used only when a period has no class list.
 export const classNameRegex = /^\d{1,2}\s*-?\s*\p{L}{0,2}$/u;
-// Mongolian numbers: 8 digits, optional +976 prefix, optional space/dash in the middle.
-export const phoneRegex = /^(\+?976[\s-]?)?\d{4}[\s-]?\d{4}$/;
 
-export const joinFormSchema = z.object({
-  fullName: trimmed(2, 100),
-  className: z
-    .string({ error: "required" })
-    .trim()
-    .min(1, { error: "required" })
-    .regex(classNameRegex, { error: "className" }),
-  phone: z
-    .string({ error: "required" })
-    .trim()
-    .min(1, { error: "required" })
-    .regex(phoneRegex, { error: "phone" }),
-  email: z
-    .string()
-    .trim()
-    .max(254, { error: "tooLong" })
-    .refine((v) => v === "" || z.email().safeParse(v).success, { error: "email" }),
-  reason: trimmed(10, 1000),
-  helpWith: z.array(helpOptionKey).min(1, { error: "helpWith" }).max(20, { error: "helpWith" }),
-  consent: z.literal(true, { error: "consent" }),
-});
-export type JoinFormValues = z.input<typeof joinFormSchema>;
-export type JoinFormData = z.output<typeof joinFormSchema>;
+/** Shape of a period's custom question as the form needs it (labels already localized). */
+export type JoinQuestion = {
+  id: string;
+  type: "text" | "choice" | "checkbox";
+  options: string[];
+  required: boolean;
+};
+
+/**
+ * Join form schema for one recruitment period. The same schema runs in the browser and again on
+ * the server (which additionally checks help options, blocks, duplicates and rate limits).
+ * Error messages are i18n keys under `Forms.errors.*`.
+ */
+export function buildJoinSchema({
+  classes,
+  questions,
+}: {
+  classes: readonly string[];
+  questions: readonly JoinQuestion[];
+}) {
+  return z
+    .object({
+      fullName: z
+        .string({ error: "required" })
+        .trim()
+        .min(1, { error: "required" })
+        .refine(isCyrillicFullName, { error: "nameCyrillic" }),
+      className: z
+        .string({ error: "required" })
+        .trim()
+        .min(1, { error: "required" })
+        .refine(
+          (v) =>
+            classes.length > 0 ? classes.includes(normalizeClass(v)) : classNameRegex.test(v),
+          { error: "className" },
+        ),
+      phone: z
+        .string({ error: "required" })
+        .trim()
+        .min(1, { error: "required" })
+        .refine((v) => normalizeMnPhone(v) !== null, { error: "phone" }),
+      email: z
+        .string()
+        .trim()
+        .max(254, { error: "tooLong" })
+        .refine((v) => v === "" || z.email().safeParse(v).success, { error: "email" }),
+      reason: trimmed(10, 1000).refine((v) => !containsUrl(v), { error: "noLinks" }),
+      helpWith: z.array(helpOptionKey).min(1, { error: "helpWith" }).max(20, { error: "helpWith" }),
+      answers: z.record(z.string(), z.union([z.string().max(500), z.boolean()])),
+      consent: z.literal(true, { error: "consent" }),
+    })
+    .superRefine((value, ctx) => {
+      for (const q of questions) {
+        const answer = value.answers[q.id];
+        const fail = (message: string) =>
+          ctx.addIssue({ code: "custom", path: ["answers", q.id], message });
+        if (q.type === "checkbox") {
+          if (q.required && answer !== true) fail("required");
+          continue;
+        }
+        const text = typeof answer === "string" ? answer.trim() : "";
+        if (!text) {
+          if (q.required) fail("required");
+          continue;
+        }
+        if (q.type === "choice" && !q.options.includes(text)) fail("required");
+        if (q.type === "text" && containsUrl(text)) fail("noLinks");
+      }
+    });
+}
+export type JoinFormValues = z.input<ReturnType<typeof buildJoinSchema>>;
+export type JoinFormData = z.output<ReturnType<typeof buildJoinSchema>>;
 
 export const contactFormSchema = z.object({
   name: trimmed(2, 100),
@@ -59,14 +113,3 @@ export const contactFormSchema = z.object({
 });
 export type ContactFormValues = z.input<typeof contactFormSchema>;
 export type ContactFormData = z.output<typeof contactFormSchema>;
-
-/** Normalizes a phone number to "+976XXXXXXXX" for storage. */
-export function normalizePhone(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  return `+976${digits.slice(-8)}`;
-}
-
-/** Normalizes a class name: "10 а" → "10А". */
-export function normalizeClassName(value: string) {
-  return value.replace(/[\s-]/g, "").toLocaleUpperCase("mn");
-}

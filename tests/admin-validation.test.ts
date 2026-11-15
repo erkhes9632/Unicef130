@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  eventInputSchema,
-  newsInputSchema,
-  settingsInputSchema,
-  userCreateSchema,
-} from "@/lib/validation/admin";
+import { eventInputSchema, newsInputSchema, settingsInputSchema } from "@/lib/validation/admin";
 
 const doc = {
   type: "doc" as const,
@@ -128,16 +123,27 @@ describe("admin schemas", () => {
         mapLat: "",
         mapLng: "",
       },
-      club: { name: "", nameEn: "", description: "", descriptionEn: "", foundedYear: 2025 },
+      announcement: { enabled: false, text: "", textEn: "", href: "/join" },
+      security: { requireAdminTwoFactor: true },
+      club: {
+        name: "",
+        nameEn: "",
+        shortName: "",
+        shortNameEn: "",
+        description: "",
+        descriptionEn: "",
+        foundedYear: 2025,
+      },
       branding: {
         schoolLogoUrl: "/media/site/2026/11/a.webp",
         unicefLogoUrl: "",
         heroImageUrl: "",
         heroImageAlt: "",
         heroImageAltEn: "",
+        ogImageUrl: "",
       },
       socials: [{ platform: "facebook", url: "https://facebook.com/x" }],
-      stats: [{ kind: "custom", label: "Гишүүн", labelEn: "", value: "25" }],
+      stats: [{ kind: "custom", label: "Гишүүн", labelEn: "", value: "25", featured: true }],
       partners: [
         { name: "Хамтрагч", nameEn: "", logoUrl: "", url: "https://example.org", type: "partner" },
       ],
@@ -149,7 +155,27 @@ describe("admin schemas", () => {
     expect(
       settingsInputSchema.safeParse({
         ...s,
-        stats: [{ kind: "custom", label: "Гишүүн", labelEn: "", value: "" }],
+        stats: [{ kind: "custom", label: "Гишүүн", labelEn: "", value: "", featured: true }],
+      }).success,
+    ).toBe(false);
+    // announcement link: internal path or https only
+    expect(
+      settingsInputSchema.safeParse({
+        ...s,
+        announcement: { enabled: true, text: "x", textEn: "", href: "javascript:alert(1)" },
+      }).success,
+    ).toBe(false);
+    // at most 5 stats featured on the home page
+    expect(
+      settingsInputSchema.safeParse({
+        ...s,
+        stats: Array.from({ length: 6 }, (_, i) => ({
+          kind: "custom",
+          label: `L${i}`,
+          labelEn: "",
+          value: "1",
+          featured: true,
+        })),
       }).success,
     ).toBe(false);
     // the join form needs at least one option, with unique keys
@@ -187,20 +213,6 @@ describe("admin schemas", () => {
         ...s,
         socials: [{ platform: "facebook", url: "javascript:x" }],
       }).success,
-    ).toBe(false);
-  });
-  test("users: password optional but ≥10 chars when given", () => {
-    expect(
-      userCreateSchema.safeParse({ name: "Н", email: "a@b.mn", role: "editor", password: "" })
-        .success,
-    ).toBe(true);
-    expect(
-      userCreateSchema.safeParse({ name: "Н", email: "a@b.mn", role: "editor", password: "short" })
-        .success,
-    ).toBe(false);
-    expect(
-      userCreateSchema.safeParse({ name: "Н", email: "a@b.mn", role: "owner", password: "" })
-        .success,
     ).toBe(false);
   });
 });

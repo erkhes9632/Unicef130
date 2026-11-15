@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { SocialLinks } from "@/components/brand/social-links";
 import { PageHero } from "@/components/common/page-hero";
 import { ContactForm } from "@/components/forms/contact-form";
+import { FormsUnavailable } from "@/components/forms/forms-unavailable";
 import { resolveLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { getSiteSettings, publicContact } from "@/lib/data/settings";
@@ -96,7 +97,11 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
             <h2 id="contact-form-title" className="mb-6 text-2xl font-extrabold">
               {t("formTitle")}
             </h2>
-            <ContactForm turnstileSiteKey={turnstileSiteKey} />
+            {turnstileSiteKey ? (
+              <ContactForm turnstileSiteKey={turnstileSiteKey} />
+            ) : (
+              <FormsUnavailable />
+            )}
           </section>
           {info.mapUrl && (
             <section aria-labelledby="map-title">

@@ -16,7 +16,7 @@ import { deleteEvent } from "./actions";
 export const metadata: Metadata = { title: "Арга хэмжээ" };
 
 export default async function AdminEventsPage() {
-  await requireUser();
+  await requireUser("content");
   const db = await getDb();
   const rows = await db
     .select({

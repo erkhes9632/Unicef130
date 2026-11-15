@@ -7,7 +7,7 @@ import { saveMember } from "../actions";
 export const metadata: Metadata = { title: "Гишүүн нэмэх" };
 
 export default async function NewMemberPage() {
-  await requireUser();
+  await requireUser("members");
   return (
     <>
       <AdminPageHeader title="Гишүүн нэмэх" />

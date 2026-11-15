@@ -11,9 +11,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { Permission } from "@/lib/auth/roles";
 import { AdminNav } from "./admin-nav";
 
-export function AdminMobileNav({ isAdmin }: { isAdmin: boolean }) {
+export function AdminMobileNav({ granted }: { granted: readonly Permission[] }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -25,10 +26,10 @@ export function AdminMobileNav({ isAdmin }: { isAdmin: boolean }) {
       <SheetContent side="left" className="w-72">
         <SheetHeader>
           <SheetTitle>Админ</SheetTitle>
-          <SheetDescription>130 UNICEF клуб</SheetDescription>
+          <SheetDescription>Админ хэсэг</SheetDescription>
         </SheetHeader>
         <nav aria-label="Админ цэс" className="px-3">
-          <AdminNav isAdmin={isAdmin} onNavigate={() => setOpen(false)} />
+          <AdminNav granted={granted} onNavigate={() => setOpen(false)} />
         </nav>
       </SheetContent>
     </Sheet>

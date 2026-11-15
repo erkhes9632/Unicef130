@@ -1,11 +1,26 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, Loader2, Save } from "lucide-react";
+import { startTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ActionState } from "@/lib/admin/action-state";
 import { cn } from "@/lib/utils";
+
+/**
+ * `onSubmit` for edit forms: runs the action without React's automatic form reset, so what the
+ * admin typed survives a validation error. `useFormStatus` still reports pending, and the
+ * `action` prop stays as the no-JS fallback.
+ */
+export function keepValuesOnSubmit(formAction: (data: FormData) => void) {
+  return (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const data = new FormData(event.currentTarget, submitter);
+    startTransition(() => formAction(data));
+  };
+}
 
 export function AdminField({
   label,

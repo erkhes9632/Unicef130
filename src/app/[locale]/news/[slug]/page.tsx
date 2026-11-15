@@ -1,6 +1,8 @@
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { findSlugRedirect } from "@/lib/data/redirects";
+import { withoutRepeatedLead } from "@/lib/rich-text/sanitize";
 import { getTranslations } from "next-intl/server";
 import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cover-image";
 import { ActivityFacts } from "@/components/impact/activity-facts";
@@ -13,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { getClubNames } from "@/lib/branding";
 import { getEventById } from "@/lib/data/events";
 import { getNewsBySlug, getRelatedNews } from "@/lib/data/news";
 import { formatDate } from "@/lib/dates/format";
@@ -40,7 +43,12 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
   const locale = await resolveLocale(params);
   const { slug } = await params;
   const item = await getNewsBySlug(locale, slug);
-  if (!item) notFound();
+  if (!item) {
+    // Renamed post: permanent redirect from the old slug.
+    const to = await findSlugRedirect("news", slug);
+    if (to) permanentRedirect(localizedPath(locale, `/news/${to}`));
+    notFound();
+  }
 
   const t = await getTranslations("News");
   const ta = await getTranslations("Activity");
@@ -63,7 +71,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
         : [`${siteUrl}/og-default.png`],
     mainEntityOfPage: url,
     inLanguage: locale,
-    publisher: { "@type": "Organization", name: "130 UNICEF клуб", url: siteUrl },
+    publisher: { "@type": "Organization", name: (await getClubNames(locale)).name, url: siteUrl },
   };
 
   return (
@@ -105,7 +113,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
         </div>
 
         <div className="container-page max-w-3xl space-y-8 py-10 sm:py-14">
-          <RichText doc={item.content} />
+          <RichText doc={withoutRepeatedLead(item.content, item.excerpt)} />
           {event && <ActivityFacts facts={event.facts} />}
           {item.sdgs.length > 0 && (
             <div className="space-y-3">

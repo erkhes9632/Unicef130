@@ -10,6 +10,7 @@ import { resolveLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { pick } from "@/lib/data/localize";
 import { listDirectionActivities } from "@/lib/data/events";
+import { displayYear } from "@/lib/data/impact";
 import { listMembers } from "@/lib/data/members";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
 import { clubDirections } from "@/lib/types";
@@ -47,7 +48,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
   const locale = await resolveLocale(params);
   const t = await getTranslations("About");
   const tn = await getTranslations("News");
-  const [{ leadership }, { about, club }, activities] = await Promise.all([
+  const [{ leadership, leadershipYear }, { about, club }, activities] = await Promise.all([
     listMembers(locale),
     getSiteSettings(),
     listDirectionActivities(locale),
@@ -186,7 +187,11 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
       {leadership.length > 0 && (
         <Section className="bg-muted/30">
           <SectionHeading
-            title={t("leadershipTitle")}
+            title={
+              leadershipYear
+                ? t("leadershipOfYear", { year: displayYear(leadershipYear) })
+                : t("leadershipTitle")
+            }
             description={t("leadershipDescription")}
             action={
               <Button asChild variant="outline">

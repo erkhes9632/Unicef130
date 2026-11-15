@@ -5,7 +5,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionState } from "@/lib/admin/action-state";
-import { AdminField, FormAlert, FormSection, NativeSelect, SubmitButton } from "./form";
+import {
+  AdminField,
+  FormAlert,
+  FormSection,
+  keepValuesOnSubmit,
+  NativeSelect,
+  SubmitButton,
+} from "./form";
 import { ImageField } from "./image-field";
 
 export type MemberFormValues = {
@@ -21,6 +28,7 @@ export type MemberFormValues = {
   active: boolean;
   showPublicly: boolean;
   volunteerHours: number | null;
+  schoolYear: string | null;
 };
 
 export function MemberForm({
@@ -33,7 +41,11 @@ export function MemberForm({
   const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
   return (
-    <form action={formAction} className="grid max-w-4xl gap-6 lg:grid-cols-[1fr_18rem]">
+    <form
+      action={formAction}
+      onSubmit={keepValuesOnSubmit(formAction)}
+      className="grid max-w-4xl gap-6 lg:grid-cols-[1fr_18rem]"
+    >
       <div className="space-y-6">
         <FormAlert state={state} />
         <FormSection title="Мэдээлэл">
@@ -101,6 +113,20 @@ export function MemberForm({
               авсан)
             </Label>
           </div>
+          <AdminField
+            label="Хичээлийн жил"
+            htmlFor="schoolYear"
+            hint="Удирдлагын хувьд заавал: сайт дээр хамгийн сүүлийн жилийн удирдлага харагдана (жишээ: 2026-2027)."
+            errors={e.schoolYear}
+          >
+            <Input
+              id="schoolYear"
+              name="schoolYear"
+              defaultValue={initial?.schoolYear ?? ""}
+              placeholder="2026-2027"
+              className="max-w-40"
+            />
+          </AdminField>
           <AdminField
             label="Сайн дурын цаг"
             htmlFor="volunteerHours"

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
 import type { AboutContent, ValueItem } from "@/lib/settings/types";
-import { AdminField, FormAlert, FormSection, SubmitButton } from "./form";
+import { AdminField, FormAlert, FormSection, keepValuesOnSubmit, SubmitButton } from "./form";
 import { ListEditor } from "./list-editor";
 
 type Row = ValueItem & { _id: string };
@@ -90,7 +90,11 @@ export function AboutPageForm({
   );
 
   return (
-    <form action={formAction} className="max-w-4xl space-y-6">
+    <form
+      action={formAction}
+      onSubmit={keepValuesOnSubmit(formAction)}
+      className="max-w-4xl space-y-6"
+    >
       <FormAlert state={state} />
       {state.fieldErrors && (
         <ul className="list-disc rounded-xl bg-destructive/10 p-3 pl-8 text-sm text-destructive">

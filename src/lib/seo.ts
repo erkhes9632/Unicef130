@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { cache } from "react";
 import { routing, type Locale } from "@/i18n/routing";
+import { getBranding, getClubNames } from "@/lib/branding";
 
 /**
  * Public origin of the site. Order: SITE_URL var (set in production) → NEXT_PUBLIC_SITE_URL
@@ -63,7 +64,11 @@ export async function pageMetadata({
   const languages = Object.fromEntries(
     routing.locales.map((l) => [l, `${base}${localizedPath(l, path)}`]),
   );
-  const images = image && !image.endsWith(".svg") ? [{ url: image }] : [DEFAULT_OG_IMAGE];
+  const branding = await getBranding(locale);
+  const fallback = branding.ogImage
+    ? { url: branding.ogImage, width: 1200, height: 630 }
+    : DEFAULT_OG_IMAGE;
+  const images = image && !image.endsWith(".svg") ? [{ url: image }] : [fallback];
   return {
     ...(title ? { title } : {}),
     description,
@@ -76,7 +81,7 @@ export async function pageMetadata({
       url,
       title,
       description,
-      siteName: locale === "en" ? "130 UNICEF Club" : "130 UNICEF клуб",
+      siteName: (await getClubNames(locale)).short,
       locale: locale === "en" ? "en_US" : "mn_MN",
       images,
       ...(publishedTime ? { publishedTime } : {}),

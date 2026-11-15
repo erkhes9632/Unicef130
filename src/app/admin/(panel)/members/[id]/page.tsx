@@ -11,7 +11,7 @@ import { saveMember } from "../actions";
 export const metadata: Metadata = { title: "Гишүүн засах" };
 
 export default async function EditMemberPage({ params }: PageProps<"/admin/members/[id]">) {
-  await requireUser();
+  await requireUser("members");
   const { id } = await params;
   const db = await getDb();
   const [m] = await db.select().from(members).where(eq(members.id, id)).limit(1);

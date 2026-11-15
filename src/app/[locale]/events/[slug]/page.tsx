@@ -1,6 +1,7 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, Clock, MapPin } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { findSlugRedirect } from "@/lib/data/redirects";
 import { getTranslations } from "next-intl/server";
 import { CoverImage } from "@/components/common/cover-image";
 import { RichText } from "@/components/common/rich-text";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { getClubNames } from "@/lib/branding";
 import { getEventBySlug, isUpcoming } from "@/lib/data/events";
 import { formatDate, formatDateRange, formatTimeRange } from "@/lib/dates/format";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
@@ -37,7 +39,11 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
   const locale = await resolveLocale(params);
   const { slug } = await params;
   const e = await getEventBySlug(locale, slug);
-  if (!e) notFound();
+  if (!e) {
+    const to = await findSlugRedirect("events", slug);
+    if (to) permanentRedirect(localizedPath(locale, `/events/${to}`));
+    notFound();
+  }
 
   const t = await getTranslations("Events");
   const ta = await getTranslations("Activity");
@@ -78,7 +84,7 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
       e.coverUrl && !e.coverUrl.endsWith(".svg")
         ? [`${siteUrl}${e.coverUrl}`]
         : [`${siteUrl}/og-default.png`],
-    organizer: { "@type": "Organization", name: "130 UNICEF клуб", url: siteUrl },
+    organizer: { "@type": "Organization", name: (await getClubNames(locale)).name, url: siteUrl },
     url,
   };
 

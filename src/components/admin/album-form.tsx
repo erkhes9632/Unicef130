@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
-import { AdminField, FormAlert, FormSection, SubmitButton } from "./form";
+import { AdminField, FormAlert, FormSection, keepValuesOnSubmit, SubmitButton } from "./form";
 import { SlugField } from "./slug-field";
 
 export type AlbumFormValues = {
@@ -34,7 +34,7 @@ export function AlbumForm({
   );
   const e = state.fieldErrors ?? {};
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} onSubmit={keepValuesOnSubmit(formAction)} className="space-y-4">
       <FormAlert state={state} />
       <FormSection title="Цомгийн мэдээлэл">
         <div className="grid gap-4 md:grid-cols-2">

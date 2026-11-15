@@ -15,7 +15,7 @@ import { deleteMessage, setMessageRead } from "./actions";
 export const metadata: Metadata = { title: "Зурвасууд" };
 
 export default async function AdminMessagesPage({ searchParams }: PageProps<"/admin/messages">) {
-  const me = await requireUser();
+  const me = await requireUser("messages");
   const sp = await searchParams;
   const filter = sp.filter === "unread" || sp.filter === "read" ? sp.filter : "all";
   const db = await getDb();
@@ -76,7 +76,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
                   </p>
                   <p className="text-sm text-muted-foreground">
                     <a
-                      href={`mailto:${m.email}?subject=${encodeURIComponent(`Re: ${m.subject || "130 UNICEF клуб"}`)}`}
+                      href={`mailto:${m.email}?subject=${encodeURIComponent(`Re: ${m.subject || "Таны зурвас"}`)}`}
                       className="hover:text-foreground"
                     >
                       {m.email}

@@ -50,10 +50,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     getBranding(locale),
     getLatestImpact().catch(() => null),
   ]);
-  const stats = await getHomeStats(locale, settings, {
-    members: t("Home.stats.members"),
-    events: t("Home.stats.events"),
-  });
+  const stats = await getHomeStats(
+    locale,
+    settings,
+    { members: t("Home.stats.members"), events: t("Home.stats.events") },
+    { featuredOnly: true },
+  );
   const socials = settings.socials;
   const partners = settings.partners.map((p) => ({
     name: pick(locale, p.name, p.nameEn),
@@ -159,16 +161,27 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             <h2 id="stats-title" className="sr-only">
               {t("Home.statsTitle")}
             </h2>
-            <dl className="flex flex-wrap justify-center gap-x-6 gap-y-8">
+            {/* 2 columns on phones (an odd last item spans both), one row on desktop. */}
+            <dl
+              className={cn(
+                "grid grid-cols-2 gap-x-4 gap-y-8",
+                stats.length === 3 && "sm:grid-cols-3",
+                stats.length === 4 && "md:grid-cols-4",
+                stats.length === 5 && "sm:grid-cols-3 lg:grid-cols-5",
+              )}
+            >
               {stats.map((s, i) => (
                 <div
                   key={`${s.label}-${i}`}
-                  className="flex w-[calc(50%-0.75rem)] min-w-0 flex-col text-center sm:w-48 lg:w-56"
+                  className={cn(
+                    "flex min-w-0 flex-col text-center",
+                    stats.length % 2 === 1 && i === stats.length - 1 && "col-span-2 sm:col-span-1",
+                  )}
                 >
                   <dt className="text-sm text-muted-foreground">{s.label}</dt>
                   <dd
                     className={cn(
-                      "order-first font-heading text-[clamp(1.5rem,8vw,2.25rem)] font-extrabold break-words sm:text-5xl",
+                      "order-first font-heading text-[clamp(1.6rem,7vw,2.25rem)] font-extrabold whitespace-nowrap tabular-nums sm:text-4xl xl:text-5xl",
                       statTones[i % statTones.length],
                     )}
                   >
@@ -355,50 +368,60 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               {socials.length > 0 && <SocialLinks socials={socials} variant="buttons" />}
             </div>
             {partners.length > 0 && (
-              <div>
-                <h3 className="mb-4 text-sm font-bold tracking-wide text-muted-foreground uppercase">
-                  {t("Home.partnersTitle")}
-                </h3>
-                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {partners.map((p, i) => {
-                    const inner = p.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- R2 logo
-                      <img
-                        src={p.logo}
-                        alt={p.name}
-                        loading="lazy"
-                        className="max-h-12 w-auto max-w-full object-contain"
-                      />
-                    ) : (
-                      <span className="flex flex-col items-center text-center">
-                        <span className="text-sm font-semibold">{p.name}</span>
-                        {p.beneficiary && (
-                          <span className="text-xs text-muted-foreground">
-                            {t("Home.beneficiary")}
-                          </span>
-                        )}
-                      </span>
-                    );
-                    const box =
-                      "flex h-20 items-center justify-center rounded-2xl bg-card p-3 ring-1 ring-border";
-                    return (
-                      <li key={`${p.name}-${i}`}>
-                        {p.url ? (
-                          <a
-                            href={p.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(box, "transition-shadow hover:shadow-md")}
-                          >
-                            {inner}
-                          </a>
-                        ) : (
-                          <div className={box}>{inner}</div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+              <div className="space-y-6">
+                {[
+                  {
+                    key: "partners",
+                    title: t("Home.partnersTitle"),
+                    items: partners.filter((p) => !p.beneficiary),
+                  },
+                  {
+                    key: "beneficiaries",
+                    title: t("Home.beneficiariesTitle"),
+                    items: partners.filter((p) => p.beneficiary),
+                  },
+                ]
+                  .filter((g) => g.items.length > 0)
+                  .map((g) => (
+                    <div key={g.key}>
+                      <h3 className="mb-4 text-sm font-bold tracking-wide text-muted-foreground uppercase">
+                        {g.title}
+                      </h3>
+                      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {g.items.map((p, i) => {
+                          const inner = p.logo ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- R2 logo
+                            <img
+                              src={p.logo}
+                              alt={p.name}
+                              loading="lazy"
+                              className="max-h-12 w-auto max-w-full object-contain"
+                            />
+                          ) : (
+                            <span className="text-center text-sm font-semibold">{p.name}</span>
+                          );
+                          const box =
+                            "flex h-20 items-center justify-center rounded-2xl bg-card p-3 ring-1 ring-border";
+                          return (
+                            <li key={`${p.name}-${i}`}>
+                              {p.url ? (
+                                <a
+                                  href={p.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={cn(box, "transition-shadow hover:shadow-md")}
+                                >
+                                  {inner}
+                                </a>
+                              ) : (
+                                <div className={box}>{inner}</div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
               </div>
             )}
           </div>

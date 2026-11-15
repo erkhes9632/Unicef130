@@ -2,10 +2,12 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { twoFactor as twoFactorPlugin } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { createDb } from "@/db";
-import { account, session, user, verification } from "@/db/schema";
+import { account, rateLimit, session, twoFactor, user, verification } from "@/db/schema";
 import { hashPassword, verifyPassword } from "./password";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "./password-policy";
 
 function createAuth(env: CloudflareEnv) {
   const db = createDb(env.DB);
@@ -14,22 +16,24 @@ function createAuth(env: CloudflareEnv) {
     .map((o) => o.trim())
     .filter(Boolean);
 
+  const isDev = env.NEXTJS_ENV === "development";
+
   return betterAuth({
-    appName: "130 UNICEF клуб",
+    appName: "UNICEF Club admin",
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL || undefined, // inferred from the request when unset
     trustedOrigins,
     database: drizzleAdapter(db, {
       provider: "sqlite",
-      schema: { user, session, account, verification },
+      schema: { user, session, account, verification, rateLimit, twoFactor },
     }),
     emailAndPassword: {
       enabled: true,
       // No public sign-up: the first admin is created by `bun run admin:create`,
       // other users are created by admins in /admin/users.
       disableSignUp: true,
-      minPasswordLength: 10,
-      maxPasswordLength: 128,
+      minPasswordLength: MIN_PASSWORD_LENGTH,
+      maxPasswordLength: MAX_PASSWORD_LENGTH,
       password: { hash: hashPassword, verify: verifyPassword },
     },
     user: {
@@ -43,7 +47,27 @@ function createAuth(env: CloudflareEnv) {
       updateAge: 60 * 60 * 24, // refresh daily
       cookieCache: { enabled: true, maxAge: 60 * 5 },
     },
-    rateLimit: { enabled: true, window: 60, max: 30 },
+    // Stored in D1 so every Worker isolate shares the counters (in-memory limits reset per
+    // isolate). The admin login form is a Server Action and has its own limiter (login-limit.ts).
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 30,
+      customRules: {
+        "/sign-in/*": { window: 15 * 60, max: 10 },
+        "/two-factor/*": { window: 15 * 60, max: 10 },
+        "/sign-up/*": { window: 60, max: 3 },
+      },
+    },
+    advanced: {
+      // Secure cookies everywhere except local http development.
+      useSecureCookies: !isDev,
+      defaultCookieAttributes: { httpOnly: true, sameSite: "lax", secure: !isDev },
+      // Cloudflare sets cf-connecting-ip itself (clients cannot spoof it); x-forwarded-for is
+      // only a local-development fallback. Used for the rate-limit keys.
+      ipAddress: { ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"] },
+    },
     databaseHooks: {
       session: {
         create: {
@@ -58,7 +82,8 @@ function createAuth(env: CloudflareEnv) {
         },
       },
     },
-    plugins: [nextCookies()],
+    // nextCookies must stay last: it forwards Set-Cookie from Server Actions.
+    plugins: [twoFactorPlugin({ issuer: "UNICEF Club 130" }), nextCookies()],
   });
 }
 

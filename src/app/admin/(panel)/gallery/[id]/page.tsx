@@ -25,7 +25,7 @@ export default async function EditAlbumPage({
   params,
   searchParams,
 }: PageProps<"/admin/gallery/[id]">) {
-  await requireUser();
+  await requireUser("content");
   const { id } = await params;
   const sp = await searchParams;
   const db = await getDb();

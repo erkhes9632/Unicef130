@@ -37,10 +37,31 @@ describe("messages", () => {
       if (typeof v === "string") expect(placeholders(String(fen[k])), k).toEqual(placeholders(v));
     }
   });
-  test("English strings contain no Cyrillic (except language names)", () => {
+  test("English strings contain no Cyrillic (except language names and name examples)", () => {
+    // Applicants must write their name in Cyrillic, so the English hint shows a Cyrillic example.
+    const allowed = new Set([
+      "Locale.mn",
+      "Forms.fullNamePlaceholder",
+      "Forms.errors.nameCyrillic",
+    ]);
     for (const [k, v] of Object.entries(fen)) {
-      if (k === "Locale.mn") continue;
+      if (allowed.has(k)) continue;
       expect(/[Ѐ-ӿ]/.test(JSON.stringify(v)), k).toBe(false);
     }
+  });
+});
+
+describe("client message namespaces", () => {
+  test("every namespace read by a client component is sent to the browser", async () => {
+    const { clientNamespaces } = await import("@/i18n/client-namespaces");
+    const { Glob } = await import("bun");
+    const used = new Set<string>();
+    for await (const file of new Glob("src/**/*.tsx").scan(".")) {
+      const src = await Bun.file(file).text();
+      if (!/^["']use client["']/m.test(src)) continue;
+      for (const m of src.matchAll(/useTranslations\(\s*["'](\w+)/g)) used.add(m[1]!);
+    }
+    expect(used.size).toBeGreaterThan(0);
+    for (const ns of used) expect(clientNamespaces as readonly string[]).toContain(ns);
   });
 });

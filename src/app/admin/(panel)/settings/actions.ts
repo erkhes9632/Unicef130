@@ -3,10 +3,10 @@
 import { inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { settings } from "@/db/schema";
-import { logActivity } from "@/lib/admin/activity";
+import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
-import { requireRole } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { deleteMediaUrls, isOwnMediaUrl } from "@/lib/media/server";
 import { SETTINGS_KEYS, socialPlatforms, type SiteSettings } from "@/lib/settings/types";
@@ -38,6 +38,7 @@ function removedSiteImages(
     s.branding.schoolLogoUrl,
     s.branding.unicefLogoUrl,
     s.branding.heroImageUrl,
+    s.branding.ogImageUrl,
     ...s.partners.map((p) => p.logoUrl),
   ];
   const kept = new Set(urls(after));
@@ -46,12 +47,21 @@ function removedSiteImages(
 
 export async function saveSettings(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const year = fd.str(data, "club.foundedYear");
     const parsed = settingsInputSchema.safeParse({
+      announcement: {
+        enabled: fd.bool(data, "announcement.enabled"),
+        text: fd.str(data, "announcement.text"),
+        textEn: fd.str(data, "announcement.textEn"),
+        href: fd.str(data, "announcement.href"),
+      },
+      security: { requireAdminTwoFactor: fd.bool(data, "security.requireAdminTwoFactor") },
       club: {
         name: fd.str(data, "club.name"),
         nameEn: fd.str(data, "club.nameEn"),
+        shortName: fd.str(data, "club.shortName"),
+        shortNameEn: fd.str(data, "club.shortNameEn"),
         description: fd.str(data, "club.description"),
         descriptionEn: fd.str(data, "club.descriptionEn"),
         foundedYear: year === "" ? null : Number(year),
@@ -62,6 +72,7 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
         heroImageUrl: fd.str(data, "branding.heroImageUrl"),
         heroImageAlt: fd.str(data, "branding.heroImageAlt"),
         heroImageAltEn: fd.str(data, "branding.heroImageAltEn"),
+        ogImageUrl: fd.str(data, "branding.ogImageUrl"),
       },
       contact: {
         address: fd.str(data, "contact.address"),
@@ -99,9 +110,20 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
     await (await getDb()).delete(settings).where(inArray(settings.key, ["donationUrl"]));
     await deleteMediaUrls(removedSiteImages(before, parsed.data));
 
+    const changed = diffFields(
+      before,
+      parsed.data,
+      Object.keys(parsed.data) as (keyof typeof parsed.data)[],
+    );
     await logActivity(user, "settings.update", {
       type: "settings",
-      summary: "Сайтын тохиргоог шинэчлэв",
+      summary: changed
+        ? `Сайтын тохиргоог шинэчлэв: ${Object.keys(changed).join(", ")}`
+        : "Сайтын тохиргоог хадгалав (өөрчлөлтгүй)",
+      changes:
+        changed && "security" in changed
+          ? { ...changed, security: [before.security, parsed.data.security] }
+          : changed,
     });
     revalidatePublic();
     return { ok: true, message: "Тохиргоо хадгалагдлаа." };
@@ -112,7 +134,7 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
 
 export async function saveAboutPage(_prev: ActionState, data: FormData): Promise<ActionState> {
   try {
-    const user = await requireRole("admin");
+    const user = await requirePermission("admin");
     const parsed = aboutInputSchema.safeParse({
       intro: fd.str(data, "intro"),
       introEn: fd.str(data, "introEn"),

@@ -7,7 +7,7 @@ import { saveAlbum } from "../actions";
 export const metadata: Metadata = { title: "Шинэ цомог" };
 
 export default async function NewAlbumPage() {
-  await requireUser();
+  await requireUser("content");
   return (
     <>
       <AdminPageHeader

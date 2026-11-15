@@ -1,12 +1,10 @@
 {
   "Metadata": {
-    "title": "130 UNICEF Club — School No. 130",
-    "titleTemplate": "%s | 130 UNICEF Club",
     "description": "The UNICEF Club of School No. 130 is part of the UNICEF Club Mongolia network: a student club organising volunteer activities in three directions — advocacy, education and fundraising."
   },
   "Common": {
     "brandPair": "School No. 130 × UNICEF",
-    "clubName": "130 UNICEF Club",
+    "clubName": "UNICEF Club of School No. 130",
     "schoolName": "School No. 130",
     "joinCta": "Become a member",
     "learnMore": "Learn more",
@@ -34,7 +32,9 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "menu": "Menu",
-    "impact": "Impact"
+    "impact": "Impact",
+    "newsGroup": "News",
+    "getInvolved": "Get involved"
   },
   "Theme": {
     "toggle": "Toggle color mode",
@@ -48,12 +48,12 @@
     "en": "English"
   },
   "Footer": {
-    "about": "A student club of School No. 130 and part of the UNICEF Club Mongolia network. Founded in the 2025–2026 school year.",
+    "about": "A student club of School No. 130 and a member of the UNICEF Club Mongolia network.",
     "explore": "Explore",
     "getInvolved": "Get involved",
     "contact": "Contact",
     "follow": "Follow us",
-    "rights": "© {year} 130 UNICEF Club, School No. 130.",
+    "rights": "© {year} {name}.",
     "disclaimer": "This is a school student club website, not an official UNICEF website.",
     "admin": "Admin"
   },
@@ -89,10 +89,10 @@
     "ctaTitle": "You can be part of the change too",
     "ctaBody": "Join the club and take part in helping children.",
     "ctaSupport": "Other ways to support",
-    "beneficiary": "Donation recipient",
     "impactEyebrow": "Impact",
     "impactTitle": "Our {year} results",
-    "impactCta": "See the results"
+    "impactCta": "See the results",
+    "beneficiariesTitle": "Organisations that received donations"
   },
   "About": {
     "metaTitle": "About",
@@ -113,7 +113,8 @@
       "education": "Club meetings, working in teams and mentoring sessions — learning and growing together.",
       "charity": "Charity sales and fundraising at tournaments."
     },
-    "directionAll": "All {direction} posts"
+    "directionAll": "All {direction} posts",
+    "leadershipOfYear": "Club leadership {year}"
   },
   "News": {
     "metaTitle": "News",
@@ -172,7 +173,9 @@
     "joinTitle": "Want to join our team?",
     "joinBody": "Students from any class can join the club.",
     "empty": "The member list is empty for now.",
-    "hiddenNote": "To protect members' privacy, other members' names are not published."
+    "hiddenNote": "To protect members' privacy, other members' names are not published.",
+    "leadershipOfYear": "Leadership {year}",
+    "otherYears": "Other years"
   },
   "Gallery": {
     "metaTitle": "Gallery",
@@ -192,7 +195,7 @@
     "metaTitle": "Join",
     "eyebrow": "Become a member",
     "title": "Join the club!",
-    "description": "Fill in the form below and we'll get back to you soon.",
+    "description": "Fill in the form below. After sending it you will get a tracking code.",
     "whyTitle": "Why join?",
     "why": [
       "Make a real difference for children",
@@ -201,7 +204,19 @@
       "Gain volunteering experience"
     ],
     "privacyTitle": "Your privacy",
-    "privacy": "We only collect what the club needs for registration. We never share your data with third parties."
+    "privacy": "We only collect what the club needs for registration. We never share your data with third parties.",
+    "checkStatus": "Check application status",
+    "closedTitle": "Recruitment is currently closed",
+    "closedBody": "The club accepts new members during recruitment periods. The next one will be announced on this page.",
+    "closedHint": "The next recruitment period has not been announced yet.",
+    "fullTitle": "Recruitment is full",
+    "fullBody": "All places for this recruitment period are taken, so new applications are not accepted.",
+    "fullHint": "If you already applied, check your status with the button below.",
+    "opensOn": "Opens on {date}",
+    "seeEvents": "See events",
+    "openUntil": "Open until {date}",
+    "timeLeft": "Time left",
+    "placesLeft": "{count, plural, one {# place left} other {# places left}}"
   },
   "Contact": {
     "metaTitle": "Contact",
@@ -271,7 +286,7 @@
   },
   "Forms": {
     "fullName": "Full name",
-    "fullNamePlaceholder": "e.g. Anujin Bat",
+    "fullNamePlaceholder": "e.g. Батын Анужин",
     "className": "Class",
     "classNamePlaceholder": "e.g. 10A",
     "phone": "Phone number",
@@ -301,19 +316,42 @@
       "tooShort": "Too short",
       "tooLong": "Too long",
       "email": "Invalid email address",
-      "phone": "Invalid phone number",
-      "className": "Please enter a valid class (e.g. 10A)",
+      "phone": "Please enter a valid 8-digit phone number",
+      "className": "Please choose your class from the list",
       "consent": "You must agree to continue",
-      "helpWith": "Please choose at least one"
+      "helpWith": "Please choose at least one",
+      "nameCyrillic": "Please write your family name and given name in Cyrillic (e.g. Батын Анужин)",
+      "noLinks": "Links are not allowed"
     },
     "joinNextSteps": [
       "The club leaders will read your application.",
       "They will contact you using the phone number (or email) you gave.",
-      "Meanwhile, have a look at the club's news and events."
+      "You can check the status any time with your tracking code."
     ],
     "joinSeeEvents": "See events",
     "joinSeeNews": "Read news",
-    "turnstileLoadError": "The security check couldn't load. Check your connection and reload the page."
+    "turnstileLoadError": "The security check couldn't load. Check your connection and reload the page.",
+    "unavailableTitle": "Form temporarily unavailable",
+    "unavailable": "The form is temporarily closed while spam protection is being set up. Please try again later.",
+    "unavailableBack": "Back to home",
+    "fullNameHint": "In Cyrillic: family name and given name",
+    "classNameSelect": "Choose your class",
+    "choose": "Choose",
+    "joinClosedError": "Recruitment has closed.",
+    "joinFullError": "All places have been taken.",
+    "rateError": "An application was sent from this network a moment ago. Please wait a little and try again.",
+    "tooFastError": "Please review the form once more and send it again.",
+    "staleError": "This page has been open for a long time. Please reload it and send again.",
+    "validationError": "Please fix the highlighted fields.",
+    "duplicateTitle": "You have already applied",
+    "duplicateBody": "An application with this phone number already exists for this recruitment period. You can check its status.",
+    "checkStatus": "Check application status",
+    "waitlistNotice": "All places are taken, so your application will be added to the waiting list.",
+    "joinWaitlistTitle": "You are on the waiting list",
+    "trackingCodeLabel": "Your tracking code",
+    "trackingCodeHint": "Keep this code — you need it to check your status.",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "Errors": {
     "title": "Sorry, something went wrong",
@@ -356,6 +394,59 @@
     "sdgDescription": "The club's activities relate to these goals.",
     "sdgActivities": "{count, plural, one {# activity} other {# activities}}",
     "autoMembers": "Active members",
-    "autoActivities": "Activities organised"
+    "autoActivities": "Activities organised",
+    "activitiesFootnote": "The report lists {reported} activities; {listed} of them are described in detail on this site."
+  },
+  "Countdown": {
+    "days": "days",
+    "hours": "hours",
+    "minutes": "min",
+    "seconds": "sec"
+  },
+  "Banner": {
+    "recruitmentOpen": "Recruitment is open — until {date}!",
+    "timeLeft": "Time left:",
+    "cta": "Apply now",
+    "label": "Announcement"
+  },
+  "JoinStatus": {
+    "metaTitle": "Application status",
+    "eyebrow": "Become a member",
+    "title": "Check your application status",
+    "description": "Enter the tracking code you received and the last 4 digits of your phone number.",
+    "code": "Tracking code",
+    "last4": "Last 4 digits of your phone number",
+    "submit": "Check",
+    "greeting": "Hello, {name}",
+    "submitted": "submitted on {date}",
+    "errors": {
+      "notFound": "No application matches. Please check the code and the last 4 digits.",
+      "rate": "Too many attempts. Please try again in 10 minutes.",
+      "invalid": "Enter the code as UC-XXXX and the last 4 digits as numbers.",
+      "captcha": "Please complete the security check. If you cannot see it, reload the page.",
+      "unavailable": "The form is temporarily closed while spam protection is being set up. Please try again later."
+    },
+    "status": {
+      "received": {
+        "title": "Received",
+        "body": "We have your application. The club leaders are reviewing it."
+      },
+      "interview": {
+        "title": "Invited to an interview",
+        "body": "The club leaders will contact you to arrange a time."
+      },
+      "accepted": {
+        "title": "Accepted — welcome!",
+        "body": "You are now a club member. We will contact you about the next steps."
+      },
+      "waitlist": {
+        "title": "On the waiting list",
+        "body": "We will contact you if a place becomes available."
+      },
+      "declined": {
+        "title": "Not accepted this time",
+        "body": "Thank you for applying. You are welcome to apply again in the next recruitment period."
+      }
+    }
   }
 }

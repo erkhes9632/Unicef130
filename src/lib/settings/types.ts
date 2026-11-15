@@ -1,3 +1,4 @@
+import "@/lib/validation/zod-config";
 import { z } from "zod";
 
 /**
@@ -24,6 +25,9 @@ export type SocialLink = { platform: SocialPlatform; url: string };
 export type ClubInfo = {
   name: string;
   nameEn: string;
+  /** Short form for page titles / social cards; falls back to the full name. */
+  shortName: string;
+  shortNameEn: string;
   description: string;
   descriptionEn: string;
   foundedYear: number | null;
@@ -35,6 +39,8 @@ export type Branding = {
   heroImageUrl: string;
   heroImageAlt: string;
   heroImageAltEn: string;
+  /** 1200×630 share image built from the logos in admin (empty → public/og-default.png). */
+  ogImageUrl: string;
 };
 
 export type ContactInfo = {
@@ -53,8 +59,19 @@ export type ContactInfo = {
 
 export const statKinds = ["custom", "members", "events"] as const;
 export type StatKind = (typeof statKinds)[number];
-/** `members` / `events` are counted from D1 (active members / past published events). */
-export type StatItem = { kind: StatKind; label: string; labelEn: string; value: string };
+/**
+ * `members` = active members counted in D1. `events` = activities of the latest school year from
+ * the official yearly report (admin → Жилийн үр дүн), so every page shows the same number.
+ * `featured` items appear in the home page band (max 5); /impact shows all of them.
+ */
+export type StatItem = {
+  kind: StatKind;
+  label: string;
+  labelEn: string;
+  value: string;
+  featured: boolean;
+};
+export const MAX_FEATURED_STATS = 5;
 
 export const partnerTypes = ["partner", "beneficiary"] as const;
 export type PartnerType = (typeof partnerTypes)[number];
@@ -89,8 +106,18 @@ export type AboutContent = {
   values: ValueItem[];
 };
 
+export type SecuritySettings = {
+  /** Admins must enrol an authenticator app before they can use the panel. */
+  requireAdminTwoFactor: boolean;
+};
+
+/** Manual site-wide banner (the recruitment banner appears on its own while a period is open). */
+export type Announcement = { enabled: boolean; text: string; textEn: string; href: string };
+
 export type SiteSettings = {
+  announcement: Announcement;
   club: ClubInfo;
+  security: SecuritySettings;
   branding: Branding;
   contact: ContactInfo;
   socials: SocialLink[];
@@ -112,6 +139,8 @@ export const SETTINGS_KEYS = {
   donation: "donation",
   helpOptions: "helpOptions",
   about: "page.about",
+  security: "security",
+  announcement: "announcement",
 } as const satisfies Record<keyof SiteSettings, string>;
 
 // ---------------------------------------------------------------------------
@@ -167,13 +196,24 @@ export const defaultAbout: AboutContent = {
 };
 
 export const defaultSettings: SiteSettings = {
-  club: { name: "", nameEn: "", description: "", descriptionEn: "", foundedYear: 2025 },
+  announcement: { enabled: false, text: "", textEn: "", href: "" },
+  security: { requireAdminTwoFactor: true },
+  club: {
+    name: "",
+    nameEn: "",
+    shortName: "",
+    shortNameEn: "",
+    description: "",
+    descriptionEn: "",
+    foundedYear: 2025,
+  },
   branding: {
     schoolLogoUrl: "",
     unicefLogoUrl: "",
     heroImageUrl: "",
     heroImageAlt: "",
     heroImageAltEn: "",
+    ogImageUrl: "",
   },
   contact: {
     address: "",
@@ -217,9 +257,18 @@ const list = <T extends z.ZodType>(item: T, max: number) =>
     );
 
 const storedSchemas = {
+  announcement: z.object({
+    enabled: bool(false),
+    text: str(200),
+    textEn: str(200),
+    href: str(500),
+  }),
+  security: z.object({ requireAdminTwoFactor: bool(true) }),
   club: z.object({
     name: str(120),
     nameEn: str(120),
+    shortName: str(60),
+    shortNameEn: str(60),
     description: str(600),
     descriptionEn: str(600),
     foundedYear: z.number().int().min(1900).max(2100).nullable().catch(null),
@@ -230,6 +279,7 @@ const storedSchemas = {
     heroImageUrl: str(500),
     heroImageAlt: str(200),
     heroImageAltEn: str(200),
+    ogImageUrl: str(500),
   }),
   contact: z.object({
     address: str(300),
@@ -252,6 +302,7 @@ const storedSchemas = {
       label: str(60),
       labelEn: str(60),
       value: str(20),
+      featured: bool(true),
     }),
     12,
   ),
@@ -308,7 +359,9 @@ export function parseSettings(rows: Map<string, unknown>): SiteSettings {
     return parsed.success ? (parsed.data as SiteSettings[K]) : defaultSettings[key];
   };
   const settings: SiteSettings = {
+    announcement: read("announcement"),
     club: read("club"),
+    security: read("security"),
     branding: read("branding"),
     contact: read("contact"),
     socials: read("socials").filter((s) => s.url),

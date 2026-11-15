@@ -1,4 +1,12 @@
 # https://developers.cloudflare.com/workers/static-assets/headers
 # https://opennext.js.org/cloudflare/caching#static-assets-caching
+# Static files are served before the Worker runs, so their headers are set here. Pages and API
+# responses get their headers (including the Content-Security-Policy) in src/middleware.ts.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
 /_next/static/*
   Cache-Control: public,max-age=31536000,immutable

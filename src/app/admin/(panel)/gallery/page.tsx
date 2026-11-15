@@ -15,7 +15,7 @@ import { deleteAlbum } from "./actions";
 export const metadata: Metadata = { title: "Зургийн цомог" };
 
 export default async function AdminGalleryPage() {
-  await requireUser();
+  await requireUser("content");
   const db = await getDb();
   const rows = await db
     .select({

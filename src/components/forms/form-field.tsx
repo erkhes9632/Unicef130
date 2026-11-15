@@ -62,6 +62,8 @@ const knownErrors = [
   "className",
   "consent",
   "helpWith",
+  "nameCyrillic",
+  "noLinks",
 ] as const;
 
 export function translateError(t: ReturnType<typeof useTranslations<"Forms">>, key: string) {

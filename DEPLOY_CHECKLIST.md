@@ -92,6 +92,47 @@ secret, лог, домэйний заавар: [README.md → Production](./READ
 - ☐ `/impact`, `/about`, `/members`, `/news` дээр шалгана. Админ → Жилийн үр дүн дээрх шар
   тэмдэглэлүүдийг (тайлангийн зөрүү) уншина.
 
+## 7c. Аюулгүй байдлын засвар (migration 0003)
+
+- ☐ Turnstile-ийн жинхэнэ түлхүүр (доорх 3-р хэсэг). Production дээр тест түлхүүр эсвэл secret
+  байхгүй бол join/contact маягт «түр ажиллахгүй» гэж харагдана (spam нэвтрэхгүй).
+- ☐ Migration + deploy + шинэчилсэн seed:
+  ```bash
+  bunx wrangler d1 migrations list DB --remote     # 0003_auth_hardening_redirects
+  bun run db:migrate:remote
+  bun run deploy
+  bun run report:seed                              # private/seed-report-2025-2026.sql-г шинэчилнэ
+  bunx wrangler d1 execute DB --remote --file private/seed-report-2025-2026.sql
+  ```
+  Seed нь админы хийсэн засварыг дарж бичихгүй.
+
+## 7d. Админ бүртгэл ба аюулгүй байдал (migration 0004)
+
+- ☐ Migration + deploy:
+  ```bash
+  bunx wrangler d1 migrations list DB --remote     # 0004_accounts_security
+  bun run db:migrate:remote
+  bun run deploy
+  ```
+- ☐ Анхны админ (хэрэв үүсгээгүй бол): `bun run admin:create -- <и-мэйл> --name "Нэр"`.
+- ☐ Нэвтрээд 2FA тохируулна (заавал), нөөц кодуудаа хадгална.
+- ☐ Бусад хүмүүсийг Админ → Хэрэглэгчид → «Хэрэглэгч урих»-аар нэмнэ.
+
+## 7e. Элсэлтийн систем (migration 0005)
+
+- ☐ Migration + deploy (0004 хараахан ажиллаагүй бол хамт, дарааллаар нь ажиллана):
+  ```bash
+  bunx wrangler d1 migrations list DB --remote     # 0005_recruitment
+  bun run db:migrate:remote
+  bun run deploy
+  ```
+- ☐ Deploy хийсний дараа `/join` **хаалттай** болно — Админ → Элсэлт → «Шинэ элсэлт» үүсгэтэл
+  маягт гарахгүй. Хуучин өргөдлүүд хадгалагдана («Элсэлтгүй (хуучин)» шүүлтүүр).
+- ☐ Сургуульд олуулаа бөглөх өдөр IP хязгаарыг түр өсгөнө (README → «Спамаас хамгаалалт ба
+  сургуулийн Wi-Fi»).
+- ☐ Smoke test: `/join` (хаалттай төлөв), `/join/status` (Turnstile харагдана), админ → Элсэлт,
+  Өргөдлүүд.
+
 ## 8. Контент (deploy-ийн дараа админаас бөглөнө)
 
 Бөглөөгүй бол тухайн хэсэг сайт дээр харагдахгүй (зохиомол утга гарахгүй).

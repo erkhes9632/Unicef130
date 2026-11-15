@@ -6,6 +6,7 @@ import { mainNav } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { pick } from "@/lib/data/localize";
+import { getClubNames } from "@/lib/branding";
 import { getSiteSettings, publicContact } from "@/lib/data/settings";
 
 export async function SiteFooter() {
@@ -15,6 +16,7 @@ export async function SiteFooter() {
   const info = publicContact(locale, contact);
   const about = pick(locale, club.description, club.descriptionEn) || t("Footer.about");
   const year = new Date().getFullYear();
+  const { name: clubName } = await getClubNames(locale);
   const icon = "mt-0.5 size-4 shrink-0 text-brand-cyan-strong";
   const contactLines = [
     info.address && { key: "address", icon: MapPin, text: info.address },
@@ -102,7 +104,7 @@ export async function SiteFooter() {
 
       <div className="border-t">
         <div className="container-page flex flex-col gap-2 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>{t("Footer.rights", { year })}</p>
+          <p>{t("Footer.rights", { year, name: clubName })}</p>
           <p>{t("Footer.disclaimer")}</p>
         </div>
       </div>
