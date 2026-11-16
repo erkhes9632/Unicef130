@@ -24,6 +24,7 @@ export const mainNav = [
   { key: "gallery", href: "/gallery" },
   { key: "support", href: "/support" },
   { key: "contact", href: "/contact" },
+  { key: "faq", href: "/faq" },
 ] as const;
 
 export type NavKey = (typeof mainNav)[number]["key"];

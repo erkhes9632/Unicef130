@@ -2,8 +2,14 @@ import { ArrowRight, BarChart3, GraduationCap, HandHeart, Megaphone } from "luci
 import { getTranslations } from "next-intl/server";
 import { LogoImage, Monogram } from "@/components/brand/logo-image";
 import { SocialLinks } from "@/components/brand/social-links";
-import { DecorativeShapes } from "@/components/common/decorative-shapes";
+import {
+  ColorRibbon,
+  DecorativeShapes,
+  HeroHighlight,
+} from "@/components/common/decorative-shapes";
+import { CountUp } from "@/components/common/count-up";
 import { Eyebrow, Section, SectionHeading } from "@/components/common/section";
+import { DateBadge } from "@/components/events/date-badge";
 import { EventCard } from "@/components/events/event-card";
 import { NewsCard } from "@/components/news/news-card";
 import { Button } from "@/components/ui/button";
@@ -21,9 +27,24 @@ import { getHomeStats, getSiteSettings, safeExternalUrl, safeImageUrl } from "@/
 import { cn } from "@/lib/utils";
 
 const pillars = [
-  { key: "activity", icon: Megaphone, tone: "bg-brand-cyan-soft text-brand-cyan-strong" },
-  { key: "education", icon: GraduationCap, tone: "bg-brand-purple-soft text-brand-purple-strong" },
-  { key: "charity", icon: HandHeart, tone: "bg-brand-gold-soft text-brand-gold-strong" },
+  {
+    key: "activity",
+    icon: Megaphone,
+    tone: "bg-brand-cyan-soft text-brand-cyan-strong",
+    bar: "bg-brand-cyan",
+  },
+  {
+    key: "education",
+    icon: GraduationCap,
+    tone: "bg-brand-purple-soft text-brand-purple-strong",
+    bar: "bg-brand-purple",
+  },
+  {
+    key: "charity",
+    icon: HandHeart,
+    tone: "bg-brand-gold-soft text-brand-gold-strong",
+    bar: "bg-brand-gold",
+  },
 ] as const;
 
 const statTones = [
@@ -65,23 +86,31 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   }));
   const clubName = pick(locale, settings.club.name, settings.club.nameEn) || t("Common.clubName");
   const founded = settings.club.foundedYear;
+  const nextEvent = events[0];
+  // One tall tile + a 2×2 block only works with exactly five photos; otherwise an even grid.
+  const bigFirst = gallery.length === 5;
 
   return (
     <>
       {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <DecorativeShapes variant="hero" />
-        <div className="container-page grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1.15fr_1fr] lg:py-24">
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-dot-grid" />
+        <div className="container-page grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-[1.15fr_1fr] lg:py-24 xl:gap-16">
           <div className="space-y-6">
-            <Eyebrow>
+            <Eyebrow className="animate-rise-in">
               {founded ? t("Home.heroEyebrow", { year: founded }) : t("Home.heroEyebrowNoYear")}
             </Eyebrow>
-            <h1 className="text-4xl leading-[1.1] font-extrabold sm:text-5xl lg:text-6xl">
-              {t("Home.heroTitle")}
+            <h1 className="text-[clamp(2.4rem,9vw,3rem)] leading-[1.08] font-extrabold sm:text-6xl lg:text-[4.1rem]">
+              {t.rich("Home.heroTitle", {
+                hl: (chunks) => <HeroHighlight>{chunks}</HeroHighlight>,
+              })}
             </h1>
-            <p className="max-w-xl text-lg text-muted-foreground">{t("Home.heroBody")}</p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
+            <p className="max-w-xl text-lg text-muted-foreground sm:text-xl/relaxed">
+              {t("Home.heroBody")}
+            </p>
+            <div className="flex animate-rise-in flex-col gap-3 [animation-delay:120ms] sm:flex-row">
+              <Button asChild size="lg" className="shadow-lg shadow-brand-cyan/25">
                 <Link href="/join">
                   {t("Common.joinCta")} <ArrowRight />
                 </Link>
@@ -93,8 +122,15 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           </div>
 
           {/* Hero photo (admin upload) or the logo card "130-р сургууль × UNICEF" */}
-          <div className="relative mx-auto w-full max-w-md animate-fade-up [animation-delay:150ms]">
-            <div className="absolute inset-0 -z-10 rotate-3 rounded-[2.5rem] bg-linear-to-br from-brand-cyan via-brand-purple to-brand-gold opacity-80" />
+          <div className="relative mx-auto w-full max-w-sm animate-rise-in [animation-delay:200ms] sm:max-w-md xl:max-w-lg">
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 -z-10 rotate-[5deg] rounded-[2.5rem] bg-linear-to-br from-brand-cyan via-brand-purple to-brand-gold opacity-85"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 -z-20 -rotate-[4deg] rounded-[2.5rem] bg-brand-green/25"
+            />
             {branding.heroImage ? (
               // eslint-disable-next-line @next/next/no-img-element -- R2 image, pre-sized on upload
               <img
@@ -104,7 +140,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 className="aspect-[4/3] w-full rounded-[2.5rem] object-cover shadow-xl ring-1 ring-border"
               />
             ) : (
-              <div className="rounded-[2.5rem] bg-card p-8 shadow-xl ring-1 ring-border sm:p-10">
+              <div className="rounded-[2.5rem] bg-card p-7 shadow-xl ring-1 ring-border sm:p-10 lg:py-14">
                 <div className="flex items-center justify-center gap-4 sm:gap-6">
                   {branding.schoolLogo || branding.unicefLogo ? (
                     <>
@@ -137,18 +173,25 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 </div>
                 <p className="mt-6 text-center font-heading text-xl font-extrabold">{clubName}</p>
                 <p className="text-center text-sm text-muted-foreground">{t("Common.brandPair")}</p>
-                <div aria-hidden="true" className="mt-6 flex justify-center gap-1.5">
-                  {[
-                    "bg-brand-cyan",
-                    "bg-brand-purple",
-                    "bg-brand-green",
-                    "bg-brand-blue",
-                    "bg-brand-gold",
-                  ].map((c) => (
-                    <span key={c} className={cn("h-2 w-8 rounded-full", c)} />
-                  ))}
-                </div>
+                <ColorRibbon className="mt-6 justify-center" />
               </div>
+            )}
+            {/* The next real event floats over the card corner (from sm up). */}
+            {nextEvent && (
+              <Link
+                href={`/events/${nextEvent.slug}`}
+                className="group absolute -bottom-10 left-4 hidden max-w-72 animate-rise-in items-center gap-3 rounded-2xl bg-background/95 p-3 pr-4 shadow-xl ring-1 ring-border backdrop-blur [animation-delay:450ms] hover:ring-brand-cyan sm:flex lg:-left-6"
+              >
+                <DateBadge date={nextEvent.startsAt} className="w-14" />
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold text-brand-cyan-strong">
+                    {t("Home.nextEvent")}
+                  </span>
+                  <span className="line-clamp-2 text-sm leading-snug font-bold group-hover:underline">
+                    {nextEvent.title}
+                  </span>
+                </span>
+              </Link>
             )}
           </div>
         </div>
@@ -185,7 +228,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                       statTones[i % statTones.length],
                     )}
                   >
-                    {s.value}
+                    <CountUp value={s.value} />
                   </dd>
                 </div>
               ))}
@@ -201,24 +244,44 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           eyebrowColor="purple"
           title={t("Home.whatTitle")}
         />
-        <ul className="grid gap-4 md:grid-cols-3">
-          {pillars.map(({ key, icon: Icon, tone }) => (
+        <ul className="reveal-group grid gap-4 md:grid-cols-3">
+          {pillars.map(({ key, icon: Icon, tone, bar }, i) => (
             <li
               key={key}
-              className="group relative rounded-3xl bg-card p-6 ring-1 ring-border transition-shadow hover:shadow-lg"
+              className="group relative isolate overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-border transition-[box-shadow,translate] duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-7"
             >
               <span
-                className={cn("mb-4 flex size-12 items-center justify-center rounded-2xl", tone)}
+                aria-hidden="true"
+                className={cn(
+                  "absolute inset-x-0 top-0 h-1.5 origin-left scale-x-25 transition-transform duration-500 group-hover:scale-x-100",
+                  bar,
+                )}
+              />
+              <span
+                aria-hidden="true"
+                className="absolute -right-2 -bottom-6 -z-10 font-heading text-[7rem] leading-none font-extrabold text-muted/80 dark:text-muted"
               >
-                <Icon className="size-6" aria-hidden="true" />
+                0{i + 1}
               </span>
-              <h3 className="mb-2 text-lg font-bold">
+              <span
+                className={cn(
+                  "mb-5 flex size-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:-rotate-6",
+                  tone,
+                )}
+              >
+                <Icon className="size-7" aria-hidden="true" />
+              </span>
+              <h3 className="mb-2 flex items-center gap-2 text-xl font-bold">
                 <Link
                   href={{ pathname: "/news", query: { category: key } }}
                   className="after:absolute after:inset-0"
                 >
                   {t(`News.categories.${key}`)}
                 </Link>
+                <ArrowRight
+                  aria-hidden="true"
+                  className="size-4 -translate-x-1 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                />
               </h3>
               <p className="text-sm text-muted-foreground">{t(`About.directions.${key}`)}</p>
             </li>
@@ -229,7 +292,15 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       {/* Impact report teaser (only when yearly numbers exist) */}
       {impact?.total && (
         <section className="container-page pb-14 sm:pb-20">
-          <div className="grid gap-8 rounded-[2rem] bg-brand-green-soft p-6 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="reveal relative isolate grid gap-8 overflow-hidden rounded-[2rem] bg-brand-green-soft p-6 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div
+              aria-hidden="true"
+              className="absolute -top-20 -right-16 -z-10 size-72 rounded-full border-[2.5rem] border-brand-green/10"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute -bottom-24 left-1/3 -z-10 size-56 rounded-full bg-brand-cyan/10 blur-2xl"
+            />
             <div className="space-y-3">
               <Eyebrow color="green">{t("Home.impactEyebrow")}</Eyebrow>
               <h2 className="text-3xl font-extrabold sm:text-4xl">
@@ -250,8 +321,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 ].map((s) => (
                   <div key={s.label} className="flex flex-col">
                     <dt className="text-sm text-muted-foreground">{s.label}</dt>
-                    <dd className="order-first font-heading text-2xl font-extrabold text-brand-green-strong sm:text-3xl">
-                      {s.value}
+                    <dd className="order-first font-heading text-2xl font-extrabold text-brand-green-strong sm:text-4xl">
+                      <CountUp value={s.value} />
                     </dd>
                   </div>
                 ))}
@@ -281,7 +352,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 </Button>
               }
             />
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {news.map((item, i) => (
                 <NewsCard key={item.id} item={item} priority={i === 0} />
               ))}
@@ -304,7 +375,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               </Button>
             }
           />
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="reveal-group grid gap-4 lg:grid-cols-3">
             {events.map((e) => (
               <EventCard key={e.id} item={e} />
             ))}
@@ -326,9 +397,9 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               </Button>
             }
           />
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <ul className="reveal-group grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             {gallery.map((img, i) => (
-              <li key={img.id} className={cn(i === 0 && "row-span-2")}>
+              <li key={img.id} className={cn(i === 0 && bigFirst && "row-span-2")}>
                 <Link
                   href={`/gallery/${img.albumSlug}`}
                   className="group block size-full overflow-hidden rounded-2xl ring-1 ring-border"
@@ -340,7 +411,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                     loading="lazy"
                     className={cn(
                       "w-full object-cover transition-transform duration-500 group-hover:scale-105",
-                      i === 0 ? "h-full min-h-48" : "aspect-[4/3]",
+                      i === 0 && bigFirst ? "h-full min-h-48" : "aspect-[4/3]",
                     )}
                   />
                 </Link>
@@ -430,7 +501,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
       {/* CTA */}
       <section className="container-page pb-16 sm:pb-24">
-        <div className="relative isolate overflow-hidden rounded-[2rem] bg-brand-night px-6 py-12 text-center text-white sm:px-12 sm:py-16">
+        <div className="reveal relative isolate overflow-hidden rounded-[2rem] bg-brand-night px-6 py-12 text-center text-white ring-white/10 sm:px-12 sm:py-20 dark:ring-1">
+          <ColorRibbon className="absolute top-6 left-1/2 -translate-x-1/2" />
           <div
             aria-hidden="true"
             className="absolute -top-16 -left-10 -z-10 size-64 rounded-full bg-brand-cyan/40 blur-3xl"

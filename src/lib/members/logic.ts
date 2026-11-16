@@ -63,3 +63,64 @@ export function signupStatusFor(event: SignupEvent, taken: number): "registered"
 
 /** The word a member types to confirm deleting their own account (either language). */
 export const DELETE_CONFIRM_WORDS = ["УСТГАХ", "DELETE"];
+
+/**
+ * Suggested hours for attending an event: its length rounded to half hours (0.5–12). Null when
+ * the length is unknown (all-day or no end time) — the admin types the hours.
+ */
+export function suggestedEventHours(event: {
+  startsAt: Date;
+  endsAt: Date | null;
+  allDay: boolean;
+}) {
+  if (event.allDay || !event.endsAt) return null;
+  const hours = (event.endsAt.getTime() - event.startsAt.getTime()) / 3_600_000;
+  if (!(hours > 0)) return null;
+  return Math.min(12, Math.max(0.5, Math.round(hours * 2) / 2));
+}
+
+/** One entry's hours: more than 0, at most 24, in quarter hours. */
+export function parseHours(value: unknown): number | null {
+  const n = typeof value === "number" ? value : Number(String(value ?? "").replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0 || n > 24) return null;
+  return Math.round(n * 4) / 4;
+}
+
+/**
+ * Each member's total for a school year: logged entries of that year plus the imported report
+ * total when the member's own school year matches.
+ */
+export function memberYearTotals(
+  members: readonly { id: string; schoolYear: string | null; volunteerHours: number | null }[],
+  entries: readonly { memberId: string | null; schoolYear: string; hours: number }[],
+  year: string,
+): Map<string, { logged: number; imported: number; total: number }> {
+  const out = new Map<string, { logged: number; imported: number; total: number }>();
+  for (const m of members) {
+    const imported = m.schoolYear === year ? (m.volunteerHours ?? 0) : 0;
+    out.set(m.id, { logged: 0, imported, total: imported });
+  }
+  for (const e of entries) {
+    if (e.schoolYear !== year || !e.memberId) continue;
+    const row = out.get(e.memberId);
+    if (!row) continue;
+    row.logged = Math.round((row.logged + e.hours) * 100) / 100;
+    row.total = Math.round((row.imported + row.logged) * 100) / 100;
+  }
+  return out;
+}
+
+/** "Идэвхтэй гишүүн": the yearly total reaches the admin's threshold (none set → nobody). */
+export function isActiveMember(total: number, threshold: number | null) {
+  return threshold !== null && threshold > 0 && total >= threshold;
+}
+
+/** Recent school years for selects: the current one first, then those that appear in data. */
+export function schoolYearOptions(known: readonly (string | null)[], now: number = Date.now()) {
+  const current = schoolYearOf(now);
+  const set = new Set([
+    current,
+    ...known.filter((y): y is string => !!y && /^\d{4}-\d{4}$/.test(y)),
+  ]);
+  return [...set].sort((a, b) => b.localeCompare(a));
+}

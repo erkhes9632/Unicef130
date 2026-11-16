@@ -76,7 +76,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                 <h2 id="search-news" className="mb-4 text-2xl font-extrabold">
                   {t("news")}
                 </h2>
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {news.map((n) => (
                     <NewsCard key={n.id} item={n} />
                   ))}
@@ -88,7 +88,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                 <h2 id="search-events" className="mb-4 text-2xl font-extrabold">
                   {t("events")}
                 </h2>
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="reveal-group grid gap-4 lg:grid-cols-2">
                   {events.map((e) => (
                     <EventCard key={e.id} item={e} />
                   ))}

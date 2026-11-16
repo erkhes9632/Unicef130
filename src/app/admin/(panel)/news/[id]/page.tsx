@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { ExternalLink } from "lucide-react";
+import { Eye, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { listAlbumOptions } from "@/lib/data/gallery";
 import { toUbInputValue } from "@/lib/dates/ub-input";
 import { saveNews } from "../actions";
 
@@ -31,13 +32,20 @@ export default async function EditNewsPage({
         title="Мэдээ засах"
         description={row.title}
         actions={
-          row.status === "published" && (
+          <>
             <Button asChild variant="outline">
-              <Link href={`/news/${row.slug}`} target="_blank">
-                <ExternalLink /> Сайт дээр харах
+              <Link href={`/admin/news/${row.id}/preview`}>
+                <Eye /> Урьдчилан харах
               </Link>
             </Button>
-          )
+            {row.status === "published" && (
+              <Button asChild variant="outline">
+                <Link href={`/news/${row.slug}`} target="_blank">
+                  <ExternalLink /> Сайт дээр харах
+                </Link>
+              </Button>
+            )}
+          </>
         }
       />
       <NewsForm
@@ -58,7 +66,12 @@ export default async function EditNewsPage({
           status: row.status,
           publishedAt: toUbInputValue(row.publishedAt),
           sdgs: row.sdgs,
+          featured: row.featured,
+          metaTitle: row.metaTitle,
+          metaDescription: row.metaDescription,
+          albumId: row.albumId,
         }}
+        albums={await listAlbumOptions()}
       />
     </>
   );

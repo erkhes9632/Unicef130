@@ -1,18 +1,21 @@
-import { Montserrat, Nunito_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
-// Both fonts support Cyrillic (Mongolian).
-export const fontDisplay = Montserrat({
-  subsets: ["latin", "cyrillic"],
+/*
+ * Self-hosted, pre-subset variable fonts (weights 400–800): one small file per family with Latin
+ * and Mongolian Cyrillic (incl. Ө/Ү). Google's own split would load up to 7 files (Mongolian
+ * letters sit in its "cyrillic-ext" subset). Regenerate with `bun run fonts` (scripts/fonts.ts).
+ * Both are SIL OFL 1.1 — licences in src/assets/fonts/.
+ */
+export const fontDisplay = localFont({
+  src: "../assets/fonts/montserrat.woff2",
+  weight: "400 800",
   variable: "--font-display",
   display: "swap",
-  // Headings only: not preloaded, so the body text (usually the LCP element) isn't delayed by
-  // competing font downloads on slow mobile connections.
-  preload: false,
-  // No `weight` → one variable font file per subset (static weights would download a file each).
 });
 
-export const fontBody = Nunito_Sans({
-  subsets: ["latin", "cyrillic"],
+export const fontBody = localFont({
+  src: "../assets/fonts/nunito-sans.woff2",
+  weight: "400 800",
   variable: "--font-body",
   display: "swap",
 });

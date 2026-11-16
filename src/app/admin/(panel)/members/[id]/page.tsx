@@ -6,6 +6,7 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { listTeams } from "@/lib/members/teams";
 import { saveMember } from "../actions";
 
 export const metadata: Metadata = { title: "Гишүүн засах" };
@@ -19,7 +20,11 @@ export default async function EditMemberPage({ params }: PageProps<"/admin/membe
   return (
     <>
       <AdminPageHeader title="Гишүүн засах" description={m.name} />
-      <MemberForm action={saveMember.bind(null, m.id)} initial={{ ...m, hasAccount: !!m.userId }} />
+      <MemberForm
+        action={saveMember.bind(null, m.id)}
+        initial={{ ...m, hasAccount: !!m.userId }}
+        teams={await listTeams()}
+      />
     </>
   );
 }

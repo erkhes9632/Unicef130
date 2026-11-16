@@ -10,7 +10,8 @@ import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { pageMetadata } from "@/lib/seo";
 import { displayYear } from "@/lib/data/impact";
-import { listMembers } from "@/lib/data/members";
+import { listActiveMembers, listMembers } from "@/lib/data/members";
+import { getSiteSettings } from "@/lib/data/settings";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -38,6 +39,8 @@ export default async function MembersPage({
     { leadershipYear: typeof requested === "string" ? requested : undefined },
   );
   const isEmpty = leadership.length === 0 && members.length === 0;
+  const { membership } = await getSiteSettings();
+  const active = await listActiveMembers(locale, membership.activeMemberHours);
 
   return (
     <>
@@ -79,7 +82,7 @@ export default async function MembersPage({
               </ul>
             </nav>
           )}
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
               <MemberCard key={m.id} member={m} index={i} size="large" />
             ))}
@@ -92,9 +95,27 @@ export default async function MembersPage({
             title={t("Members.members")}
             description={t("Members.count", { count: leadership.length + members.length })}
           />
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <ul className="reveal-group grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {members.map((m, i) => (
               <MemberCard key={m.id} member={m} index={i + 2} />
+            ))}
+          </ul>
+        </Section>
+      )}
+      {active.names.length > 0 && (
+        <Section>
+          <SectionHeading
+            title={t("Members.activeTitle", { year: displayYear(active.year) })}
+            description={t("Members.activeBody", { hours: membership.activeMemberHours ?? 0 })}
+          />
+          <ul className="flex flex-wrap gap-2">
+            {active.names.map((m) => (
+              <li
+                key={m.id}
+                className="rounded-full bg-brand-green-soft px-4 py-2 font-semibold text-foreground"
+              >
+                {m.name}
+              </li>
             ))}
           </ul>
         </Section>

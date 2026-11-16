@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -8,8 +9,11 @@ import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cove
 import { ActivityFacts } from "@/components/impact/activity-facts";
 import { SdgBadges } from "@/components/impact/sdg-badges";
 import { RichText } from "@/components/common/rich-text";
+import { GalleryGrid } from "@/components/gallery/gallery-grid";
+import { getAlbumById } from "@/lib/data/gallery";
 import { Section, SectionHeading } from "@/components/common/section";
 import { NewsCard } from "@/components/news/news-card";
+import { newsCoverTransition } from "@/lib/motion/transitions";
 import { ShareButtons } from "@/components/news/share-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,8 +35,8 @@ export async function generateMetadata({
   return pageMetadata({
     locale,
     path: `/news/${item.slug}`,
-    title: item.title,
-    description: item.excerpt,
+    title: item.metaTitle || item.title,
+    description: item.metaDescription || item.excerpt,
     image: item.coverUrl,
     type: "article",
     publishedTime: item.publishedAt,
@@ -49,6 +53,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
     if (to) permanentRedirect(localizedPath(locale, `/news/${to}`));
     notFound();
   }
+  const album = item.albumId ? await getAlbumById(locale, item.albumId) : null;
 
   const t = await getTranslations("News");
   const ta = await getTranslations("Activity");
@@ -100,20 +105,33 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
         </header>
 
         <div className="container-page mt-8 max-w-5xl">
-          <div className="aspect-[16/9] overflow-hidden rounded-[2rem]">
-            <CoverImage
-              src={item.coverUrl}
-              alt={item.title}
-              tone={categoryTone[item.category]}
-              icon={coverIconFor(item.category)}
-              sdgs={item.sdgs}
-              priority
-            />
-          </div>
+          {/* Same view-transition name as the news card: the cover morphs card → article. */}
+          <ViewTransition name={newsCoverTransition(item.id)} share="morph" default="none">
+            <div className="aspect-[16/9] overflow-hidden rounded-[2rem]">
+              <CoverImage
+                src={item.coverUrl}
+                alt={item.title}
+                tone={categoryTone[item.category]}
+                icon={coverIconFor(item.category)}
+                sdgs={item.sdgs}
+                priority
+              />
+            </div>
+          </ViewTransition>
         </div>
 
         <div className="container-page max-w-3xl space-y-8 py-10 sm:py-14">
           <RichText doc={withoutRepeatedLead(item.content, item.excerpt)} />
+          {album && album.images.length > 0 && (
+            <section aria-labelledby="post-album" className="space-y-3">
+              <h2 id="post-album" className="text-xl font-extrabold">
+                <Link href={`/gallery/${album.slug}`} className="hover:underline">
+                  {album.title}
+                </Link>
+              </h2>
+              <GalleryGrid images={album.images} title={album.title} />
+            </section>
+          )}
           {event && <ActivityFacts facts={event.facts} />}
           {item.sdgs.length > 0 && (
             <div className="space-y-3">
@@ -151,7 +169,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
       {related.length > 0 && (
         <Section className="bg-muted/30">
           <SectionHeading title={t("related")} />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((r) => (
               <NewsCard key={r.id} item={r} />
             ))}

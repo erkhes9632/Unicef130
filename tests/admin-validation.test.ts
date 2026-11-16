@@ -20,6 +20,10 @@ describe("admin schemas", () => {
     contentEn: null,
     status: "draft",
     publishedAt: null,
+    featured: false,
+    metaTitle: "",
+    metaDescription: "",
+    albumId: null,
     sdgs: [4],
   };
   test("news: empty strings become null, slug format enforced", () => {

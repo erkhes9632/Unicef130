@@ -36,6 +36,10 @@ function parseForm(data: FormData) {
     status: fd.str(data, "status") === "published" ? "published" : "draft",
     publishedAt: parseUbInputValue(fd.str(data, "publishedAt")),
     sdgs: parseSdgList(fd.str(data, "sdgs")),
+    featured: fd.bool(data, "featured"),
+    metaTitle: fd.str(data, "metaTitle"),
+    metaDescription: fd.str(data, "metaDescription"),
+    albumId: fd.opt(data, "albumId"),
   });
 }
 

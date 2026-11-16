@@ -55,124 +55,7 @@ export const users = sqliteTable(
   (t) => [index("users_email_idx").on(t.email), index("users_role_idx").on(t.role)],
 );
 
-// ---------------------------------------------------------------------------
-// Legacy Better Auth tables — no code uses them any more; dropped by a separate migration.
-// ---------------------------------------------------------------------------
-
-export const user = sqliteTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
-  image: text("image"),
-  // admin plugin
-  role: text("role").notNull().default("editor"),
-  banned: integer("banned", { mode: "boolean" }).default(false),
-  banReason: text("ban_reason"),
-  banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
-  // two-factor plugin
-  twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).default(false),
-  ...timestamps,
-});
-
-export const session = sqliteTable(
-  "session",
-  {
-    id: text("id").primaryKey(),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    token: text("token").notNull().unique(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    impersonatedBy: text("impersonated_by"),
-    ...timestamps,
-  },
-  (t) => [index("session_user_id_idx").on(t.userId)],
-);
-
-export const account = sqliteTable(
-  "account",
-  {
-    id: text("id").primaryKey(),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
-    scope: text("scope"),
-    password: text("password"),
-    ...timestamps,
-  },
-  (t) => [index("account_user_id_idx").on(t.userId)],
-);
-
-export const verification = sqliteTable(
-  "verification",
-  {
-    id: text("id").primaryKey(),
-    identifier: text("identifier").notNull(),
-    value: text("value").notNull(),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    ...timestamps,
-  },
-  (t) => [index("verification_identifier_idx").on(t.identifier)],
-);
-
-/** TOTP secret + backup codes (encrypted by Better Auth's two-factor plugin). */
-export const twoFactor = sqliteTable(
-  "two_factor",
-  {
-    id: text("id").primaryKey(),
-    secret: text("secret").notNull(),
-    backupCodes: text("backup_codes").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    verified: integer("verified", { mode: "boolean" }).default(true),
-    failedVerificationCount: integer("failed_verification_count").default(0),
-    lockedUntil: integer("locked_until", { mode: "timestamp_ms" }),
-  },
-  (t) => [index("two_factor_user_id_idx").on(t.userId)],
-);
-
-/**
- * One-time links created by admins: an invitation to join the admin panel, or a password reset
- * for an existing user. Only the SHA-256 hash of the token is stored; links expire and work once.
- */
-export const authTokenKinds = ["invite", "reset"] as const;
-export type AuthTokenKind = (typeof authTokenKinds)[number];
-
-export const authTokens = sqliteTable(
-  "auth_tokens",
-  {
-    id: id(),
-    kind: text("kind", { enum: authTokenKinds }).notNull(),
-    tokenHash: text("token_hash").notNull(),
-    /** Invite: the address being invited. Reset: the user's email (for display). */
-    email: text("email").notNull(),
-    /** Invite only: role the new account gets. */
-    role: text("role"),
-    /** Reset only: the account whose password is reset. */
-    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
-    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
-    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    usedAt: integer("used_at", { mode: "timestamp_ms" }),
-    createdAt: timestamps.createdAt,
-  },
-  (t) => [uniqueIndex("auth_tokens_hash_idx").on(t.tokenHash)],
-);
-
-/**
- * Rate-limit counters shared by all Worker isolates (Better Auth `rateLimit.storage: "database"`
- * and the admin login Server Action). Columns follow Better Auth's `rateLimit` model.
- */
+/** Rate-limit counters shared by all Worker isolates (join submits per account, contact form). */
 export const rateLimit = sqliteTable("rate_limit", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),
@@ -227,6 +110,15 @@ export const news = sqliteTable(
       .default(sql`'[]'`),
     /** The activity (event) this post reports on, if any. */
     eventId: text("event_id").references((): AnySQLiteColumn => events.id, {
+      onDelete: "set null",
+    }),
+    /** Shown first on the home page and in the news list. */
+    featured: integer("featured", { mode: "boolean" }).notNull().default(false),
+    /** Search-engine title / description; empty → the title / excerpt. */
+    metaTitle: text("meta_title").notNull().default(""),
+    metaDescription: text("meta_description").notNull().default(""),
+    /** Photo album shown under the post. */
+    albumId: text("album_id").references((): AnySQLiteColumn => albums.id, {
       onDelete: "set null",
     }),
     ...timestamps,
@@ -399,6 +291,10 @@ export const albums = sqliteTable(
     date: text("date").notNull(),
     coverUrl: text("cover_url"),
     published: integer("published", { mode: "boolean" }).notNull().default(false),
+    /** The activity these photos are from, if any. */
+    eventId: text("event_id").references((): AnySQLiteColumn => events.id, {
+      onDelete: "set null",
+    }),
     ...timestamps,
   },
   (t) => [uniqueIndex("albums_slug_idx").on(t.slug), index("albums_date_idx").on(t.date)],
@@ -530,6 +426,22 @@ export const applications = sqliteTable(
     uniqueIndex("applications_user_period_idx").on(t.userId, t.periodId),
     index("applications_period_idx").on(t.periodId),
   ],
+);
+
+/** Frequently asked questions (/faq), edited in admin. */
+export const faqs = sqliteTable(
+  "faqs",
+  {
+    id: id(),
+    question: text("question").notNull(),
+    questionEn: text("question_en"),
+    answer: text("answer").notNull(),
+    answerEn: text("answer_en"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    published: integer("published", { mode: "boolean" }).notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [index("faqs_order_idx").on(t.sortOrder)],
 );
 
 export const contactMessages = sqliteTable(

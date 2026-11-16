@@ -50,6 +50,20 @@
       "when": 1794720091164,
       "tag": "0006_clerk_users",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794724641729,
+      "tag": "0007_drop_legacy_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794725324003,
+      "tag": "0008_content_ux",
+      "breakpoints": true
     }
   ]
 }

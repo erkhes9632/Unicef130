@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, CalendarPlus, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarDays, CalendarPlus, Clock, Images, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { findSlugRedirect } from "@/lib/data/redirects";
@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { getClubNames } from "@/lib/branding";
-import { getEventBySlug, isUpcoming } from "@/lib/data/events";
+import { getEventBySlug, getEventSignupInfo, isUpcoming } from "@/lib/data/events";
+import { getAlbumForEvent } from "@/lib/data/gallery";
 import { formatDate, formatDateRange, formatTimeRange } from "@/lib/dates/format";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
 import { ActivityFacts } from "@/components/impact/activity-facts";
@@ -54,6 +55,10 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
   const url = `${siteUrl}${localizedPath(locale, `/events/${e.slug}`)}`;
   const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}`;
   const past = !isUpcoming(e);
+  const [signup, album] = await Promise.all([
+    past ? null : getEventSignupInfo(e.id),
+    getAlbumForEvent(locale, e.id),
+  ]);
 
   const facts = [
     {
@@ -131,7 +136,7 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
           </div>
         </div>
 
-        <aside className="h-fit space-y-4 rounded-3xl bg-brand-purple-soft p-6 lg:sticky lg:top-24">
+        <div className="h-fit space-y-4 rounded-3xl bg-brand-purple-soft p-6 lg:sticky lg:top-24">
           <dl className="space-y-4">
             {facts.map(({ icon: Icon, label, value }) => (
               <div key={label} className="grid grid-cols-[2.5rem_1fr] gap-x-3">
@@ -145,10 +150,31 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
               </div>
             ))}
           </dl>
+          {signup && !past && (
+            <div className="rounded-2xl bg-brand-green-soft p-4 text-sm">
+              <p className="font-bold">{signup.open ? t("signupOpen") : t("signupClosed")}</p>
+              {signup.open && (
+                <p className="mt-1">
+                  {signup.placesLeft !== null &&
+                    `${t("placesLeft", { count: signup.placesLeft })} · `}
+                  <Link href="/me" className="font-semibold underline">
+                    {t("signupHow")}
+                  </Link>
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex flex-col gap-2 pt-2">
             {newsSlug && (
               <Button asChild>
                 <Link href={`/news/${newsSlug}`}>{ta("readStory")}</Link>
+              </Button>
+            )}
+            {album && (
+              <Button asChild variant="outline" className="bg-background">
+                <Link href={`/gallery/${album.slug}`}>
+                  <Images /> {t("photos", { count: album.imageCount })}
+                </Link>
               </Button>
             )}
             {e.location && (
@@ -166,7 +192,7 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
               </Button>
             )}
           </div>
-        </aside>
+        </div>
       </div>
     </article>
   );

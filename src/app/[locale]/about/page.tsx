@@ -126,7 +126,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
           <SectionHeading title={t("valuesTitle")} align="center" />
           <ul
             className={cn(
-              "grid gap-4 sm:grid-cols-2",
+              "reveal-group grid gap-4 sm:grid-cols-2",
               values.length >= 4 ? "lg:grid-cols-4" : values.length === 3 && "lg:grid-cols-3",
             )}
           >
@@ -154,7 +154,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
       {columns.length > 0 && (
         <Section>
           <SectionHeading title={t("doTitle")} />
-          <div className={cn("grid gap-6", columns.length > 1 && "lg:grid-cols-3")}>
+          <div className={cn("reveal-group grid gap-6", columns.length > 1 && "lg:grid-cols-3")}>
             {columns.map((col) => (
               <div key={col.key} className={cn("flex flex-col rounded-3xl p-6 sm:p-8", col.tone)}>
                 <h3 className="text-2xl font-extrabold">{col.title}</h3>
@@ -201,7 +201,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
               </Button>
             }
           />
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
               <MemberCard key={m.id} member={m} index={i} />
             ))}

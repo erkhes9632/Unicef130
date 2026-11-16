@@ -22,7 +22,7 @@ export function GalleryGrid({ images, title }: { images: GalleryImage[]; title: 
 
   return (
     <>
-      <ul className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+      <ul className="reveal-group columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
         {images.map((img, i) => (
           <li key={img.id} className="mb-3 break-inside-avoid sm:mb-4">
             <button
@@ -37,7 +37,9 @@ export function GalleryGrid({ images, title }: { images: GalleryImage[]; title: 
                 alt={img.alt}
                 width={img.width}
                 height={img.height}
-                loading="lazy"
+                // The first row is above the fold (LCP): load it right away.
+                loading={i < 2 ? "eager" : "lazy"}
+                fetchPriority={i === 0 ? "high" : undefined}
                 decoding="async"
                 className="h-auto w-full transition-transform duration-500 group-hover:scale-105"
               />

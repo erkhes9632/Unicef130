@@ -44,14 +44,15 @@ export async function ActivityFacts({ facts, className }: { facts: Facts; classN
       </h2>
       <dl className="grid gap-4 sm:grid-cols-2">
         {rows.map(({ icon: Icon, label, value }) => (
-          <div key={label} className="flex gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background text-brand-cyan-strong">
-              <Icon className="size-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <dt className="text-xs font-bold text-muted-foreground uppercase">{label}</dt>
-              <dd className="font-heading text-lg font-extrabold break-words">{value}</dd>
-            </div>
+          // dt/dd stay direct children of the row (valid <dl>); the icon sits inside the dt.
+          <div key={label} className="relative min-h-10 min-w-0 pl-13">
+            <dt className="text-xs font-bold text-muted-foreground uppercase">
+              <span className="absolute top-0 left-0 flex size-10 items-center justify-center rounded-xl bg-background text-brand-cyan-strong">
+                <Icon className="size-5" aria-hidden="true" />
+              </span>
+              {label}
+            </dt>
+            <dd className="font-heading text-lg font-extrabold break-words">{value}</dd>
           </div>
         ))}
       </dl>

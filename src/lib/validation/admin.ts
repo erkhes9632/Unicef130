@@ -61,6 +61,10 @@ export const newsInputSchema = z.object({
   status: z.enum(["draft", "published"]),
   publishedAt: date.nullable(),
   sdgs: sdgList,
+  featured: z.boolean(),
+  metaTitle: z.string().trim().max(70, { error: "Хамгийн ихдээ 70 тэмдэгт." }),
+  metaDescription: z.string().trim().max(160, { error: "Хамгийн ихдээ 160 тэмдэгт." }),
+  albumId: z.string().max(64).nullable(),
 });
 export type NewsInput = z.output<typeof newsInputSchema>;
 
@@ -331,6 +335,7 @@ export const albumInputSchema = z.object({
   descriptionEn: opt(1000),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Огноо буруу байна." }),
   published: z.boolean(),
+  eventId: z.string().max(64).nullable(),
 });
 
 export const albumImagesSchema = z

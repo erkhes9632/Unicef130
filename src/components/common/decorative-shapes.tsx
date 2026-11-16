@@ -48,3 +48,55 @@ export function DecorativeShapes({
     </div>
   );
 }
+
+const ribbonColors = [
+  "bg-brand-cyan",
+  "bg-brand-purple",
+  "bg-brand-green",
+  "bg-brand-blue",
+  "bg-brand-gold",
+] as const;
+
+/** The club's five-colour ribbon (the recurring brand accent). Decorative. */
+export function ColorRibbon({ className }: { className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("flex gap-1.5", className)}>
+      {ribbonColors.map((c) => (
+        <span key={c} className={cn("h-2 w-8 rounded-full", c)} />
+      ))}
+    </div>
+  );
+}
+
+/** Highlighted word in a headline: brand colour + a hand-drawn ribbon stroke underneath. */
+export function HeroHighlight({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="relative inline-block whitespace-nowrap text-brand-cyan-strong">
+      {children}
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 300 24"
+        preserveAspectRatio="none"
+        className="absolute -bottom-[0.18em] left-0 h-[0.28em] w-full overflow-visible"
+      >
+        <defs>
+          <linearGradient id="hero-ribbon" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stopColor="var(--brand-cyan)" />
+            <stop offset="0.5" stopColor="var(--brand-purple)" />
+            <stop offset="1" stopColor="var(--brand-gold)" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M5 16 C 70 5, 140 4, 200 10 S 275 19, 295 8"
+          pathLength={1}
+          fill="none"
+          stroke="url(#hero-ribbon)"
+          strokeWidth={7}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          className="animate-draw-stroke"
+        />
+      </svg>
+    </span>
+  );
+}

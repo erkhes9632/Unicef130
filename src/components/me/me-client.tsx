@@ -3,6 +3,7 @@
 import { useClerk } from "@clerk/nextjs";
 import { Loader2, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -119,6 +120,7 @@ export function SignupButton({
 export function DeleteMyAccount({ disabledReason }: { disabledReason?: string }) {
   const t = useTranslations("Me");
   const { signOut } = useClerk();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
   const [pending, start] = useTransition();
@@ -157,7 +159,8 @@ export function DeleteMyAccount({ disabledReason }: { disabledReason?: string })
                 // The Clerk user is already gone (its sessions with it): clear the local
                 // session if possible and leave the member area either way.
                 await signOut().catch(() => undefined);
-                window.location.assign("/");
+                router.replace("/");
+                router.refresh();
               })
             }
           >

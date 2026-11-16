@@ -38,9 +38,9 @@ export default async function GalleryPage({ params }: PageProps<"/[locale]/galle
       <Section className="pt-8 sm:pt-10">
         <h2 className="sr-only">{t("metaTitle")}</h2>
         {albums.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {albums.map((a) => (
-              <AlbumCard key={a.id} album={a} />
+          <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {albums.map((a, i) => (
+              <AlbumCard key={a.id} album={a} priority={i === 0} />
             ))}
           </div>
         ) : (

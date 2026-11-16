@@ -30,9 +30,13 @@ export default async function SignInPage({
           fallbackRedirectUrl={`${AFTER_SIGN_IN_PATH}?locale=${locale}`}
         />
       ) : (
-        <p role="status" className="max-w-md rounded-2xl bg-muted/60 p-6 text-center">
-          {t("unavailable")}
-        </p>
+        <>
+          {/* The Clerk card brings its own heading; without Clerk the page needs one. */}
+          <h1 className="text-3xl font-extrabold">{t("signInTitle")}</h1>
+          <p role="status" className="max-w-md rounded-2xl bg-muted/60 p-6 text-center">
+            {t("unavailable")}
+          </p>
+        </>
       )}
       <p className="max-w-md text-center text-xs text-muted-foreground">{t("privacyNote")}</p>
     </div>

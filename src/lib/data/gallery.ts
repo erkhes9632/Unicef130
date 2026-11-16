@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
@@ -11,6 +11,8 @@ export type AlbumItem = {
   title: string;
   description: string;
   date: string;
+  /** The activity the photos are from. */
+  eventId: string | null;
   coverUrl: string | null;
   imageCount: number;
   images: GalleryImage[];
@@ -44,6 +46,7 @@ function toItem(locale: Locale, a: AlbumRow, imgs: ImageRow[]): AlbumItem {
     title,
     description: pick(locale, a.description, a.descriptionEn),
     date: a.date,
+    eventId: a.eventId,
     coverUrl: a.coverUrl ?? list[0]?.thumbUrl ?? null,
     imageCount: list.length,
     images: list,
@@ -90,4 +93,31 @@ export async function getGalleryPreview(locale: Locale, limit = 6) {
       a.images.slice(0, 3).map((img) => ({ ...img, albumSlug: a.slug, albumTitle: a.title })),
     )
     .slice(0, limit);
+}
+
+/** A published album by id (photos under a news post, the album of an activity). */
+export async function getAlbumById(locale: Locale, id: string) {
+  const db = await getDb();
+  const [a] = await db.select().from(albums).where(eq(albums.id, id)).limit(1);
+  if (!a || !a.published) return null;
+  const imgs = await imagesFor([a.id]);
+  return toItem(locale, a, imgs.get(a.id) ?? []);
+}
+
+/** The published album of an activity (newest when there are several). */
+export async function getAlbumForEvent(locale: Locale, eventId: string) {
+  const db = await getDb();
+  const [a] = await db
+    .select({ id: albums.id })
+    .from(albums)
+    .where(and(eq(albums.eventId, eventId), eq(albums.published, true)))
+    .orderBy(desc(albums.date))
+    .limit(1);
+  return a ? getAlbumById(locale, a.id) : null;
+}
+
+/** Admin selects: every album (drafts too), newest first. */
+export async function listAlbumOptions() {
+  const db = await getDb();
+  return db.select({ id: albums.id, title: albums.title }).from(albums).orderBy(desc(albums.date));
 }

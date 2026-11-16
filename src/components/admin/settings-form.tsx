@@ -111,6 +111,7 @@ export function SettingsForm({
     <form
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
       className="max-w-3xl space-y-6"
     >
       <FormAlert state={state} />

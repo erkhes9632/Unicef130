@@ -93,7 +93,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<"/[lo
           </div>
         )}
         {items.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <NewsCard key={item.id} item={item} priority={i === 0} />
             ))}

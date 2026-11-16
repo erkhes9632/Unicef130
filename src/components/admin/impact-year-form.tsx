@@ -46,7 +46,12 @@ export function ImpactYearForm({
 }) {
   const [state, formAction] = useActionState(action, {});
   return (
-    <form action={formAction} onSubmit={keepValuesOnSubmit(formAction)} className="space-y-4">
+    <form
+      action={formAction}
+      onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
+      className="space-y-4"
+    >
       <FormAlert state={state} />
       {state.fieldErrors && (
         <ul className="list-disc rounded-xl bg-destructive/10 p-3 pl-8 text-sm text-destructive">

@@ -27,13 +27,14 @@ secret, лог, домэйний заавар: [README.md → Production](./READ
 
 ## 2. Тохиргоо (`wrangler.jsonc` → `"vars"`)
 
-- ✅ `SITE_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_TRUSTED_ORIGINS` = workers.dev URL.
+- ✅ `SITE_URL` = workers.dev URL (домэйн холбоход 7f-ийн дагуу солино).
+- ☐ `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — Clerk production instance (7f).
 - ✅ `GOOGLE_SHEET_TAB` = `Applications`.
 - ☐ `TURNSTILE_SITE_KEY` — Turnstile widget үүсгэсний дараа (доорх 3-р алхам).
 
 ## 3. Нууц утгууд
 
-- ✅ `BETTER_AUTH_SECRET` — шинээр үүсгэж шууд дамжуулсан (локалынхаас өөр).
+- ☐ `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET` — Clerk production instance (7f).
 - ☐ `TURNSTILE_SECRET_KEY`:
   1. Dashboard → **Turnstile** → **Add widget**.
   2. Widget name: `unicef-club-130`; Hostname: `unicef-club-130.erkhes-labs.workers.dev`.
@@ -49,23 +50,18 @@ secret, лог, домэйний заавар: [README.md → Production](./READ
 
 - ✅ `bun run deploy` → `https://unicef-club-130.erkhes-labs.workers.dev`.
 - ✅ Автомат deploy (Workers Builds, GitHub Actions) **тохируулаагүй** — зориуд гараар.
-- ☐ **Plan:** Workers Free нь хүсэлт бүрт 10 ms CPU хязгаартай. Нэвтрэлт (PBKDF2) эсвэл хүнд
-  хуудсууд Error 1102 өгвөл **Workers Paid** ($5/сар) руу шилжинэ.
+- ☐ **Plan:** Workers Free нь хүсэлт бүрт 10 ms CPU хязгаартай. Хүнд хуудсууд Error 1102 өгвөл
+  **Workers Paid** ($5/сар) руу шилжинэ.
 
 ## 5. Эхний админ
 
-- ☐ Өөрийн терминал дээр:
-  ```bash
-  bun run admin:create -- o.erkhes2009@gmail.com --name "Админ"
-  ```
-  Нууц үгийг 2 удаа нуугдмал асууна (≥ 12 тэмдэгт).
-- ☐ `/admin/login`-оор нэвтэрч шалгана. Бусад редакторыг Админ → Хэрэглэгчид-ээс нэмнэ.
+- ☐ Clerk-ээр (7f): сайтад нэг удаа нэвтэрч, дараа нь `bun run admin:grant -- <таны-и-мэйл>`.
 
 ## 6. Smoke test
 
 - ✅ Бүх нийтийн хуудас (mn + en) 200, `sitemap.xml`, `robots.txt` зөв домэйнтэй.
 - ✅ Байхгүй хуудас 404, 500 алдаа байхгүй.
-- ✅ Нэвтрээгүй үед `/admin` → `/admin/login` (307).
+- ☐ Нэвтрээгүй үед `/admin` → `/sign-in?redirect_url=…` (307).
 - ☐ Нэвтэрсний дараа: мэдээ үүсгэх/устгах, зураг upload/устгах (R2).
 - ☐ Гишүүнчлэлийн өргөдөл ба холбоо барих зурвас илгээх → админд харагдана → устгана.
 - ☐ `bunx wrangler tail` дээр алдаа гараагүй.
@@ -106,32 +102,82 @@ secret, лог, домэйний заавар: [README.md → Production](./READ
   ```
   Seed нь админы хийсэн засварыг дарж бичихгүй.
 
-## 7d. Админ бүртгэл ба аюулгүй байдал (migration 0004)
+## 7d–7e. Migration 0004, 0005
 
-- ☐ Migration + deploy:
+- ✅ Production дээр хэрэгжсэн (2026-11-15-ны read-only шалгалт). Тэдгээрийн нэвтрэлтийн хэсгийг
+  7f орлоно.
+
+## 7f. Clerk нэвтрэлт ба өөрийн домэйн (migration 0006, 0007, 0008)
+
+Энэ хүртэл production хуучин хувилбараараа ажиллана — **дараах бүх алхам бэлэн болтол deploy
+хийхгүй**. Migration болон deploy-ийг нэг дор, дарааллаар нь хийнэ (0006 дараа хуучин код, эсвэл
+шинэ код 0006-гүй ажиллахгүй).
+
+**A. Домэйн (`<домэйн>`, жишээ нь `unicef130.mn`)**
+
+- ☐ Домэйн худалдаж авна. Cloudflare → **Add a site** → `<домэйн>` (Free plan) → бүртгэгч дээрээ
+  nameserver-ийг Cloudflare-ийнх болгоно (идэвхжтэл хэдэн цаг).
+- ☐ Workers & Pages → unicef-club-130 → Settings → Domains & Routes → **Add → Custom domain** →
+  `<домэйн>` (хүсвэл `www.<домэйн>`).
+- ☐ Turnstile widget → Hostname management → `<домэйн>` нэмнэ (холбоо барих маягт).
+
+**B. Clerk production instance**
+
+- ☐ Clerk dashboard → application → **Create production instance** (Development-ийн тохиргоог
+  хуулна) → домэйн: `<домэйн>`.
+- ☐ **Domains** хуудсанд гарсан DNS бичлэгүүдийг (CNAME: `clerk.`, `accounts.`, и-мэйлийн
+  `clkmail.`, `clk._domainkey.`, `clk2._domainkey.` гэх мэт — яг тэр хуудсанд байгаагаар)
+  Cloudflare DNS-д нэмнэ. **Proxy status: DNS only** (саарал үүл). Clerk дээр бүгд «Verified»
+  болтол хүлээнэ (48 цаг хүртэл).
+- ☐ **User & authentication**: Email code (sign-up + sign-in) ON; Password, Phone, Username,
+  First/Last name OFF; «Allow users to delete their accounts» OFF.
+- ☐ **Google OAuth (өөрийн credential)**: Google Cloud Console → шинэ project → OAuth consent
+  screen (External, апп нэр «130 UNICEF клуб», support и-мэйл, authorized domain `<домэйн>`) →
+  Credentials → **OAuth client ID** (Web application) → Authorized redirect URI-д Clerk-ийн
+  **SSO connections → Google** хуудсанд заасан URI-г хуулна → Client ID, Client secret-ийг Clerk-д
+  оруулна. Consent screen-ийг **Publish** (Testing горимд зөвхөн туршилтын хэрэглэгч нэвтэрнэ).
+- ☐ **Sessions → Customize session token**: `{ "role": "{{user.public_metadata.role}}" }`.
+- ☐ **Attack protection → Bot sign-up protection** ON (боломжтой бол).
+- ☐ **Multi-factor → Authenticator app + Backup codes** — plan-д байвал ON (байхгүй бол
+  тэмдэглэнэ; кодоор албадаагүй).
+- ☐ **Webhooks → Add endpoint**: `https://<домэйн>/api/webhooks/clerk`, events `user.created`,
+  `user.updated`, `user.deleted`.
+
+**C. Түлхүүр, тохиргоо (өөрийн терминалаас; утгыг чатад бичихгүй)**
+
+- ☐ `wrangler.jsonc` → `"vars"`:
+  `"SITE_URL": "https://<домэйн>"`,
+  `"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_…"` (нийтэд ил утга).
+- ☐ Secret-ууд:
   ```bash
-  bunx wrangler d1 migrations list DB --remote     # 0004_accounts_security
-  bun run db:migrate:remote
+  bunx wrangler secret put CLERK_SECRET_KEY               # sk_live_… (Clerk → API keys)
+  bunx wrangler secret put CLERK_WEBHOOK_SIGNING_SECRET   # whsec_… (Clerk → Webhooks → endpoint)
+  bunx wrangler secret delete BETTER_AUTH_SECRET          # хуучин нэвтрэлтийн нууц
+  ```
+
+**D. Нөөц → migration → deploy (дараалал чухал)**
+
+- ☐ ```bash
+  bunx wrangler d1 export DB --remote --output backup-before-clerk.sql # нөөц (git-д оруулахгүй)
+  bunx wrangler d1 migrations list DB --remote # 0006, 0007 хүлээгдэж байна
+  bun run db:migrate:remote # 0006 → 0007
   bun run deploy
   ```
-- ☐ Анхны админ (хэрэв үүсгээгүй бол): `bun run admin:create -- <и-мэйл> --name "Нэр"`.
-- ☐ Нэвтрээд 2FA тохируулна (заавал), нөөц кодуудаа хадгална.
-- ☐ Бусад хүмүүсийг Админ → Хэрэглэгчид → «Хэрэглэгч урих»-аар нэмнэ.
-
-## 7e. Элсэлтийн систем (migration 0005)
-
-- ☐ Migration + deploy (0004 хараахан ажиллаагүй бол хамт, дарааллаар нь ажиллана):
-  ```bash
-  bunx wrangler d1 migrations list DB --remote     # 0005_recruitment
-  bun run db:migrate:remote
-  bun run deploy
+  0007 нь хуучин админ бүртгэл, session, 2FA хүснэгтүүдийг **буцаалтгүй** устгана.
   ```
-- ☐ Deploy хийсний дараа `/join` **хаалттай** болно — Админ → Элсэлт → «Шинэ элсэлт» үүсгэтэл
-  маягт гарахгүй. Хуучин өргөдлүүд хадгалагдана («Элсэлтгүй (хуучин)» шүүлтүүр).
-- ☐ Сургуульд олуулаа бөглөх өдөр IP хязгаарыг түр өсгөнө (README → «Спамаас хамгаалалт ба
-  сургуулийн Wi-Fi»).
-- ☐ Smoke test: `/join` (хаалттай төлөв), `/join/status` (Turnstile харагдана), админ → Элсэлт,
-  Өргөдлүүд.
+
+**E. Анхны админ ба шалгалт**
+
+- ☐ `https://<домэйн>` → «Нэвтрэх» → өөрийн Google эсвэл и-мэйлээр нэвтэрнэ (→ `/join`).
+- ☐ `bun run admin:grant -- <таны-и-мэйл>` (production Secret key-г нуугдмал асууна) → гараад
+  дахин нэвтэрнэ → `/admin`.
+- ☐ Clerk → Webhooks → endpoint → **Send example** / Attempts — 200 буцааж байгааг харна.
+- ☐ Smoke test: нийтийн хуудсууд; `/admin` (нэвтрээгүй → sign-in); Админ → Элсэлт → туршилтын
+  элсэлт үүсгээд өөр бүртгэлээр өргөдөл илгээх → Тэнцсэн → `/me` → тэр бүртгэлийг Хэрэглэгчид
+  хэсгээс устгах → туршилтын элсэлтийг устгах. `bunx wrangler tail` дээр алдаа гараагүй.
+- ☐ `bunx wrangler triggers deploy` шаардлагагүй — cron (`30 19 * * *`) `bun run deploy`-оор хамт
+  тохирно; Dashboard → Worker → Settings → Triggers дээр харагдана.
+- ☐ workers.dev хаягийг хаах (заавал биш): Domains & Routes → workers.dev → Disable.
 
 ## 8. Контент (deploy-ийн дараа админаас бөглөнө)
 

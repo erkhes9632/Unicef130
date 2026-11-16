@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { NewsForm } from "@/components/admin/news-form";
 import { requireAdmin } from "@/lib/auth/session";
+import { listAlbumOptions } from "@/lib/data/gallery";
 import { saveNews } from "../actions";
 
 export const metadata: Metadata = { title: "Шинэ мэдээ" };
@@ -11,7 +12,7 @@ export default async function NewNewsPage() {
   return (
     <>
       <AdminPageHeader title="Шинэ мэдээ" />
-      <NewsForm action={saveNews.bind(null, null)} />
+      <NewsForm action={saveNews.bind(null, null)} albums={await listAlbumOptions()} />
     </>
   );
 }

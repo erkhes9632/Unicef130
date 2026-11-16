@@ -6,7 +6,7 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getDb } from "@/db";
-import { activityLog, user } from "@/db/schema";
+import { activityLog, users } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 
@@ -59,7 +59,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/admin/a
   const condition = where.length ? and(...where) : undefined;
 
   const db = await getDb();
-  const [[total], rows, users] = await Promise.all([
+  const [[total], rows, actors] = await Promise.all([
     db.select({ n: count() }).from(activityLog).where(condition),
     db
       .select({
@@ -69,16 +69,20 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/admin/a
         summary: activityLog.summary,
         details: activityLog.details,
         createdAt: activityLog.createdAt,
-        userName: user.name,
-        userEmail: user.email,
+        userName: users.name,
+        userEmail: users.email,
       })
       .from(activityLog)
-      .leftJoin(user, eq(activityLog.userId, user.id))
+      .leftJoin(users, eq(activityLog.userId, users.id))
       .where(condition)
       .orderBy(desc(activityLog.createdAt))
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE),
-    db.select({ id: user.id, name: user.name, email: user.email }).from(user),
+    // Accounts that appear in the log (admins), for the actor filter.
+    db
+      .selectDistinct({ id: users.id, name: users.name, email: users.email })
+      .from(users)
+      .innerJoin(activityLog, eq(activityLog.userId, users.id)),
   ]);
   const pageCount = Math.max(1, Math.ceil((total?.n ?? 0) / PAGE_SIZE));
   const pageHref = (p: number) => {
@@ -99,7 +103,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/admin/a
           <span>Хэрэглэгч</span>
           <NativeSelect name="user" defaultValue={filters.user}>
             <option value="">Бүгд</option>
-            {users.map((u) => (
+            {actors.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name} ({u.email})
               </option>

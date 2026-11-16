@@ -4,6 +4,7 @@ import {
   BarChart3,
   DoorOpen,
   CalendarDays,
+  Clock,
   Images,
   Inbox,
   LayoutDashboard,
@@ -12,7 +13,9 @@ import {
   Newspaper,
   ScrollText,
   FileText,
+  HelpCircle,
   Settings,
+  Activity,
   UserCog,
   Users,
 } from "lucide-react";
@@ -32,14 +35,17 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/events", label: "Арга хэмжээ", icon: CalendarDays },
   { href: "/admin/gallery", label: "Зургийн цомог", icon: Images },
   { href: "/admin/members", label: "Гишүүд", icon: Users },
+  { href: "/admin/hours", label: "Сайн дурын цаг", icon: Clock },
   { href: "/admin/recruitment", label: "Элсэлт", icon: DoorOpen },
   { href: "/admin/applications", label: "Өргөдлүүд", icon: Inbox },
   { href: "/admin/messages", label: "Зурвасууд", icon: Mail },
   { href: "/admin/impact", label: "Жилийн үр дүн", icon: BarChart3 },
   { href: "/admin/pages/about", label: "Бидний тухай хуудас", icon: FileText },
+  { href: "/admin/faq", label: "Түгээмэл асуулт", icon: HelpCircle },
   { href: "/admin/settings", label: "Сайтын тохиргоо", icon: Settings },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UserCog },
   { href: "/admin/audit", label: "Үйлдлийн түүх", icon: ScrollText },
+  { href: "/admin/system", label: "Системийн төлөв", icon: Activity },
 ];
 
 /** Admin menu (only admins reach the panel; every page checks the role on the server). */

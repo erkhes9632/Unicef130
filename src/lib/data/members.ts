@@ -2,6 +2,8 @@ import { and, asc, count, eq } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
+import { schoolYearOf } from "@/lib/members/logic";
+import { yearSummary } from "@/lib/members/year-summary";
 import { displayClassName, pick } from "./localize";
 
 export type MemberItem = {
@@ -62,5 +64,23 @@ export async function listMembers(
     members: rows.filter((m) => m.group === "member").map((m) => toItem(locale, m)),
     /** Active members whose names are not public (no consent yet). */
     hiddenCount: hidden,
+  };
+}
+
+/**
+ * "Идэвхтэй гишүүд" of the current school year: members who reached the admin's hours threshold
+ * AND whose names are public (consent). Hours are never returned — only the names.
+ * Empty when no threshold is set.
+ */
+export async function listActiveMembers(locale: Locale, threshold: number | null) {
+  const year = schoolYearOf(new Date());
+  if (!threshold) return { year, names: [] as { id: string; name: string }[] };
+  const { listed } = await yearSummary(await getDb(), year, threshold);
+  return {
+    year,
+    names: listed
+      .filter((r) => r.active && r.member.showPublicly && r.member.active)
+      .map((r) => ({ id: r.member.id, name: pick(locale, r.member.name, r.member.nameEn) }))
+      .sort((a, b) => a.name.localeCompare(b.name, "mn")),
   };
 }

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -31,13 +31,20 @@ export default async function EditEventPage({
         title="Арга хэмжээ засах"
         description={row.title}
         actions={
-          row.published && (
+          <>
             <Button asChild variant="outline">
-              <Link href={`/events/${row.slug}`} target="_blank">
-                <ExternalLink /> Сайт дээр харах
+              <Link href={`/admin/events/${row.id}/volunteers`}>
+                <Users /> Сайн дурынхан
               </Link>
             </Button>
-          )
+            {row.published && (
+              <Button asChild variant="outline">
+                <Link href={`/events/${row.slug}`} target="_blank">
+                  <ExternalLink /> Сайт дээр харах
+                </Link>
+              </Button>
+            )}
+          </>
         }
       />
       <EventForm

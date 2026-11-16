@@ -260,3 +260,166 @@
 @utility animate-fade-up {
   animation: fade-up 0.6s ease-out both;
 }
+
+/* ==========================================================================
+   MOTION — CSS first. Every rule below is off under prefers-reduced-motion.
+   ========================================================================== */
+:root {
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Faint dot grid for hero backgrounds (masked to fade out at the edges). */
+@utility bg-dot-grid {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--foreground) 14%, transparent) 1px,
+    transparent 1.2px
+  );
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 75%);
+}
+
+/*
+ * Scroll reveal with CSS scroll-driven animations (no JavaScript). Browsers without
+ * `animation-timeline` simply show the content; elements already on screen at load are fully
+ * visible. `.reveal` = one element; `.reveal-group` = every child, staggered across a row of 3.
+ */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@layer components {
+  @media screen and (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .reveal,
+      .reveal-group > * {
+        animation: reveal-up linear both;
+        animation-timeline: view();
+        animation-range: entry calc(var(--reveal-i, 0) * 36px) entry
+          calc(170px + var(--reveal-i, 0) * 36px);
+      }
+      .reveal-group > :nth-child(3n + 2) {
+        --reveal-i: 1;
+      }
+      .reveal-group > :nth-child(3n) {
+        --reveal-i: 2;
+      }
+      /* Bar that grows to its value when it scrolls into view (charts). */
+      .grow-x {
+        transform-origin: left;
+        animation: grow-x linear both;
+        animation-timeline: view();
+        animation-range: entry 20% cover 40%;
+      }
+      /* Vertical line that draws itself while the list scrolls past (timeline). */
+      .draw-line {
+        transform-origin: top;
+        animation: draw-line linear both;
+        animation-timeline: view();
+        animation-range: entry 0% exit 30%;
+      }
+    }
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes draw-line {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Hero entrance: decorative parts only — the headline and intro are never hidden (LCP). */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@utility animate-rise-in {
+  animation: rise-in 0.8s var(--ease-out-soft) both;
+}
+
+/* Hand-drawn ribbon under a highlighted word: draws once on load. */
+@keyframes draw-stroke {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@utility animate-draw-stroke {
+  stroke-dasharray: 1;
+  animation: draw-stroke 0.9s var(--ease-out-soft) 0.35s both;
+}
+
+/* ---------- View transitions (React <ViewTransition>, see components/layout/page-transition) */
+::view-transition-old(.page-exit) {
+  animation: 140ms ease-in both vt-fade-out;
+}
+::view-transition-new(.page-enter) {
+  animation:
+    220ms ease-out 100ms both vt-fade-in,
+    380ms var(--ease-out-soft) both vt-rise;
+}
+::view-transition-group(.morph) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out-soft);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: vt-via-blur;
+}
+/* The sticky header stays put while the page content changes. */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 10;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-rise {
+  from {
+    transform: translateY(10px);
+  }
+}
+@keyframes vt-via-blur {
+  30% {
+    filter: blur(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

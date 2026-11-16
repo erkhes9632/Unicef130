@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import type { AlbumItem } from "@/lib/data/gallery";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
 
-export async function AlbumCard({ album }: { album: AlbumItem }) {
+export async function AlbumCard({ album, priority }: { album: AlbumItem; priority?: boolean }) {
   const t = await getTranslations("Gallery");
   const locale = await getLocale();
 
@@ -15,6 +15,7 @@ export async function AlbumCard({ album }: { album: AlbumItem }) {
         <CoverImage
           src={album.coverUrl}
           alt={album.title}
+          priority={priority}
           className="transition-transform duration-500 group-hover:scale-105"
         />
       </div>

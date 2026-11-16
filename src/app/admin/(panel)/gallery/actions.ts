@@ -28,6 +28,7 @@ export async function saveAlbum(
       descriptionEn: fd.str(data, "descriptionEn"),
       date: fd.str(data, "date"),
       published: fd.bool(data, "published"),
+      eventId: fd.opt(data, "eventId"),
     });
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;

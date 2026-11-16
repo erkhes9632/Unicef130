@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarDays, Clock, MapPin, UserRound } from "lucide-react";
+import { Award, CalendarCheck, CalendarDays, Clock, MapPin, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { PageHero } from "@/components/common/page-hero";
@@ -89,6 +89,14 @@ export default async function MePage({ params }: PageProps<"/[locale]/me">) {
                   </p>
                 )}
               </div>
+            )}
+            {page.totals.some((y) => y.hours > 0) && (
+              <Link
+                href="/me/certificate"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-cyan-strong underline"
+              >
+                <Award className="size-4" aria-hidden="true" /> {t("certificate")}
+              </Link>
             )}
             {page.history.length === 0 && !page.importedTotal ? (
               <p className="text-sm text-muted-foreground">{t("noHours")}</p>

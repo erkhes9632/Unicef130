@@ -18,6 +18,11 @@ export type NewsItem = {
   publishedAt: string;
   sdgs: number[];
   eventId: string | null;
+  featured: boolean;
+  /** Search-engine title / description (empty → title / excerpt). */
+  metaTitle: string;
+  metaDescription: string;
+  albumId: string | null;
 };
 
 export const NEWS_PAGE_SIZE = 6;
@@ -39,6 +44,11 @@ function toItem(locale: Locale, r: Row): NewsItem {
     publishedAt: (r.publishedAt ?? r.createdAt).toISOString(),
     sdgs: normalizeSdgs(r.sdgs),
     eventId: r.eventId,
+    featured: r.featured,
+    // SEO fields are written in Mongolian only.
+    metaTitle: locale === "mn" ? r.metaTitle : "",
+    metaDescription: locale === "mn" ? r.metaDescription : "",
+    albumId: r.albumId,
   };
 }
 
@@ -85,7 +95,8 @@ export async function getLatestNews(locale: Locale, limit = 3) {
     .select()
     .from(news)
     .where(visible())
-    .orderBy(desc(news.publishedAt))
+    // Featured posts first (home page), then the newest.
+    .orderBy(desc(news.featured), desc(news.publishedAt))
     .limit(limit);
   return rows.map((r) => toItem(locale, r));
 }

@@ -187,6 +187,8 @@ const { setApplicationStatus, saveDecisionMessage, setApplyBlocked } =
 const { changeUserRole, setUserBanned, deleteUserAccount, linkAccountToMember } =
   await import("@/app/admin/(panel)/users/actions");
 const { deleteNews } = await import("@/app/admin/(panel)/news/actions");
+const { markAttendance } = await import("@/app/admin/(panel)/events/actions");
+const { addHours } = await import("@/app/admin/(panel)/hours/actions");
 const { submitJoinApplication, submitContactMessage } = await import("@/app/actions/forms");
 const { deleteMyAccount, signUpForEvent, cancelSignup } = await import("@/app/[locale]/me/actions");
 
@@ -563,6 +565,64 @@ describe("member area actions", () => {
     expect(await cancelSignup("e1")).toEqual({ ok: true, status: "cancelled" });
     expect(setLog[0]).toMatchObject({ status: "cancelled" });
     expect(setLog[1]).toMatchObject({ status: "registered" });
+  });
+});
+
+describe("attendance and the hours log", () => {
+  test("admin-only; hours are validated before the database", async () => {
+    signInAs("member");
+    expect((await markAttendance("e1", "s1", "attended", "2")).ok).toBe(false);
+    signInAs("admin");
+    expect((await markAttendance("e1", "s1", "attended", "30")).message).toContain("0.25–24");
+    expect((await markAttendance("e1", "s1", "dancing", "2")).message).toBe("Төлөв буруу.");
+    expect(dbCalls).toEqual([]);
+  });
+
+  test("attended → one hours entry for (member, event) in the event's school year", async () => {
+    signInAs("admin");
+    const startsAt = new Date(Date.UTC(2026, 10, 20, 2));
+    queuedResults.push(
+      [{ id: "s1", userId: "u1", eventId: "e1", startsAt, schoolYear: null }], // sign-up + event
+      [{ id: "m1" }], // the account's member row
+      [], // status update
+      [], // earlier entry removed
+      [], // insert
+    );
+    expect((await markAttendance("e1", "s1", "attended", "2,5")).ok).toBe(true);
+    expect(insertedValues).toMatchObject({
+      memberId: "m1",
+      eventId: "e1",
+      hours: 2.5,
+      schoolYear: "2026-2027",
+      createdBy: "me",
+    });
+  });
+
+  test("no member row → no hours (and a clear message)", async () => {
+    signInAs("admin");
+    queuedResults.push(
+      [{ id: "s1", userId: "u1", eventId: "e1", startsAt: new Date(), schoolYear: "2026-2027" }],
+      [],
+    );
+    const res = await markAttendance("e1", "s1", "attended", "2");
+    expect(res.ok).toBe(false);
+    expect(dbCalls).not.toContain("insert");
+  });
+
+  test("bulk hours need selected members and valid hours", async () => {
+    signInAs("admin");
+    const f = new FormData();
+    f.set("hours", "2");
+    f.set("date", "2026-11-20");
+    f.set("schoolYear", "2026-2027");
+    expect((await addHours({}, f)).message).toBe("Гишүүн сонгоно уу.");
+    f.append("memberIds", "m1");
+    f.append("memberIds", "m2");
+    queuedResults.push([{ id: "m1" }, { id: "m2" }], []);
+    expect((await addHours({}, f)).ok).toBe(true);
+    expect(insertedValues).toHaveLength(2);
+    f.set("hours", "0");
+    expect((await addHours({}, f)).ok).toBe(false);
   });
 });
 

@@ -31,7 +31,7 @@ const desktopNav: ({ key: NavKeyT } | { group: "newsGroup" | "getInvolved"; item
     { group: "newsGroup", items: ["news", "gallery"] },
     { key: "events" },
     { key: "members" },
-    { group: "getInvolved", items: ["support", "join"] },
+    { group: "getInvolved", items: ["support", "join", "faq"] },
     { key: "contact" },
   ];
 

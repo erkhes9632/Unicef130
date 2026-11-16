@@ -22,7 +22,9 @@ export default async function AdminMembersPage({ searchParams }: PageProps<"/adm
     .orderBy(asc(members.group), asc(members.sortOrder), asc(members.name));
   // Anonymized rows (deleted accounts) only count towards the hours total.
   const totalHours = all.reduce((sum, r) => sum + (r.volunteerHours ?? 0), 0);
-  const rows = all.filter((r) => !r.anonymized);
+  const teams = [...new Set(all.map((r) => r.team).filter(Boolean))].sort();
+  const team = typeof sp.team === "string" ? sp.team : "";
+  const rows = all.filter((r) => !r.anonymized && (!team || r.team === team));
 
   return (
     <>
@@ -46,6 +48,20 @@ export default async function AdminMembersPage({ searchParams }: PageProps<"/adm
         Нийт {rows.length} гишүүн · нийтэд харагдах {rows.filter((r) => r.showPublicly).length} ·
         бүртгэгдсэн сайн дурын цаг {totalHours} (хувь хүний цаг сайт дээр хэзээ ч харагдахгүй).
       </p>
+      {teams.length > 0 && (
+        <nav aria-label="Баг" className="mb-4 flex flex-wrap gap-2 text-sm">
+          {["", ...teams].map((t) => (
+            <Link
+              key={t || "all"}
+              href={t ? `/admin/members?team=${encodeURIComponent(t)}` : "/admin/members"}
+              aria-current={team === t ? "page" : undefined}
+              className={`rounded-full px-3 py-1 ring-1 ring-border hover:bg-muted ${team === t ? "bg-brand-cyan text-brand-night ring-brand-cyan" : ""}`}
+            >
+              {t || "Бүх баг"}
+            </Link>
+          ))}
+        </nav>
+      )}
       <MembersBulkList
         rows={rows}
         isAdmin={user.role === "admin"}

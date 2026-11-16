@@ -118,7 +118,7 @@ export function CoverImage({
                 SDGS[n]!.text === "light" ? "text-white" : "text-brand-night",
               )}
             >
-              <span className="mr-0.5 text-[0.6rem] opacity-80">SDG</span>
+              <span className="mr-0.5 text-[0.6rem]">SDG</span>
               {n}
             </span>
           ))}

@@ -21,9 +21,14 @@ export function PageHero({
   return (
     <div className={cn("relative isolate border-b border-border/60", className)}>
       <DecorativeShapes />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-dot-grid opacity-70" />
       <div className="container-page py-12 sm:py-16">
         <div className="max-w-3xl space-y-4">
-          {eyebrow && <Eyebrow color={eyebrowColor}>{eyebrow}</Eyebrow>}
+          {eyebrow && (
+            <Eyebrow color={eyebrowColor} className="animate-rise-in">
+              {eyebrow}
+            </Eyebrow>
+          )}
           <h1 className="text-4xl font-extrabold sm:text-5xl">{title}</h1>
           {description && <p className="text-lg text-muted-foreground">{description}</p>}
           {children}

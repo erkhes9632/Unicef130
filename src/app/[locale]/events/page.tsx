@@ -99,7 +99,7 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
           <div className="space-y-8">
             <MonthCalendar year={year} month={month} events={monthEvents} />
             {monthEvents.length > 0 ? (
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="reveal-group grid gap-4 lg:grid-cols-2">
                 {monthEvents.map((e) => (
                   <EventCard key={e.id} item={e} />
                 ))}
@@ -109,7 +109,7 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
             )}
           </div>
         ) : items.length > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="reveal-group grid gap-4 lg:grid-cols-2">
             {items.map((e) => (
               <EventCard key={e.id} item={e} />
             ))}

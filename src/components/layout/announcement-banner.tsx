@@ -37,7 +37,7 @@ export async function AnnouncementBanner() {
       </>
     );
     return (
-      <aside aria-label={t("label")} className="bg-brand-gold text-brand-night">
+      <aside aria-label={t("label")} className="bg-brand-gold text-brand-night print:hidden">
         {external ? (
           <a
             href={external}
@@ -60,7 +60,7 @@ export async function AnnouncementBanner() {
   if (state.phase !== "open") return null;
   const tc = await getTranslations("Countdown");
   return (
-    <aside aria-label={t("label")} className="bg-brand-cyan text-brand-night">
+    <aside aria-label={t("label")} className="bg-brand-cyan text-brand-night print:hidden">
       <p className={base}>
         <Megaphone className="size-4 shrink-0" aria-hidden="true" />
         <span>{t("recruitmentOpen", { date: formatDate(locale, state.closesAt, "long") })}</span>

@@ -1,14 +1,17 @@
 "use server";
 
 import { and, eq, ne } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { events } from "@/db/schema";
+import { eventSignups, events } from "@/db/schema";
 import { diffFields, logActivity } from "@/lib/admin/activity";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { revalidatePublic } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 import { recordSlugRename } from "@/lib/data/redirects";
+import { setAttendance } from "@/lib/members/hours";
+import { parseHours } from "@/lib/members/logic";
 import { deleteMediaUrls } from "@/lib/media/server";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
 import { slugify, uniqueSlug } from "@/lib/slug";
@@ -152,6 +155,68 @@ export async function deleteEvent(id: string): Promise<ActionState> {
     });
     revalidatePublic();
     return { ok: true, message: "Арга хэмжээ устгагдлаа." };
+  } catch (err) {
+    return actionError(err);
+  }
+}
+
+const attendanceStatuses = ["attended", "absent", "registered"] as const;
+
+/** Marks a volunteer's sign-up attended (hours go to the hours log), absent or registered. */
+export async function markAttendance(
+  eventId: string,
+  signupId: string,
+  status: string,
+  hours: string,
+): Promise<ActionState> {
+  try {
+    const user = await assertAdmin();
+    if (!(attendanceStatuses as readonly string[]).includes(status))
+      return { ok: false, message: "Төлөв буруу." };
+    const parsedHours = status === "attended" ? parseHours(hours) : null;
+    if (status === "attended" && parsedHours === null)
+      return { ok: false, message: "Цагийг 0.25–24 хооронд оруулна уу." };
+    const res = await setAttendance(
+      await getDb(),
+      user,
+      signupId,
+      status as (typeof attendanceStatuses)[number],
+      parsedHours,
+    );
+    if (res === "not-found") return { ok: false, message: "Бүртгэл олдсонгүй." };
+    if (res === "no-member")
+      return {
+        ok: false,
+        message: "Энэ бүртгэл гишүүний мөртэй холбогдоогүй тул цаг бүртгэх боломжгүй.",
+      };
+    revalidatePath(`/admin/events/${eventId}/volunteers`);
+    revalidatePath("/admin/hours");
+    return {
+      ok: true,
+      message: status === "attended" ? "Ирсэн гэж тэмдэглэлээ." : "Шинэчлэгдлээ.",
+    };
+  } catch (err) {
+    return actionError(err);
+  }
+}
+
+/** Every registered volunteer of the event → attended with the same hours. */
+export async function markAllAttended(eventId: string, hours: string): Promise<ActionState> {
+  try {
+    const user = await assertAdmin();
+    const parsedHours = parseHours(hours);
+    if (parsedHours === null) return { ok: false, message: "Цагийг 0.25–24 хооронд оруулна уу." };
+    const db = await getDb();
+    const registered = await db
+      .select({ id: eventSignups.id })
+      .from(eventSignups)
+      .where(and(eq(eventSignups.eventId, eventId), eq(eventSignups.status, "registered")));
+    let done = 0;
+    for (const r of registered)
+      if ((await setAttendance(db, user, r.id, "attended", parsedHours)) === "ok") done++;
+    revalidatePath(`/admin/events/${eventId}/volunteers`);
+    revalidatePath("/admin/hours");
+    return { ok: true, message: `${done} сайн дурынхныг ирсэн гэж тэмдэглэлээ.` };
   } catch (err) {
     return actionError(err);
   }

@@ -24,7 +24,7 @@ export async function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur supports-backdrop-filter:bg-background/70">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur [view-transition-name:site-header] supports-backdrop-filter:bg-background/70 print:hidden">
       <div className="container-page flex h-16 min-w-0 items-center gap-2 sm:gap-3 xl:h-[4.5rem]">
         <Link
           href="/"

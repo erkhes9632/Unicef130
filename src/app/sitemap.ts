@@ -19,6 +19,7 @@ const staticPaths = [
   "/join",
   "/contact",
   "/support",
+  "/faq",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

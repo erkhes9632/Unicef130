@@ -25,6 +25,7 @@
     "admin:grant": "bun scripts/admin-role.ts grant",
     "admin:revoke": "bun scripts/admin-role.ts revoke",
     "brand:assets": "bun scripts/brand-assets.ts",
+    "fonts": "bun scripts/fonts.ts",
     "report:seed": "bun scripts/seed-report.ts",
     "test": "bun test --isolate",
     "test:e2e": "playwright test"

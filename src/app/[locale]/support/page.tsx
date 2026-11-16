@@ -66,7 +66,7 @@ export default async function SupportPage({ params }: PageProps<"/[locale]/suppo
         description={t("Support.description")}
       />
       <Section>
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="reveal-group grid gap-4 sm:grid-cols-2">
           {ways.map(({ key, icon: Icon, tone, href }) => (
             <li key={key} className={card}>
               <span className={cn(iconBox, tone)}>

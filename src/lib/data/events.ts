@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, lt, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
 import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
-import { events } from "@/db/schema";
+import { eventSignups, events } from "@/db/schema";
+import { placeHolding, signupOpen } from "@/lib/members/logic";
 import { normalizeSdgs } from "@/lib/sdg";
 import { clubDirections, type ClubDirection, type RichTextDoc } from "@/lib/types";
 import { pick } from "./localize";
@@ -178,4 +179,31 @@ export async function listDirectionActivities(locale: Locale) {
     .where(and(eq(events.published, true), isNotNull(events.direction)))
     .orderBy(desc(events.startsAt));
   return rows.map((r) => toItem(locale, r));
+}
+
+/**
+ * Volunteer sign-up of an upcoming event for the public page: whether it is open and how many
+ * places are left (no names). Null when sign-up is off.
+ */
+export async function getEventSignupInfo(eventId: string) {
+  const db = await getDb();
+  const [e] = await db
+    .select({
+      signupEnabled: events.signupEnabled,
+      signupCapacity: events.signupCapacity,
+      signupDeadline: events.signupDeadline,
+      startsAt: events.startsAt,
+    })
+    .from(events)
+    .where(eq(events.id, eventId))
+    .limit(1);
+  if (!e?.signupEnabled) return null;
+  const [taken] = await db
+    .select({ n: count() })
+    .from(eventSignups)
+    .where(and(eq(eventSignups.eventId, eventId), inArray(eventSignups.status, [...placeHolding])));
+  return {
+    open: signupOpen(e),
+    placesLeft: e.signupCapacity === null ? null : Math.max(0, e.signupCapacity - (taken?.n ?? 0)),
+  };
 }

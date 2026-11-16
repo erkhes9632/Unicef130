@@ -23,6 +23,9 @@ export type AdminMemberRow = {
   active: boolean;
   showPublicly: boolean;
   volunteerHours: number | null;
+  team: string;
+  /** Linked to a site account (approved applicant or linked by an admin). */
+  userId: string | null;
 };
 
 /**
@@ -115,6 +118,10 @@ export function MembersBulkList({
                 </Badge>
                 <span>{m.role}</span>
                 {m.className && <span>· {m.className}</span>}
+                {m.team && <span>· {m.team} баг</span>}
+                {m.userId && (
+                  <span className="font-semibold text-brand-cyan-strong">· бүртгэлтэй</span>
+                )}
                 {m.volunteerHours !== null && <span>· {m.volunteerHours} цаг</span>}
                 <span
                   className={

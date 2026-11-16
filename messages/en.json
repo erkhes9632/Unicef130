@@ -34,7 +34,8 @@
     "menu": "Menu",
     "impact": "Impact",
     "newsGroup": "News",
-    "getInvolved": "Get involved"
+    "getInvolved": "Get involved",
+    "faq": "FAQ"
   },
   "Theme": {
     "toggle": "Toggle color mode",
@@ -65,8 +66,9 @@
   "Home": {
     "heroEyebrow": "Since {year} · School No. 130",
     "heroEyebrowNoYear": "School No. 130",
-    "heroTitle": "Together, for every child!",
+    "heroTitle": "<hl>Together</hl>, for every child!",
     "heroBody": "We are the student club of School No. 130, part of the UNICEF Club Mongolia network. We organise volunteer activities in three directions: advocacy, education and fundraising.",
+    "nextEvent": "Next event",
     "heroSecondary": "About us",
     "statsTitle": "What we've achieved together",
     "stats": {
@@ -159,7 +161,12 @@
     "addToCalendar": "Add to calendar",
     "pastBadge": "Past event",
     "backToList": "All events",
-    "eventsOnDay": "{count, plural, one {# event} other {# events}}"
+    "eventsOnDay": "{count, plural, one {# event} other {# events}}",
+    "signupOpen": "Volunteer sign-up is open",
+    "signupClosed": "Volunteer sign-up is closed",
+    "placesLeft": "{count} places left",
+    "signupHow": "Members sign up in “My page”",
+    "photos": "Photo album ({count})"
   },
   "Members": {
     "metaTitle": "Members",
@@ -175,7 +182,9 @@
     "empty": "The member list is empty for now.",
     "hiddenNote": "To protect members' privacy, other members' names are not published.",
     "leadershipOfYear": "Leadership {year}",
-    "otherYears": "Other years"
+    "otherYears": "Other years",
+    "activeTitle": "Active members {year}",
+    "activeBody": "Members who volunteered at least {hours} hours this school year (with consent to show their names)."
   },
   "Gallery": {
     "metaTitle": "Gallery",
@@ -407,6 +416,13 @@
     "total": "Total",
     "chartInPerson": "People reached in person",
     "chartOnline": "People reached online",
+    "filterLabel": "Filter by direction",
+    "filterAll": "All",
+    "sdgPick": "Pick a goal to see the activities behind it",
+    "sdgNone": "no related activities this year",
+    "sdgNews": "Related news",
+    "sdgReached": "Contributed to {count} of the 17 goals",
+    "sdgList": "Related SDGs",
     "timelineTitle": "Activity timeline",
     "sdgTitle": "Sustainable Development Goals",
     "sdgDescription": "The club's activities relate to these goals.",
@@ -489,6 +505,29 @@
       "adminSelfDelete": "Admins can't delete their own account.",
       "confirm": "Type DELETE exactly.",
       "server": "Something went wrong. Please try again."
-    }
+    },
+    "certificate": "Certificate of participation"
+  },
+  "Certificate": {
+    "title": "Certificate of participation",
+    "heading": "Certificate of participation",
+    "awardedTo": "This certificate is awarded to",
+    "body": "for taking part in the club's volunteer work for a total of {hours} hours in the {year} school year.",
+    "signLeader": "Club leader",
+    "signAdvisor": "Advisor teacher",
+    "issued": "Issued: {date}",
+    "print": "Print / save as PDF",
+    "years": "School year",
+    "back": "Back to my page",
+    "nothing": "There are no volunteer hours recorded for a certificate yet."
+  },
+  "Faq": {
+    "metaTitle": "FAQ",
+    "eyebrow": "Questions & answers",
+    "title": "Frequently asked questions",
+    "description": "Common questions about the club, joining and volunteering.",
+    "empty": "No questions have been added yet.",
+    "more": "Didn't find your answer?",
+    "contact": "Contact us"
   }
 }

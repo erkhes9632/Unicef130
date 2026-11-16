@@ -2,6 +2,8 @@ import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { CommandPalette } from "@/components/admin/command-palette";
+import { UnsavedChangesGuard } from "@/components/admin/unsaved-changes-guard";
 import { ThemeToggleAdmin } from "@/components/admin/theme-toggle-admin";
 import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandLockup } from "@/components/brand/brand-lockup";
@@ -47,6 +49,8 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur sm:px-6">
           <AdminMobileNav />
+          <CommandPalette />
+          <UnsavedChangesGuard />
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right text-xs sm:block">
               <p className="font-semibold">{user.name || user.email}</p>

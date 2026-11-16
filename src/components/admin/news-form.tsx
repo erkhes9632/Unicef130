@@ -32,16 +32,23 @@ export type NewsFormValues = {
   status: "draft" | "published";
   publishedAt: string; // datetime-local (UB)
   sdgs: number[];
+  featured: boolean;
+  metaTitle: string;
+  metaDescription: string;
+  albumId: string | null;
 };
 
 export function NewsForm({
   action,
   initial,
   saved,
+  albums = [],
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial?: NewsFormValues;
   saved?: boolean;
+  /** Albums that can be shown under the post. */
+  albums?: { id: string; title: string }[];
 }) {
   const [state, formAction] = useActionState(
     action,
@@ -53,6 +60,7 @@ export function NewsForm({
     <form
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
       className="grid gap-6 xl:grid-cols-[1fr_20rem]"
     >
       <div className="space-y-6">
@@ -148,7 +156,59 @@ export function NewsForm({
               defaultValue={initial?.publishedAt}
             />
           </AdminField>
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              name="featured"
+              defaultChecked={initial?.featured ?? false}
+              className="size-4 accent-[var(--brand-cyan)]"
+            />
+            Онцлох мэдээ (нүүр хуудсанд эхэнд)
+          </label>
           <SubmitButton className="w-full" />
+        </FormSection>
+        <FormSection title="Зургийн цомог">
+          <AdminField
+            label="Мэдээний доор харуулах цомог"
+            htmlFor="albumId"
+            hint="Зөвхөн нийтлэгдсэн цомог сайт дээр харагдана."
+            errors={e.albumId}
+          >
+            <NativeSelect id="albumId" name="albumId" defaultValue={initial?.albumId ?? ""}>
+              <option value="">—</option>
+              {albums.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.title}
+                </option>
+              ))}
+            </NativeSelect>
+          </AdminField>
+        </FormSection>
+        <FormSection
+          title="Хайлтын систем (SEO)"
+          description="Хоосон бол гарчиг, товч агуулгыг ашиглана."
+        >
+          <AdminField label="SEO гарчиг (≤ 70)" htmlFor="metaTitle" errors={e.metaTitle}>
+            <Input
+              id="metaTitle"
+              name="metaTitle"
+              maxLength={70}
+              defaultValue={initial?.metaTitle ?? ""}
+            />
+          </AdminField>
+          <AdminField
+            label="SEO тайлбар (≤ 160)"
+            htmlFor="metaDescription"
+            errors={e.metaDescription}
+          >
+            <Textarea
+              id="metaDescription"
+              name="metaDescription"
+              maxLength={160}
+              rows={3}
+              defaultValue={initial?.metaDescription ?? ""}
+            />
+          </AdminField>
         </FormSection>
         <FormSection title="Ангилал, шошго">
           <AdminField label="Ангилал" htmlFor="category" errors={e.category}>

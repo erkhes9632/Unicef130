@@ -1,11 +1,13 @@
-import { ArrowRight, BarChart3 } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { coverIconFor, coverIcons } from "@/components/common/cover-image";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
-import { SdgBadges } from "@/components/impact/sdg-badges";
+import { CountUp } from "@/components/common/count-up";
+import { ImpactTimeline, type TimelineItem } from "@/components/impact/impact-timeline";
+import { SdgExplorer, type ExplorerGoal } from "@/components/impact/sdg-explorer";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
 import { formatDate, formatDateRange, formatMnt, formatNumber } from "@/lib/dates/format";
@@ -15,6 +17,7 @@ import { getNewsSlugsForEvents } from "@/lib/data/news";
 import { getHomeStats, getSiteSettings } from "@/lib/data/settings";
 import { SDGS } from "@/lib/sdg";
 import { pageMetadata } from "@/lib/seo";
+import { clubDirections } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const directionColor: Record<string, { bar: string; soft: string; text: string }> = {
@@ -66,7 +69,7 @@ function Bars({
 }) {
   const max = Math.max(1, ...rows.map(value));
   return (
-    <figure className="rounded-3xl bg-card p-5 ring-1 ring-border sm:p-6">
+    <figure className="reveal rounded-3xl bg-card p-5 ring-1 ring-border sm:p-6">
       <figcaption className="mb-4 font-bold">{title}</figcaption>
       <dl className="space-y-3">
         {rows.map((r) => (
@@ -77,7 +80,7 @@ function Bars({
             </dt>
             <dd aria-hidden="true" className="h-3 overflow-hidden rounded-full bg-muted">
               <span
-                className={cn("block h-full rounded-full", directionColor[r.direction]?.bar)}
+                className={cn("grow-x block h-full rounded-full", directionColor[r.direction]?.bar)}
                 style={{ width: `${Math.max(2, (value(r) / max) * 100)}%` }}
               />
             </dd>
@@ -125,6 +128,53 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
   const sdgCounts = new Map<number, number>();
   for (const a of activities) for (const n of a.sdgs) sdgCounts.set(n, (sdgCounts.get(n) ?? 0) + 1);
   const sdgs = [...sdgCounts.keys()].sort((a, b) => a - b);
+  const sdgName = (n: number) => (locale === "en" ? SDGS[n]!.en : SDGS[n]!.mn);
+  const hrefOf = (a: (typeof activities)[number]) =>
+    newsSlugs.has(a.id) ? `/news/${newsSlugs.get(a.id)}` : `/events/${a.slug}`;
+  const explorerGoals: ExplorerGoal[] = Object.keys(SDGS)
+    .map(Number)
+    .map((n) => {
+      const list = activities.filter((a) => a.sdgs.includes(n));
+      return {
+        n,
+        name: sdgName(n),
+        color: SDGS[n]!.color,
+        light: SDGS[n]!.text === "light",
+        countLabel: list.length ? t("sdgActivities", { count: list.length }) : "",
+        activities: list.map((a) => ({ id: a.id, title: a.title, href: hrefOf(a) })),
+      };
+    });
+  // Open the explorer on the goal with the most activities.
+  const topSdg = [...sdgCounts].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? 0;
+  const timelineItems: TimelineItem[] = activities.map((a) => ({
+    id: a.id,
+    href: hrefOf(a),
+    title: a.title,
+    dateTime: a.startsAt,
+    dateLabel: a.allDay
+      ? formatDateRange(locale, a.startsAt, a.endsAt)
+      : formatDate(locale, a.startsAt, "long"),
+    monthKey: formatDate(locale, a.startsAt, "monthYear"),
+    monthLabel: formatDate(locale, a.startsAt, "monthYear"),
+    direction: a.direction,
+    directionLabel: a.direction ? directionLabel(a.direction) : null,
+    sdgs: a.sdgs
+      .filter((n) => SDGS[n])
+      .map((n) => ({
+        n,
+        label: sdgName(n),
+        color: SDGS[n]!.color,
+        light: SDGS[n]!.text === "light",
+      })),
+  }));
+  const timelineFilters = clubDirections
+    .map((d) => ({ key: d, n: activities.filter((a) => a.direction === d).length }))
+    .filter((f) => f.n > 0)
+    .map((f) => ({
+      key: f.key,
+      label: directionLabel(f.key),
+      count: t("sdgActivities", { count: f.n }),
+    }));
 
   return (
     <>
@@ -163,11 +213,11 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
             {headline.map((s, i) => (
               <div
                 key={`${s.label}-${i}`}
-                className="flex flex-col rounded-3xl bg-card p-5 text-center ring-1 ring-border"
+                className="flex min-w-0 flex-col rounded-3xl bg-card p-4 text-center ring-1 ring-border sm:p-5"
               >
                 <dt className="text-sm text-muted-foreground">{s.label}</dt>
-                <dd className="order-first font-heading text-3xl font-extrabold text-brand-cyan-strong sm:text-4xl">
-                  {s.value}
+                <dd className="order-first font-heading text-[clamp(1.25rem,6vw,1.875rem)] font-extrabold whitespace-nowrap text-brand-cyan-strong sm:text-4xl">
+                  <CountUp value={s.value} />
                 </dd>
               </div>
             ))}
@@ -178,7 +228,7 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
       {impact && rows.length > 0 && (
         <Section className="bg-muted/30">
           <SectionHeading title={t("directionsTitle")} description={t("directionsDescription")} />
-          <div className="-mx-4 overflow-x-auto px-4">
+          <div className="reveal -mx-4 overflow-x-auto px-4">
             <table className="w-full min-w-[40rem] overflow-hidden rounded-2xl bg-card text-sm ring-1 ring-border">
               <caption className="sr-only">{t("directionsTitle")}</caption>
               <thead className="bg-muted/60 text-left text-xs text-muted-foreground uppercase">
@@ -280,91 +330,40 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
         </Section>
       )}
 
-      {activities.length > 0 && (
-        <Section>
-          <SectionHeading title={t("timelineTitle")} />
-          <ol className="relative space-y-4 border-l-2 border-border pl-6 sm:pl-8">
-            {activities.map((a) => {
-              const href = newsSlugs.has(a.id)
-                ? `/news/${newsSlugs.get(a.id)}`
-                : `/events/${a.slug}`;
-              const color = a.direction ? directionColor[a.direction] : undefined;
-              return (
-                <li key={a.id} className="relative">
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "absolute top-5 -left-[calc(1.5rem+7px)] size-3 rounded-full ring-4 ring-background sm:-left-[calc(2rem+7px)]",
-                      color?.bar ?? "bg-brand-cyan",
-                    )}
-                  />
-                  <article className="group relative rounded-2xl bg-card p-4 ring-1 ring-border transition-shadow hover:shadow-md sm:p-5">
-                    <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <time dateTime={a.startsAt}>
-                        {a.allDay
-                          ? formatDateRange(locale, a.startsAt, a.endsAt)
-                          : formatDate(locale, a.startsAt, "long")}
-                      </time>
-                      {a.direction && (
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 font-semibold",
-                            color?.soft,
-                            color?.text,
-                          )}
-                        >
-                          {directionLabel(a.direction)}
-                        </span>
-                      )}
-                    </p>
-                    <h3 className="mt-1 font-bold sm:text-lg">
-                      <Link
-                        href={href}
-                        className="after:absolute after:inset-0 hover:text-brand-cyan-strong"
-                      >
-                        {a.title}
-                      </Link>
-                    </h3>
-                    {a.sdgs.length > 0 && (
-                      <div className="relative z-10 mt-2">
-                        <SdgBadges sdgs={a.sdgs} size="sm" />
-                      </div>
-                    )}
-                  </article>
-                </li>
-              );
-            })}
-          </ol>
+      {sdgs.length > 0 && (
+        <Section className="bg-muted/30">
+          <SectionHeading
+            title={t("sdgTitle")}
+            description={`${t("sdgReached", { count: sdgs.length })}. ${t("sdgPick")}.`}
+          />
+          <div className="reveal">
+            <SdgExplorer
+              goals={explorerGoals}
+              initial={topSdg}
+              labels={{
+                pick: t("sdgPick"),
+                none: t("sdgNone"),
+                news: t("sdgNews"),
+                activities: t("timelineTitle"),
+              }}
+            />
+          </div>
         </Section>
       )}
 
-      {sdgs.length > 0 && (
-        <Section className="bg-muted/30">
-          <SectionHeading title={t("sdgTitle")} description={t("sdgDescription")} />
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {sdgs.map((n) => {
-              const info = SDGS[n]!;
-              return (
-                <li key={n}>
-                  <Link
-                    href={{ pathname: "/news", query: { sdg: String(n) } }}
-                    style={{ backgroundColor: info.color }}
-                    className={cn(
-                      "flex h-full flex-col gap-1 rounded-2xl p-4 transition-opacity hover:opacity-90",
-                      info.text === "light" ? "text-white" : "text-brand-night",
-                    )}
-                  >
-                    <span className="font-heading text-2xl font-extrabold">SDG {n}</span>
-                    <span className="font-semibold">{locale === "en" ? info.en : info.mn}</span>
-                    <span className="mt-auto inline-flex items-center gap-1 pt-2 text-sm">
-                      {t("sdgActivities", { count: sdgCounts.get(n) ?? 0 })}
-                      <ArrowRight className="size-4" aria-hidden="true" />
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+      {activities.length > 0 && (
+        <Section>
+          <SectionHeading title={t("timelineTitle")} />
+          <ImpactTimeline
+            items={timelineItems}
+            filters={timelineFilters}
+            labels={{
+              all: t("filterAll"),
+              allCount: t("sdgActivities", { count: activities.length }),
+              filter: t("filterLabel"),
+              sdgs: t("sdgList"),
+            }}
+          />
         </Section>
       )}
     </>

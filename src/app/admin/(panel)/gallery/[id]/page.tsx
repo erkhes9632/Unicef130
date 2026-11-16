@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
+import { listEventOptions } from "@/lib/data/event-options";
 import {
   addAlbumImages,
   deleteAlbumImage,
@@ -57,6 +58,7 @@ export default async function EditAlbumPage({
           key={album.updatedAt.getTime()}
           action={saveAlbum.bind(null, album.id)}
           initial={album}
+          events={await listEventOptions()}
           saved={sp.saved === "1"}
         />
         <GalleryManager

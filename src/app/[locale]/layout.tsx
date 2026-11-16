@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
+import { PageTransition } from "@/components/layout/page-transition";
 import { SiteHeader } from "@/components/layout/site-header";
 import { routing } from "@/i18n/routing";
 import { clientNamespaces } from "@/i18n/client-namespaces";
@@ -71,7 +72,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       <AnnouncementBanner />
       <SiteHeader />
       <main id="main" className="flex flex-1 flex-col">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
       <SiteFooter />
     </NextIntlClientProvider>

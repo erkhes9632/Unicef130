@@ -25,6 +25,8 @@ export const clerkAppearance = {
   elements: {
     headerTitle: "font-heading",
     formButtonPrimary: "font-semibold",
+    // Clerk greys this label (4.3:1); full foreground keeps it WCAG AA in both themes.
+    socialButtonsBlockButtonText: { color: "var(--foreground)" },
   },
 };
 

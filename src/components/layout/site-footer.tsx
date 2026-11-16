@@ -31,7 +31,7 @@ export async function SiteFooter() {
   ].filter((l) => !!l);
 
   return (
-    <footer className="relative mt-auto overflow-hidden border-t bg-muted/40">
+    <footer className="relative mt-auto overflow-hidden border-t bg-muted/40 print:hidden">
       {/* Colorful brand stripe */}
       <div aria-hidden="true" className="flex h-1.5">
         <span className="flex-1 bg-brand-cyan" />
@@ -91,6 +91,9 @@ export async function SiteFooter() {
               className="font-semibold text-brand-purple-strong hover:underline"
             >
               {t("Nav.support")} →
+            </Link>
+            <Link href="/faq" className="hover:underline">
+              {t("Nav.faq")}
             </Link>
           </div>
           {socials.length > 0 && (

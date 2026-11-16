@@ -38,9 +38,12 @@ export type MemberFormValues = {
 export function MemberForm({
   action,
   initial,
+  teams = [],
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial?: MemberFormValues;
+  /** Existing team names, offered as suggestions. */
+  teams?: string[];
 }) {
   const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
@@ -48,6 +51,7 @@ export function MemberForm({
     <form
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
       className="grid max-w-4xl gap-6 lg:grid-cols-[1fr_18rem]"
     >
       <div className="space-y-6">
@@ -154,7 +158,13 @@ export function MemberForm({
               defaultValue={initial?.team ?? ""}
               maxLength={60}
               className="max-w-64"
+              list="team-options"
             />
+            <datalist id="team-options">
+              {teams.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
           </AdminField>
           <AdminField
             label="И-мэйл (зөвхөн админд)"

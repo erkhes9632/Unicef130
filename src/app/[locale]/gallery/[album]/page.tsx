@@ -7,6 +7,7 @@ import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { getEventById } from "@/lib/data/events";
 import { getAlbumBySlug } from "@/lib/data/gallery";
 import { pageMetadata } from "@/lib/seo";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
@@ -33,6 +34,7 @@ export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery
   const album = await getAlbumBySlug(locale, slug);
   if (!album) notFound();
   const t = await getTranslations("Gallery");
+  const event = album.eventId ? await getEventById(locale, album.eventId) : null;
 
   return (
     <Section className="pt-8 sm:pt-12">
@@ -47,6 +49,14 @@ export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery
         <p className="text-sm text-muted-foreground">
           <time dateTime={album.date}>{formatDate(locale, fromIsoDate(album.date), "long")}</time> ·{" "}
           {t("photos", { count: album.imageCount })}
+          {event && (
+            <>
+              {" · "}
+              <Link href={`/events/${event.slug}`} className="font-semibold underline">
+                {event.title}
+              </Link>
+            </>
+          )}
         </p>
       </header>
       <GalleryGrid images={album.images} title={album.title} />

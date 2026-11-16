@@ -50,3 +50,8 @@ export function todayUb() {
 export function nowMs() {
   return Date.now();
 }
+
+/** Today's date in Ulaanbaatar as YYYY-MM-DD (for date inputs). */
+export function ubToday(now: number = Date.now()) {
+  return new Date(now + UB_OFFSET_MS).toISOString().slice(0, 10);
+}

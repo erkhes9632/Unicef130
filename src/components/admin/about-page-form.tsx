@@ -93,6 +93,7 @@ export function AboutPageForm({
     <form
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
       className="max-w-4xl space-y-6"
     >
       <FormAlert state={state} />

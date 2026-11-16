@@ -68,6 +68,7 @@ export function EventForm({
     <form
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
       className="grid gap-6 xl:grid-cols-[1fr_20rem]"
     >
       <div className="space-y-6">
