@@ -15,7 +15,7 @@ export function toRole(value: unknown): AppRole | null {
   return (appRoles as readonly unknown[]).includes(value) ? (value as AppRole) : null;
 }
 
-export const roleLabels: Record<AppRole | "none", string> = {
+const roleLabels: Record<AppRole | "none", string> = {
   admin: "Админ",
   member: "Гишүүн",
   none: "Өргөдөл гаргагч",
@@ -34,7 +34,7 @@ export function homePathFor(role: AppRole | null, locale: "mn" | "en" = "mn") {
   return `${prefix}${role === "member" ? "/me" : "/join"}`;
 }
 
-export type RouteArea = "admin" | "member" | "public";
+type RouteArea = "admin" | "member" | "public";
 
 /** /admin/* is admin-only, /me/* (and /en/me/*) is for members and admins, the rest is public. */
 export function routeArea(pathname: string): RouteArea {
@@ -43,7 +43,7 @@ export function routeArea(pathname: string): RouteArea {
   return "public";
 }
 
-export type AccessDecision = { allow: true } | { allow: false; redirect: "sign-in" | string };
+type AccessDecision = { allow: true } | { allow: false; redirect: "sign-in" | string };
 
 /**
  * Who may open an area. Not signed in → sign-in; an applicant on /me → /join; anyone but an

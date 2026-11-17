@@ -16,7 +16,7 @@ import {
 } from "./form";
 import { SlugField } from "./slug-field";
 
-export type AlbumFormValues = {
+type AlbumFormValues = {
   title: string;
   titleEn: string | null;
   slug: string;

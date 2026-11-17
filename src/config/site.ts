@@ -11,8 +11,6 @@ export const siteConfig = {
   schoolName: "130-р сургууль",
 } as const;
 
-export type { ContactInfo, SocialLink, SocialPlatform } from "@/lib/settings/types";
-
 /** Public navigation (labels come from messages → Nav). */
 export const mainNav = [
   { key: "home", href: "/" },

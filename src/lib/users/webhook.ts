@@ -3,7 +3,7 @@ import type { Database } from "@/db";
 import { removeUserData } from "./delete";
 import { mirrorFromClerk, upsertUser } from "./sync";
 
-export type ClerkEvent = { type: string; data: unknown };
+type ClerkEvent = { type: string; data: unknown };
 
 /**
  * Applies a verified Clerk webhook event to D1:

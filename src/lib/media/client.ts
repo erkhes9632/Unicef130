@@ -2,7 +2,7 @@
 
 import { MAX_SOURCE_BYTES, type MediaKind } from "./constants";
 
-export type ProcessedImage = { blob: Blob; width: number; height: number };
+type ProcessedImage = { blob: Blob; width: number; height: number };
 
 /**
  * Resizes + re-encodes an image in the browser (WebP, JPEG fallback). Re-encoding also strips

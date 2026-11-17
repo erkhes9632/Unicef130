@@ -4,7 +4,7 @@ import { getDb } from "@/db";
 import { applications, applicationStatuses, type ApplicationStatus } from "@/db/schema";
 
 /** Filters of the admin applications list (also used by the CSV export). */
-export type ApplicationFilters = {
+type ApplicationFilters = {
   period: string;
   /** "" = every status. */
   status: ApplicationStatus | "";

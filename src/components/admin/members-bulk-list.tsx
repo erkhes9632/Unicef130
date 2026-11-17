@@ -10,7 +10,7 @@ import { memberGroupLabel } from "@/lib/admin/labels";
 import { ConfirmAction } from "./confirm-action";
 import { FormAlert } from "./form";
 
-export type AdminMemberRow = {
+type AdminMemberRow = {
   id: string;
   name: string;
   nameEn: string | null;

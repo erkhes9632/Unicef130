@@ -14,7 +14,7 @@ import {
  */
 
 /** Help-option keys; the list itself is editable in admin (see src/lib/settings/types.ts). */
-export const helpOptionKey = z.string().regex(/^[a-z0-9-]{1,40}$/, { error: "helpWith" });
+const helpOptionKey = z.string().regex(/^[a-z0-9-]{1,40}$/, { error: "helpWith" });
 
 const trimmed = (min: number, max: number) =>
   z
@@ -28,7 +28,7 @@ const trimmed = (min: number, max: number) =>
 export const classNameRegex = /^\d{1,2}\s*-?\s*\p{L}{0,2}$/u;
 
 /** Shape of a period's custom question as the form needs it (labels already localized). */
-export type JoinQuestion = {
+type JoinQuestion = {
   id: string;
   type: "text" | "choice" | "checkbox";
   options: string[];

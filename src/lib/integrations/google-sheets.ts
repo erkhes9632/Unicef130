@@ -9,7 +9,7 @@ import "server-only";
  *   GOOGLE_SHEET_ID, GOOGLE_SHEET_TAB (default "Applications").
  * Share the sheet with the service account e-mail (Editor).
  */
-export type SheetsConfig = { email: string; privateKey: string; sheetId: string; tab: string };
+type SheetsConfig = { email: string; privateKey: string; sheetId: string; tab: string };
 
 export function sheetsConfigFromEnv(env: Partial<CloudflareEnv>): SheetsConfig | null {
   const email = env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();

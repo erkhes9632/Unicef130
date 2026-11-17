@@ -25,7 +25,7 @@ export type NewsItem = {
   albumId: string | null;
 };
 
-export const NEWS_PAGE_SIZE = 6;
+const NEWS_PAGE_SIZE = 6;
 
 type Row = typeof news.$inferSelect;
 

@@ -8,7 +8,7 @@ import { pick } from "@/lib/data/localize";
 import { logger } from "@/lib/logger";
 import { countedStatuses, findNextPeriod, findOpenPeriod, intakeFor, type Intake } from "./logic";
 
-export type PeriodRow = typeof recruitmentPeriods.$inferSelect;
+type PeriodRow = typeof recruitmentPeriods.$inferSelect;
 
 export const listPeriods = cache(async (): Promise<PeriodRow[]> => {
   const db = await getDb();
@@ -27,7 +27,7 @@ export async function countTaken(periodId: string) {
   return row?.n ?? 0;
 }
 
-export type PublicQuestion = {
+type PublicQuestion = {
   id: string;
   type: RecruitmentQuestion["type"];
   label: string;
@@ -35,7 +35,7 @@ export type PublicQuestion = {
   required: boolean;
 };
 
-export type RecruitmentState =
+type RecruitmentState =
   | {
       phase: "open";
       period: PeriodRow;

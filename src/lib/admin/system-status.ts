@@ -7,7 +7,7 @@ import { isSheetsConfigured } from "@/lib/applications/sheets-sync";
 import { clerkPublishableKey, frontendApiFromPublishableKey } from "@/lib/auth/clerk";
 import { resolveTurnstileConfig } from "@/lib/integrations/turnstile";
 
-export type Check = { label: string; state: "ok" | "warn" | "fail"; detail: string };
+type Check = { label: string; state: "ok" | "warn" | "fail"; detail: string };
 
 /**
  * Health of the site's parts for /admin/system. Never shows secret values — only whether they

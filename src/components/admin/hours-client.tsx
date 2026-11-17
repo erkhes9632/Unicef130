@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import type { ActionState } from "@/lib/admin/action-state";
 import { FormAlert, NativeSelect } from "./form";
 
-export type HoursMemberRow = {
+type HoursMemberRow = {
   id: string;
   name: string;
   className: string;

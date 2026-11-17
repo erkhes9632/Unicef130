@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { buildJoinSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { FormField, translateError } from "./form-field";
 
-export type JoinFormQuestion = {
+type JoinFormQuestion = {
   id: string;
   type: "text" | "choice" | "checkbox";
   label: string;

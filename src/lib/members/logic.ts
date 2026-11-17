@@ -11,7 +11,7 @@ export function schoolYearOf(date: Date | number) {
   return ub.getUTCMonth() >= 8 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 }
 
-export type HoursEntry = { schoolYear: string; hours: number };
+type HoursEntry = { schoolYear: string; hours: number };
 
 /**
  * Yearly totals, newest year first: logged entries plus the imported report total
@@ -36,7 +36,7 @@ export function activeProgress(hours: number, threshold: number | null) {
   return Math.min(100, Math.round((hours / threshold) * 100));
 }
 
-export type SignupEvent = {
+type SignupEvent = {
   signupEnabled: boolean;
   signupCapacity: number | null;
   signupDeadline: Date | null;

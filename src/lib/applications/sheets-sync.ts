@@ -9,7 +9,7 @@ import { formatDate } from "@/lib/dates/format";
 import { appendSheetRow, sheetsConfigFromEnv } from "@/lib/integrations/google-sheets";
 import { logger } from "@/lib/logger";
 
-export type SyncResult = "synced" | "skipped" | "error" | "not_found";
+type SyncResult = "synced" | "skipped" | "error" | "not_found";
 
 export async function isSheetsConfigured() {
   const { env } = await getCloudflareContext({ async: true });

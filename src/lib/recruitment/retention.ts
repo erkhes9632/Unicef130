@@ -11,7 +11,7 @@ import { DEFAULT_REJECTED_RETENTION_DAYS, retentionCutoff } from "./logic";
 
 type Db = DrizzleD1Database<typeof schema>;
 
-export async function retentionDays(db: Db): Promise<number> {
+async function retentionDays(db: Db): Promise<number> {
   const [row] = await db
     .select({ value: settings.value })
     .from(settings)

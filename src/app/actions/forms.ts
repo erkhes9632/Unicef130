@@ -20,7 +20,7 @@ import {
 } from "@/lib/recruitment/logic";
 import { buildJoinSchema, contactFormSchema } from "@/lib/validation/forms";
 
-export type FormActionResult =
+type FormActionResult =
   | { ok: true }
   | {
       ok: false;
@@ -28,7 +28,7 @@ export type FormActionResult =
       fieldErrors?: Record<string, string[] | undefined>;
     };
 
-export type JoinActionResult =
+type JoinActionResult =
   | { ok: true; waitlisted: boolean }
   | {
       ok: false;

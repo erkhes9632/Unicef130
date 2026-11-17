@@ -7,7 +7,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export type SqlValue = string | number | boolean | null | undefined | Date | object;
+type SqlValue = string | number | boolean | null | undefined | Date | object;
 
 export function sqlValue(v: SqlValue): string {
   if (v === null || v === undefined) return "NULL";

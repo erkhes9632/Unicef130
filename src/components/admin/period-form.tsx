@@ -18,7 +18,7 @@ import {
 } from "./form";
 import { ListEditor } from "./list-editor";
 
-export type PeriodFormValues = {
+type PeriodFormValues = {
   name: string;
   nameEn: string | null;
   schoolYear: string;

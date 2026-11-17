@@ -37,7 +37,7 @@ export function localizedPath(locale: Locale, path: string) {
   return locale === routing.defaultLocale ? clean || "/" : `/${locale}${clean}`;
 }
 
-export const DEFAULT_OG_IMAGE = { url: "/og-default.png", width: 1200, height: 630 };
+const DEFAULT_OG_IMAGE = { url: "/og-default.png", width: 1200, height: 630 };
 
 /** Per-page metadata with canonical URL, hreflang alternates and Open Graph defaults. */
 export async function pageMetadata({

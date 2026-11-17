@@ -17,7 +17,7 @@ const tones = {
   gold: "from-brand-gold/90 to-brand-purple/55",
   blue: "from-brand-blue/85 to-brand-purple/65",
 } as const;
-export type CoverTone = keyof typeof tones;
+type CoverTone = keyof typeof tones;
 
 export const coverIcons = {
   activity: Megaphone,
@@ -27,7 +27,7 @@ export const coverIcons = {
   event: CalendarHeart,
   members: Users,
 } satisfies Record<string, LucideIcon>;
-export type CoverIcon = keyof typeof coverIcons;
+type CoverIcon = keyof typeof coverIcons;
 
 /** Tone per news category / club direction. */
 export const categoryTone: Record<string, CoverTone> = {

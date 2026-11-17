@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { slugRedirects } from "@/db/schema";
 
-export type RedirectKind = "news" | "events";
+type RedirectKind = "news" | "events";
 
 /** Current slug for an old one, following chains (a → b → c) up to a few hops. */
 export async function findSlugRedirect(kind: RedirectKind, slug: string): Promise<string | null> {

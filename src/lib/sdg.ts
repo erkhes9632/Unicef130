@@ -2,7 +2,7 @@
  * UN Sustainable Development Goals: official colors, number and short names (mn/en).
  * Text color per goal is chosen for WCAG AA contrast on the official background.
  */
-export type SdgInfo = { color: string; text: "light" | "dark"; mn: string; en: string };
+type SdgInfo = { color: string; text: "light" | "dark"; mn: string; en: string };
 
 export const SDGS: Record<number, SdgInfo> = {
   1: { color: "#E5243B", text: "light", mn: "Ядуурлыг устгах", en: "No poverty" },

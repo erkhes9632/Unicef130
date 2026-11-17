@@ -4,7 +4,7 @@ import { users } from "@/db/schema";
 import { toRole, type AppRole } from "@/lib/auth/roles";
 
 /** The fields we mirror from a Clerk user. */
-export type UserMirror = {
+type UserMirror = {
   id: string;
   email: string;
   name: string;
@@ -70,7 +70,7 @@ export async function upsertUser(db: Database, m: UserMirror): Promise<UserRow |
   return row ?? null;
 }
 
-export type UserRow = typeof users.$inferSelect;
+type UserRow = typeof users.$inferSelect;
 
 export async function findUser(db: Database, id: string): Promise<UserRow | null> {
   const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);

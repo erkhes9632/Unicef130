@@ -3,7 +3,7 @@
  * "101K+", "2 489", "4.5"), so the counter animates only the number inside and keeps the rest.
  * A value with more than one number, or one that does not survive a parse → format round trip is left static (returns null).
  */
-export type ParsedStat = {
+type ParsedStat = {
   prefix: string;
   suffix: string;
   target: number;

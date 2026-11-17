@@ -19,7 +19,7 @@ import { ImageField } from "./image-field";
 import { RichTextEditor } from "./rich-text-editor";
 import { SlugField } from "./slug-field";
 
-export type EventFormValues = {
+type EventFormValues = {
   title: string;
   titleEn: string | null;
   slug: string;

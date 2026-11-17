@@ -9,9 +9,9 @@ export const userFilterOptions = [
   { value: "applicant", label: "Өргөдөл гаргагч" },
   { value: "banned", label: "Идэвхгүй" },
 ] as const;
-export type UserRoleFilter = (typeof userFilterOptions)[number]["value"];
+type UserRoleFilter = (typeof userFilterOptions)[number]["value"];
 
-export type UserFilters = { q: string; role: UserRoleFilter };
+type UserFilters = { q: string; role: UserRoleFilter };
 
 type Params = Record<string, string | string[] | undefined>;
 

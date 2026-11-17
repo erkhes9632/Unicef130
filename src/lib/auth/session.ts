@@ -7,7 +7,7 @@ import { findUser, mirrorFromClerk, upsertUser } from "@/lib/users/sync";
 import { clerkPublishableKey } from "./clerk";
 import { SIGN_IN_PATH, toRole, type AppRole } from "./roles";
 
-export type CurrentUser = {
+type CurrentUser = {
   id: string;
   email: string;
   name: string;

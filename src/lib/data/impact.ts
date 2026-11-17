@@ -17,7 +17,7 @@ export type ImpactRow = {
   donationAmount: number;
 };
 
-export type ImpactYear = {
+type ImpactYear = {
   schoolYear: string;
   /** Club directions in fixed order (missing ones omitted). */
   directions: ImpactRow[];

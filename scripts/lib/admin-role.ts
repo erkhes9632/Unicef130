@@ -20,7 +20,7 @@ export function instanceOf(secretKey: string): "development" | "production" | nu
   return null;
 }
 
-export const isAdmin = (u: ClerkUserLite) => u.publicMetadata.role === "admin";
+const isAdmin = (u: ClerkUserLite) => u.publicMetadata.role === "admin";
 
 /**
  * What the command should do for this user. Revoking refuses to remove the last admin who can

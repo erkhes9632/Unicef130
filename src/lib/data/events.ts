@@ -36,7 +36,7 @@ export type EventItem = {
 
 type Row = typeof events.$inferSelect;
 
-export function eventToItem(locale: Locale, e: Row): EventItem {
+function toItem(locale: Locale, e: Row): EventItem {
   return {
     id: e.id,
     slug: e.slug,
@@ -62,7 +62,6 @@ export function eventToItem(locale: Locale, e: Row): EventItem {
     },
   };
 }
-const toItem = eventToItem;
 
 /** An event counts as upcoming until it ends (or until its start if it has no end time). */
 export function isUpcoming(e: Pick<EventItem, "startsAt" | "endsAt">, now = Date.now()) {

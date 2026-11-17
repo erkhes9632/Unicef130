@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-export type CountdownLabels = { days: string; hours: string; minutes: string; seconds: string };
+type CountdownLabels = { days: string; hours: string; minutes: string; seconds: string };
 
 function parts(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));

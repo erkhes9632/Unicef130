@@ -4,7 +4,7 @@ import type { Locale } from "@/i18n/routing";
 import { pick } from "@/lib/data/localize";
 import { getSiteSettings, safeImageUrl } from "@/lib/data/settings";
 
-export type ResolvedBranding = {
+type ResolvedBranding = {
   ogImage: string | null;
   schoolLogo: string | null;
   unicefLogo: string | null;

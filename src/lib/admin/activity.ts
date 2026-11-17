@@ -4,7 +4,7 @@ import { activityLog } from "@/db/schema";
 import { logger } from "@/lib/logger";
 import type { Changes } from "./audit-diff";
 
-export { diffFields, shortId, type Changes } from "./audit-diff";
+export { diffFields, shortId } from "./audit-diff";
 
 /**
  * Audit trail: records who did what to which record. Never throws (a logging failure must not

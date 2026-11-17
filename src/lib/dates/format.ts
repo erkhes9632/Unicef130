@@ -7,7 +7,7 @@ import { UB_OFFSET_MS } from "./ub-time";
  * falls back to English for "mn". Mongolian formats are therefore built by hand here;
  * English uses Intl. Works identically on the server, the client and in tests.
  */
-export type DateStyle =
+type DateStyle =
   | "long" // 2026 оны 11-р сарын 5  | November 5, 2026
   | "full" // 2026 оны 11-р сарын 20, Баасан гараг | Friday, November 20, 2026
   | "monthShort" // 11-р сар | Nov

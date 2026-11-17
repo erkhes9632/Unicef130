@@ -5,7 +5,7 @@ import { FileText, LogIn, ShieldCheck, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AFTER_SIGN_IN_PATH, toRole } from "@/lib/auth/roles";
 
-export type AccountMenuLabels = {
+type AccountMenuLabels = {
   signIn: string;
   admin: string;
   me: string;

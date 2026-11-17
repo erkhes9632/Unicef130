@@ -18,7 +18,7 @@ import { ImageField } from "./image-field";
 import { RichTextEditor } from "./rich-text-editor";
 import { SlugField } from "./slug-field";
 
-export type NewsFormValues = {
+type NewsFormValues = {
   title: string;
   titleEn: string | null;
   slug: string;

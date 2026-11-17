@@ -10,8 +10,8 @@ import { logger } from "@/lib/logger";
  *   key), forms are reported as "temporarily unavailable" and every submission is rejected.
  * https://developers.cloudflare.com/turnstile/troubleshooting/testing/
  */
-export const TURNSTILE_TEST_SITE_KEY = "1x00000000000000000000AA";
-export const TURNSTILE_TEST_SECRET_KEY = "1x0000000000000000000000000000000AA";
+const TURNSTILE_TEST_SITE_KEY = "1x00000000000000000000AA";
+const TURNSTILE_TEST_SECRET_KEY = "1x0000000000000000000000000000000AA";
 
 /** Cloudflare's published dummy keys: 1x/2x/3x + zeros (+ AA/AB/BB/FF suffixes). */
 export function isTestSiteKey(key: string) {
@@ -21,7 +21,7 @@ export function isTestSecretKey(key: string) {
   return /^[123]x0{31}[A-F]{2}$/.test(key.trim());
 }
 
-export type TurnstileConfig =
+type TurnstileConfig =
   | { status: "ok"; siteKey: string; secret: string }
   | { status: "test"; siteKey: string; secret: string } // local development only
   | { status: "unavailable"; reason: string };
@@ -66,7 +66,7 @@ export async function getTurnstileSiteKey(): Promise<string | null> {
   return cfg.status === "unavailable" ? null : cfg.siteKey;
 }
 
-export type TurnstileResult = "ok" | "failed" | "unavailable";
+type TurnstileResult = "ok" | "failed" | "unavailable";
 
 export async function verifyTurnstile(
   token: unknown,

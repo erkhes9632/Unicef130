@@ -109,7 +109,7 @@ function DeleteAccountDialog({
   );
 }
 
-export type UserRowView = {
+type UserRowView = {
   id: string;
   email: string;
   role: AppRole | null;

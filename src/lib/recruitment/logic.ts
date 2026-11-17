@@ -8,8 +8,8 @@ import type { ApplicationStatus } from "@/db/schema";
 // Periods
 // ---------------------------------------------------------------------------
 
-export type PeriodWindow = { opensAt: Date; closesAt: Date };
-export type PeriodPhase = "upcoming" | "open" | "closed";
+type PeriodWindow = { opensAt: Date; closesAt: Date };
+type PeriodPhase = "upcoming" | "open" | "closed";
 
 /** Open means `opensAt <= now < closesAt` (instants; the admin enters them in Ulaanbaatar time). */
 export function periodPhase(period: PeriodWindow, now: number = Date.now()): PeriodPhase {
@@ -113,7 +113,7 @@ export function publicStatus(status: ApplicationStatus): PublicStatus {
   return "pending";
 }
 
-export type JoinView =
+type JoinView =
   /** Already a member (or an admin): nothing to apply for. */
   | "member"
   /** An admin blocked new applications from this account. */

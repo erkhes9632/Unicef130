@@ -16,8 +16,6 @@ import {
 } from "@/lib/settings/types";
 import { pick } from "./localize";
 
-export type { SiteSettings } from "@/lib/settings/types";
-
 /** Obvious sample values that must never reach the public site. */
 function isPlaceholder(value: string) {
   return /@example\.(com|org|mn)$/i.test(value) || /0000\s?0000/.test(value);
@@ -51,7 +49,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
 // Public helpers (locale-resolved, empty values removed)
 // ---------------------------------------------------------------------------
 
-export type PublicContact = {
+type PublicContact = {
   address: string;
   email: string;
   phone: string;
@@ -111,7 +109,7 @@ export function safeImageUrl(url: string): string | null {
   return safeExternalUrl(url);
 }
 
-export type PublicStat = { label: string; value: string };
+type PublicStat = { label: string; value: string };
 
 /**
  * Stats in admin order. `members` counts active members in D1; `events` is the activity count of

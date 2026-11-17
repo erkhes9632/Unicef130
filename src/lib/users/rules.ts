@@ -4,7 +4,7 @@ import type { AppRole } from "@/lib/auth/roles";
 export type UserAction =
   "make-admin" | "make-member" | "remove-role" | "ban" | "unban" | "delete" | "self-delete";
 
-export type UserActionRefusal = "self" | "last-admin" | "admin-self-delete" | "no-change";
+type UserActionRefusal = "self" | "last-admin" | "admin-self-delete" | "no-change";
 
 /** Actions that take admin rights away from the target. */
 const removesAdmin = new Set<UserAction>(["make-member", "remove-role", "ban", "delete"]);

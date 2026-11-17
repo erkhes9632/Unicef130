@@ -3,10 +3,10 @@ import { sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { rateLimit } from "@/db/schema";
 
-export type RateLimitResult = { allowed: boolean; count: number; retryAfterSec: number };
+type RateLimitResult = { allowed: boolean; count: number; retryAfterSec: number };
 
 /** Pure decision for a fixed window that starts at the first counted request. */
-export function decideRateLimit(
+function decideRateLimit(
   row: { count: number; lastRequest: number },
   max: number,
   windowMs: number,

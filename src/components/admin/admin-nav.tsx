@@ -23,7 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-export type AdminNavItem = {
+type AdminNavItem = {
   href: string;
   label: string;
   icon: LucideIcon;

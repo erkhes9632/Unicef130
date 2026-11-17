@@ -15,7 +15,7 @@ import {
 } from "./form";
 import { ImageField } from "./image-field";
 
-export type MemberFormValues = {
+type MemberFormValues = {
   name: string;
   nameEn: string | null;
   role: string;

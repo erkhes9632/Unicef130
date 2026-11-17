@@ -10,7 +10,7 @@ import type { ActionState } from "@/lib/admin/action-state";
 import { ConfirmAction } from "./confirm-action";
 import { AdminField, FormAlert, keepValuesOnSubmit, SubmitButton } from "./form";
 
-export type FaqValues = {
+type FaqValues = {
   question: string;
   questionEn: string | null;
   answer: string;

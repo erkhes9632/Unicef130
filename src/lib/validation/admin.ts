@@ -30,7 +30,7 @@ const slug = z
   });
 
 /** Relative path (/media/..., /placeholders/...) or https URL. */
-export const imageUrl = z
+const imageUrl = z
   .string()
   .trim()
   .max(500)

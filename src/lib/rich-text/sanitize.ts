@@ -21,19 +21,6 @@ export function safeImageSrc(value: unknown): string | null {
     : null;
 }
 
-/** Plain text of a rich-text tree (for excerpts, search, meta descriptions). */
-export function richTextToPlain(
-  node: { text?: string; content?: unknown[] } | null | undefined,
-): string {
-  if (!node) return "";
-  if (typeof node.text === "string") return node.text;
-  return (node.content ?? [])
-    .map((child) => richTextToPlain(child as { text?: string; content?: unknown[] }))
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 const plain = (n: RichTextNode): string => n.text ?? (n.content ?? []).map(plain).join("");
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 
