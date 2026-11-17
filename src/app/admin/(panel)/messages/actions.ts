@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { contactMessages } from "@/db/schema";
-import { logActivity, shortId } from "@/lib/admin/activity";
 import { actionError, type ActionState } from "@/lib/admin/action-state";
+import { logActivity, shortId } from "@/lib/admin/activity";
 import { assertAdmin } from "@/lib/auth/session";
 
 export async function setMessageRead(id: string, read: boolean): Promise<ActionState> {

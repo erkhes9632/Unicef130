@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
+import type { Locale } from "@/i18n/routing";
 import type { GalleryImage } from "@/lib/types";
 import { pick } from "./localize";
 

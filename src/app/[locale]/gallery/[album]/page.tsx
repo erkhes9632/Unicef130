@@ -5,12 +5,12 @@ import { getTranslations } from "next-intl/server";
 import { Section } from "@/components/common/section";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { getEventById } from "@/lib/data/events";
 import { getAlbumBySlug } from "@/lib/data/gallery";
-import { pageMetadata } from "@/lib/seo";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
   params,

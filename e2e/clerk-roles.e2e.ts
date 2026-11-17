@@ -4,8 +4,9 @@ import { E2E, findUser } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
+/** Programmatic sign-in needs clerk-js on the page: public pages don't load it, /sign-in does. */
 async function signInAs(page: Page, email: string) {
-  await page.goto("/");
+  await page.goto("/sign-in");
   await clerk.signIn({ page, emailAddress: email });
 }
 

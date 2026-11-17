@@ -2,8 +2,8 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { PrintButton } from "@/components/me/print-button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { requireMember } from "@/lib/auth/session";
 import { getBranding, getClubNames } from "@/lib/branding";
 import { formatDate, formatNumber } from "@/lib/dates/format";
@@ -44,6 +44,7 @@ export default async function CertificatePage({
   if (!page.member || hours <= 0) {
     return (
       <div className="container-page py-16 text-center">
+        <h1 className="mb-3 text-3xl font-extrabold">{t("heading")}</h1>
         <p className="text-muted-foreground">{t("nothing")}</p>
         <Link href="/me" className="mt-4 inline-block font-semibold underline">
           {t("back")}

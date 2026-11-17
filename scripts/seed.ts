@@ -1,17 +1,17 @@
 /**
- * Seeds the LOCAL D1 database with sample content (from src/lib/mock/*) for development.
+ * Seeds the LOCAL D1 database with sample content (from scripts/seed-data/*) for development.
  * Safe to re-run: content tables are cleared first. Site settings and users are NOT touched —
- * fill settings in admin, create a local admin with
- * `bun run admin:create:local -- you@example.com`.
+ * fill settings in admin; accounts come from Clerk (make yourself admin with
+ * `bun run admin:grant -- you@example.com --dev`).
  * Never run this against production.
  *
  *   bun run db:migrate:local && bun run db:seed:local
  */
-import { mockEvents } from "@/lib/mock/events";
-import { mockAlbums } from "@/lib/mock/gallery";
-import { mockMembers } from "@/lib/mock/members";
-import { mockNews } from "@/lib/mock/news";
 import { insert, runLocalSql } from "./lib/sql";
+import { mockEvents } from "./seed-data/events";
+import { mockAlbums } from "./seed-data/gallery";
+import { mockMembers } from "./seed-data/members";
+import { mockNews } from "./seed-data/news";
 
 const ts = (iso: string | null) => (iso ? Date.parse(iso) : null);
 const statements: string[] = [

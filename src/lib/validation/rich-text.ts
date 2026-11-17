@@ -34,8 +34,6 @@ export const richTextSchema = z
     error: "Агуулгын бүтэц хэт гүн байна.",
   }) as z.ZodType<RichTextDoc>;
 
-export const emptyDoc: RichTextDoc = { type: "doc", content: [{ type: "paragraph" }] };
-
 /** True when the document has no visible text or images. */
 export function isEmptyDoc(doc: RichTextDoc | null | undefined) {
   const walk = (n: RichTextNode): boolean =>

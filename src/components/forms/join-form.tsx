@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Mail } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { buildJoinSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { cn } from "@/lib/utils";
+import { buildJoinSchema, type JoinFormValues } from "@/lib/validation/forms";
 import { FormField, translateError } from "./form-field";
 
 export type JoinFormQuestion = {

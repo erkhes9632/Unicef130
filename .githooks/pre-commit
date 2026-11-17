@@ -1,0 +1,9 @@
+#!/bin/sh
+# Pre-commit gate: the same checks as CI would run (lint, typecheck, format, unit tests).
+# Enable once per clone:  bun run hooks:install   ·   Skip in an emergency: git commit --no-verify
+set -e
+if git diff --cached --name-only | grep -qE '(^|/)\.dev\.vars$|(^|/)private/'; then
+  echo "pre-commit: .dev.vars or private/ is staged — these must never be committed." >&2
+  exit 1
+fi
+bun run check

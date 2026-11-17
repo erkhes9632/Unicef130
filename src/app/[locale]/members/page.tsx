@@ -6,12 +6,12 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
 import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
+import { Link } from "@/i18n/navigation";
 import { displayYear } from "@/lib/data/impact";
 import { listActiveMembers, listMembers } from "@/lib/data/members";
 import { getSiteSettings } from "@/lib/data/settings";
+import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({

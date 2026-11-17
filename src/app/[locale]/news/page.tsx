@@ -6,14 +6,14 @@ import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { PaginationNav } from "@/components/common/pagination-nav";
 import { Section } from "@/components/common/section";
-import { NewsCard } from "@/components/news/news-card";
-import { Link } from "@/i18n/navigation";
-import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
-import { listNews } from "@/lib/data/news";
-import { newsCategories, type NewsCategory } from "@/lib/types";
 import { SdgBadges } from "@/components/impact/sdg-badges";
+import { NewsCard } from "@/components/news/news-card";
+import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
+import { listNews } from "@/lib/data/news";
 import { isSdg } from "@/lib/sdg";
+import { pageMetadata } from "@/lib/seo";
+import { newsCategories, type NewsCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/news">): Promise<Metadata> {

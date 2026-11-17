@@ -94,7 +94,6 @@ export function buildJoinSchema({
     });
 }
 export type JoinFormValues = z.input<ReturnType<typeof buildJoinSchema>>;
-export type JoinFormData = z.output<ReturnType<typeof buildJoinSchema>>;
 
 export const contactFormSchema = z.object({
   name: trimmed(2, 100),
@@ -108,4 +107,3 @@ export const contactFormSchema = z.object({
   message: trimmed(10, 2000),
 });
 export type ContactFormValues = z.input<typeof contactFormSchema>;
-export type ContactFormData = z.output<typeof contactFormSchema>;

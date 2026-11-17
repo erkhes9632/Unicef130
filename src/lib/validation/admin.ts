@@ -1,8 +1,8 @@
 import "@/lib/validation/zod-config";
 import { z } from "zod";
+import { MAX_FEATURED_STATS, partnerTypes, socialPlatforms, statKinds } from "@/lib/settings/types";
 import { SLUG_MAX, slugRegex } from "@/lib/slug";
 import { clubDirections, newsCategories } from "@/lib/types";
-import { MAX_FEATURED_STATS, partnerTypes, socialPlatforms, statKinds } from "@/lib/settings/types";
 import { richTextSchema } from "./rich-text";
 
 /** Admin-side schemas (Mongolian error messages; admin UI is Mongolian only). */
@@ -66,7 +66,6 @@ export const newsInputSchema = z.object({
   metaDescription: z.string().trim().max(160, { error: "Хамгийн ихдээ 160 тэмдэгт." }),
   albumId: z.string().max(64).nullable(),
 });
-export type NewsInput = z.output<typeof newsInputSchema>;
 
 export const eventInputSchema = z
   .object({
@@ -119,7 +118,6 @@ export const eventInputSchema = z
     path: ["signupDeadline"],
     error: "Бүртгэл хаагдах хугацаа арга хэмжээ эхлэхээс өмнө байна.",
   });
-export type EventInput = z.output<typeof eventInputSchema>;
 
 export const memberInputSchema = z.object({
   name: req(100),
@@ -151,7 +149,6 @@ export const memberInputSchema = z.object({
     .refine((v) => v === "" || z.email().safeParse(v).success, { error: "И-мэйл буруу байна." })
     .transform((v) => v || null),
 });
-export type MemberInput = z.output<typeof memberInputSchema>;
 
 const httpsUrl = z
   .string()
@@ -304,7 +301,6 @@ export const settingsInputSchema = z.object({
       error: "Сонголтын түлхүүр давхардсан байна.",
     }),
 });
-export type SettingsInput = z.output<typeof settingsInputSchema>;
 
 export const aboutInputSchema = z.object({
   intro: text(1000, "Танилцуулга"),
@@ -325,7 +321,6 @@ export const aboutInputSchema = z.object({
     )
     .max(8, { error: "Хамгийн ихдээ 8 үнэт зүйл." }),
 });
-export type AboutInput = z.output<typeof aboutInputSchema>;
 
 export const albumInputSchema = z.object({
   title: req(200),

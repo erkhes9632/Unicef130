@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 import { MEDIA_KINDS, type MediaKind } from "@/lib/media/constants";
 import { storeImage, UploadError } from "@/lib/media/server";
 
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     return Response.json({ url });
   } catch (err) {
     if (err instanceof UploadError) return Response.json({ error: err.message }, { status: 400 });
-    console.error("[upload] failed", err);
+    logger.error("upload", "failed", err);
     return Response.json({ error: "Хадгалах үед алдаа гарлаа." }, { status: 500 });
   }
 }

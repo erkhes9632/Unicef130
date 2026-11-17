@@ -1,5 +1,6 @@
 import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { logger } from "@/lib/logger";
 import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MEDIA_PREFIX, type MediaKind } from "./constants";
 
 const EXT: Record<string, string> = {
@@ -69,7 +70,7 @@ export async function deleteMediaUrls(urls: (string | null | undefined)[]) {
     const { env } = await getCloudflareContext({ async: true });
     await env.MEDIA.delete(keys);
   } catch (err) {
-    console.error("[media] failed to delete", keys, err);
+    logger.error("media", "failed to delete", { keys, error: err });
   }
 }
 

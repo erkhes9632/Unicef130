@@ -1,5 +1,6 @@
 // TODO(content): sample albums with placeholder images — replace via /admin → Зургийн цомог.
-import type { Album, GalleryImage } from "@/lib/types";
+import type { GalleryImage } from "@/lib/types";
+import type { Album } from "./types";
 
 const sizes: Record<number, [number, number]> = {
   1: [1200, 800],

@@ -5,8 +5,8 @@ import { SocialLinks } from "@/components/brand/social-links";
 import { mainNav } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { pick } from "@/lib/data/localize";
 import { getClubNames } from "@/lib/branding";
+import { pick } from "@/lib/data/localize";
 import { getSiteSettings, publicContact } from "@/lib/data/settings";
 
 export async function SiteFooter() {

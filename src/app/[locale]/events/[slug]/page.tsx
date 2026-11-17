@@ -1,23 +1,23 @@
 import { ArrowLeft, CalendarDays, CalendarPlus, Clock, Images, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { findSlugRedirect } from "@/lib/data/redirects";
 import { getTranslations } from "next-intl/server";
 import { CoverImage } from "@/components/common/cover-image";
+import { categoryTone, coverIconFor } from "@/components/common/cover-image";
 import { RichText } from "@/components/common/rich-text";
+import { ActivityFacts } from "@/components/impact/activity-facts";
+import { SdgBadges } from "@/components/impact/sdg-badges";
 import { ShareButtons } from "@/components/news/share-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { getClubNames } from "@/lib/branding";
 import { getEventBySlug, getEventSignupInfo, isUpcoming } from "@/lib/data/events";
 import { getAlbumForEvent } from "@/lib/data/gallery";
-import { formatDate, formatDateRange, formatTimeRange } from "@/lib/dates/format";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
-import { ActivityFacts } from "@/components/impact/activity-facts";
-import { SdgBadges } from "@/components/impact/sdg-badges";
-import { categoryTone, coverIconFor } from "@/components/common/cover-image";
+import { findSlugRedirect } from "@/lib/data/redirects";
+import { formatDate, formatDateRange, formatTimeRange } from "@/lib/dates/format";
 import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({

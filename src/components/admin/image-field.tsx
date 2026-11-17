@@ -4,8 +4,8 @@ import { ImageOff, ImageUp, Loader2, X } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { FULL_MAX_EDGE, type MediaKind } from "@/lib/media/constants";
 import { processImage, uploadImage } from "@/lib/media/client";
+import { FULL_MAX_EDGE, type MediaKind } from "@/lib/media/constants";
 
 /**
  * Image picker: resizes in the browser, uploads to R2 and stores the resulting URL in a hidden
@@ -84,6 +84,9 @@ export function ImageField({
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
           className="sr-only"
+          // Opened by the button below; kept out of the tab order but still named.
+          tabIndex={-1}
+          aria-label={label}
           aria-describedby={hintId}
           onChange={(e) => onFile(e.target.files?.[0])}
         />

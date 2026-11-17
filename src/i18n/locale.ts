@@ -1,6 +1,6 @@
+import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
 import { routing, type Locale } from "./routing";
 
 /** Validates the [locale] param, enables static-friendly rendering and returns it typed. */

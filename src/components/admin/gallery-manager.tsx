@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ActionState } from "@/lib/admin/action-state";
-import { FULL_MAX_EDGE, THUMB_MAX_EDGE } from "@/lib/media/constants";
 import { processImage, uploadImage } from "@/lib/media/client";
+import { FULL_MAX_EDGE, THUMB_MAX_EDGE } from "@/lib/media/constants";
 import { cn } from "@/lib/utils";
 
 type Img = { id: string; url: string; thumbUrl: string; alt: string };
@@ -90,6 +90,8 @@ export function GalleryManager({
           multiple
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"
+          tabIndex={-1}
+          aria-label="Зураг нэмэх"
           id="gallery-upload"
           onChange={(e) => onFiles(e.target.files)}
         />

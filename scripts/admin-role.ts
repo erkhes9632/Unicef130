@@ -9,9 +9,9 @@
  * mirror follows through the webhook, or on their next request. The secret key is never
  * printed or stored. Granting also lifts a ban (break-glass: an admin who was locked out).
  */
-import { createClerkClient } from "@clerk/backend";
 import { existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { createClerkClient } from "@clerk/backend";
 import {
   instanceOf,
   isEmail,

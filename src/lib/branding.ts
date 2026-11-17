@@ -1,6 +1,6 @@
 import "server-only";
-import type { Locale } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
+import type { Locale } from "@/i18n/routing";
 import { pick } from "@/lib/data/localize";
 import { getSiteSettings, safeImageUrl } from "@/lib/data/settings";
 

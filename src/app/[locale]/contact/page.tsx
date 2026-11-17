@@ -6,9 +6,9 @@ import { PageHero } from "@/components/common/page-hero";
 import { ContactForm } from "@/components/forms/contact-form";
 import { FormsUnavailable } from "@/components/forms/forms-unavailable";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
 import { getSiteSettings, publicContact } from "@/lib/data/settings";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
+import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({

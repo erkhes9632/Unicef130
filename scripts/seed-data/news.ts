@@ -1,7 +1,7 @@
 // TODO(content): sample news posts — replace with real posts via /admin → Мэдээ.
-import type { NewsPost } from "@/lib/types";
 import { newsContentEn } from "./content-en";
 import { b, doc, h, p, quote, ul } from "./rich-text";
+import type { NewsPost } from "./types";
 
 const baseNews: NewsPost[] = [
   {

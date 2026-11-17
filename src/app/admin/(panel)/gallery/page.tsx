@@ -51,7 +51,13 @@ export default async function AdminGalleryPage() {
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map((a) => (
             <li key={a.id} className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
-              <Link href={`/admin/gallery/${a.id}`} className="block aspect-[16/9] bg-muted">
+              {/* Duplicate of the title link below: skipped by keyboard and screen readers. */}
+              <Link
+                href={`/admin/gallery/${a.id}`}
+                tabIndex={-1}
+                aria-hidden="true"
+                className="block aspect-[16/9] bg-muted"
+              >
                 {a.coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail
                   <img src={a.coverUrl} alt="" className="size-full object-cover" />

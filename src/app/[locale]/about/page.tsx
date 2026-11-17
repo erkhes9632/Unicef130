@@ -5,16 +5,16 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
 import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
-import { pick } from "@/lib/data/localize";
+import { Link } from "@/i18n/navigation";
 import { listDirectionActivities } from "@/lib/data/events";
 import { displayYear } from "@/lib/data/impact";
+import { pick } from "@/lib/data/localize";
 import { listMembers } from "@/lib/data/members";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
-import { clubDirections } from "@/lib/types";
 import { getSiteSettings, paragraphs } from "@/lib/data/settings";
+import { pageMetadata } from "@/lib/seo";
+import { clubDirections } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({

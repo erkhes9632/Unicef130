@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AuthError } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 
 /** Result shape shared by all admin Server Actions (used with useActionState). */
 export type ActionState = {
@@ -28,7 +29,7 @@ export function actionError(err: unknown): ActionState {
     };
   }
   if (isNextSignal(err)) throw err;
-  console.error("[admin action]", err);
+  logger.error("admin-action", "failed", err);
   return { ok: false, message: "Алдаа гарлаа. Дахин оролдоно уу." };
 }
 

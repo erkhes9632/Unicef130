@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getCurrentUser } from "@/lib/auth/session";
 import { homePathFor, SIGN_IN_PATH } from "@/lib/auth/roles";
+import { getCurrentUser } from "@/lib/auth/session";
 
 /**
  * Landing address after sign-in (when no return address was given): admin → /admin,

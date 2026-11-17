@@ -4,8 +4,9 @@ import { cache } from "react";
 import { getDb } from "@/db";
 import { events, members, settings } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
-import { formatNumber } from "@/lib/dates/format";
 import { getLatestImpact } from "@/lib/data/impact";
+import { formatNumber } from "@/lib/dates/format";
+import { logger } from "@/lib/logger";
 import {
   MAX_FEATURED_STATS,
   defaultSettings,
@@ -41,7 +42,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
     const parsed = parseSettings(new Map(rows.map((r) => [r.key, r.value])));
     return { ...parsed, contact: sanitizeContact(parsed.contact) };
   } catch (err) {
-    console.error("[settings] D1 read failed, using defaults", err);
+    logger.error("settings", "D1 read failed, using defaults", err);
     return defaultSettings;
   }
 });
@@ -138,7 +139,7 @@ export async function getHomeStats(
     }
     if (needs.has("events")) counts.events = await getActivityCount();
   } catch (err) {
-    console.error("[settings] stats count failed", err);
+    logger.error("settings", "stats count failed", err);
   }
   return items
     .map((item) => {

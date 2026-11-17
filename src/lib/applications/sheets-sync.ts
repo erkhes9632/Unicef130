@@ -7,21 +7,9 @@ import { applicationStatusLabel, helpOptionLabels } from "@/lib/admin/labels";
 import { getSiteSettings } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
 import { appendSheetRow, sheetsConfigFromEnv } from "@/lib/integrations/google-sheets";
+import { logger } from "@/lib/logger";
 
 export type SyncResult = "synced" | "skipped" | "error" | "not_found";
-
-/** Column order in the Google Sheet (put these headers in row 1). */
-export const SHEET_HEADERS = [
-  "Огноо",
-  "Овог нэр",
-  "Анги",
-  "Утас",
-  "И-мэйл",
-  "Шалтгаан",
-  "Туслах чиглэл",
-  "Төлөв",
-  "ID",
-];
 
 export async function isSheetsConfigured() {
   const { env } = await getCloudflareContext({ async: true });
@@ -40,6 +28,7 @@ export async function syncApplicationToSheets(id: string): Promise<SyncResult> {
     if (!app) return "not_found";
     const helpOptionLabel = helpOptionLabels((await getSiteSettings()).helpOptions);
     try {
+      // Column order = row 1 of the Sheet (DEPLOY_CHECKLIST: Огноо | Овог нэр | … | Төлөв | ID).
       await appendSheetRow(cfg, [
         `${formatDate("mn", app.createdAt, "long")} ${formatDate("mn", app.createdAt, "time")}`,
         app.fullName,
@@ -58,7 +47,7 @@ export async function syncApplicationToSheets(id: string): Promise<SyncResult> {
       return "synced";
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error("[sheets] sync failed", id, message);
+      logger.error("sheets", "sync failed", { id, message });
       await db
         .update(applications)
         .set({ sheetsError: message.slice(0, 500) })
@@ -66,7 +55,7 @@ export async function syncApplicationToSheets(id: string): Promise<SyncResult> {
       return "error";
     }
   } catch (err) {
-    console.error("[sheets] unexpected error", err);
+    logger.error("sheets", "unexpected error", err);
     return "error";
   }
 }

@@ -1,7 +1,7 @@
 import { and, asc, count, eq } from "drizzle-orm";
-import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
+import type { Locale } from "@/i18n/routing";
 import { schoolYearOf } from "@/lib/members/logic";
 import { yearSummary } from "@/lib/members/year-summary";
 import { displayClassName, pick } from "./localize";

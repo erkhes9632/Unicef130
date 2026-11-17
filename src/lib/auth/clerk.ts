@@ -1,5 +1,5 @@
 /**
- * Clerk settings shared by the middleware, the root layout and server code (no secrets here).
+ * Clerk settings shared by the middleware, `ClerkShell` and server code (no secrets here).
  * Keys are read at runtime: on Workers from wrangler vars / secrets, in `next dev` from .dev.vars
  * (copied into process.env by next.config.ts).
  */

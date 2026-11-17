@@ -7,11 +7,11 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
 import { EventCard } from "@/components/events/event-card";
 import { MonthCalendar } from "@/components/events/month-calendar";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
+import { Link } from "@/i18n/navigation";
 import { getEventsInMonth, listEvents } from "@/lib/data/events";
 import { parseMonth } from "@/lib/dates/ub-time";
+import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({

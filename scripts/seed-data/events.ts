@@ -1,7 +1,7 @@
 // TODO(content): sample events — replace with real events via /admin → Арга хэмжээ.
-import type { ClubEvent } from "@/lib/types";
 import { eventContentEn } from "./content-en";
 import { doc, p, ul } from "./rich-text";
+import type { ClubEvent } from "./types";
 
 const baseEvents: ClubEvent[] = [
   {

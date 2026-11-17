@@ -1,15 +1,15 @@
 import { HandHeart, Handshake, Megaphone, Package } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { SocialLinks } from "@/components/brand/social-links";
 import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
-import { SocialLinks } from "@/components/brand/social-links";
+import { Link } from "@/i18n/navigation";
 import { pick } from "@/lib/data/localize";
 import { getSiteSettings, paragraphs, safeExternalUrl } from "@/lib/data/settings";
+import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({

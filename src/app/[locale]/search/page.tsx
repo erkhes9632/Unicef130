@@ -8,11 +8,11 @@ import { EventCard } from "@/components/events/event-card";
 import { NewsCard } from "@/components/news/news-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getPathname } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
+import { getPathname } from "@/i18n/navigation";
 import { searchEvents } from "@/lib/data/events";
 import { searchNews } from "@/lib/data/news";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
   params,

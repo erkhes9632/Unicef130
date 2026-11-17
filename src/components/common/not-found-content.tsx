@@ -9,7 +9,7 @@ export async function NotFoundContent({ homeLink }: { homeLink: React.ReactEleme
     <div className="relative isolate flex flex-1 items-center">
       <DecorativeShapes variant="hero" />
       <div className="container-page py-24 text-center">
-        <p className="font-heading text-7xl font-extrabold text-brand-cyan sm:text-8xl">
+        <p className="font-heading text-7xl font-extrabold text-brand-cyan-strong sm:text-8xl">
           {t("NotFound.code")}
         </p>
         <h1 className="mt-4 text-3xl font-extrabold sm:text-4xl">{t("NotFound.title")}</h1>

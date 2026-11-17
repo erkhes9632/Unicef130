@@ -1,6 +1,7 @@
 /**
  * Helpers for local maintenance scripts (Bun). They build SQL and run it against the
- * LOCAL D1 via wrangler. Production writes go through scripts/create-admin.ts only.
+ * LOCAL D1 via wrangler. Production is changed only by the developer (`--remote` commands in
+ * DEPLOY_CHECKLIST / the generated report seed SQL).
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

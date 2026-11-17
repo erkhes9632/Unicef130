@@ -1,7 +1,7 @@
 import { and, count, desc, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
-import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
+import type { Locale } from "@/i18n/routing";
 import { normalizeSdgs } from "@/lib/sdg";
 import { newsCategories, type NewsCategory, type RichTextDoc } from "@/lib/types";
 import { pick } from "./localize";

@@ -1,6 +1,7 @@
 import "server-only";
 import { getDb } from "@/db";
 import { activityLog } from "@/db/schema";
+import { logger } from "@/lib/logger";
 import type { Changes } from "./audit-diff";
 
 export { diffFields, shortId, type Changes } from "./audit-diff";
@@ -25,6 +26,6 @@ export async function logActivity(
       details: entity.changes ?? null,
     });
   } catch (err) {
-    console.error("[activity] failed to log", action, err);
+    logger.error("activity", "failed to log", { action, error: err });
   }
 }

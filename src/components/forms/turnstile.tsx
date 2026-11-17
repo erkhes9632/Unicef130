@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { logger } from "@/lib/logger";
 
 type TurnstileApi = {
   render: (el: HTMLElement, opts: Record<string, unknown>) => string;
@@ -77,7 +78,7 @@ export function Turnstile({
         });
       })
       .catch((err) => {
-        console.error(err);
+        logger.error("turnstile", "widget failed", err);
         onErrorRef.current?.();
       });
     return () => {

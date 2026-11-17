@@ -1,6 +1,7 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
 import { getDb } from "@/db";
+import { logger } from "@/lib/logger";
 import { handleClerkEvent } from "@/lib/users/webhook";
 
 /**
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     const result = await handleClerkEvent(await getDb(), event);
     return Response.json({ ok: true, result });
   } catch (err) {
-    console.error("[clerk webhook] failed", event.type, err);
+    logger.error("clerk-webhook", "failed", { type: event.type, error: err });
     // 5xx → Clerk retries later.
     return new Response("Failed", { status: 500 });
   }

@@ -8,8 +8,8 @@ import { applications, contactMessages } from "@/db/schema";
 import { runInBackground, syncApplicationToSheets } from "@/lib/applications/sheets-sync";
 import { AuthError, assertSignedIn } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
-import { notifyNewApplication, notifyNewContactMessage } from "@/lib/integrations/notifications";
 import { verifyTurnstile } from "@/lib/integrations/turnstile";
+import { logger } from "@/lib/logger";
 import { consumeRateLimit, hashIp } from "@/lib/rate-limit";
 import { countTaken, listPeriods } from "@/lib/recruitment/data";
 import {
@@ -62,8 +62,8 @@ const JOIN_SUBMITS_PER_10_MIN = 5;
 /**
  * Join form (signed-in accounts only; Clerk's bot protection covers sign-up). Order: account
  * checks → per-account rate limit → open period → strict validation against the period → one
- * application per account per period → capacity / waitlist → store. Google Sheets and
- * notifications run in the background and never fail the submission.
+ * application per account per period → capacity / waitlist → store. The Google Sheets copy
+ * runs in the background and never fails the submission.
  */
 export async function submitJoinApplication(input: unknown): Promise<JoinActionResult> {
   let me;
@@ -140,18 +140,8 @@ export async function submitJoinApplication(input: unknown): Promise<JoinActionR
           consentAt: new Date(),
           status,
         })
-        .returning({ id: applications.id, createdAt: applications.createdAt });
-      await runInBackground(
-        Promise.allSettled([
-          syncApplicationToSheets(row!.id),
-          notifyNewApplication({
-            id: row!.id,
-            fullName: d.fullName,
-            className: d.className,
-            createdAt: row!.createdAt,
-          }),
-        ]),
-      );
+        .returning({ id: applications.id });
+      await runInBackground(syncApplicationToSheets(row!.id));
     } catch (err) {
       // Two tabs submitting at once: the unique (account, period) index keeps one.
       if (isUniqueViolation(err)) return { ok: false, error: "duplicate" };
@@ -159,12 +149,12 @@ export async function submitJoinApplication(input: unknown): Promise<JoinActionR
     }
     return { ok: true, waitlisted: status === "waitlist" };
   } catch (err) {
-    console.error("[join] failed to store application", err);
+    logger.error("join", "failed to store application", err);
     return { ok: false, error: "server" };
   }
 }
 
-/** Contact form: validate → Turnstile → D1 → (background) notify. */
+/** Contact form: validate → Turnstile → rate limit → D1 (admins read it in /admin/messages). */
 export async function submitContactMessage(input: unknown): Promise<FormActionResult> {
   const parsed = contactServerSchema.safeParse(input);
   if (!parsed.success) {
@@ -187,14 +177,10 @@ export async function submitContactMessage(input: unknown): Promise<FormActionRe
     );
     if (!limit.allowed) return { ok: false, error: "rate" };
     const db = await getDb();
-    const [row] = await db
-      .insert(contactMessages)
-      .values({ name, email: email.toLowerCase(), subject, message })
-      .returning({ id: contactMessages.id });
-    await runInBackground(notifyNewContactMessage({ id: row!.id, name, email, subject }));
+    await db.insert(contactMessages).values({ name, email: email.toLowerCase(), subject, message });
     return { ok: true };
   } catch (err) {
-    console.error("[contact] failed to store message", err);
+    logger.error("contact", "failed to store message", err);
     return { ok: false, error: "server" };
   }
 }

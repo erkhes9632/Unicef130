@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
-import { notFound } from "next/navigation";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
-import { SiteFooter } from "@/components/layout/site-footer";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { PageTransition } from "@/components/layout/page-transition";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { routing } from "@/i18n/routing";
 import { clientNamespaces } from "@/i18n/client-namespaces";
+import { routing } from "@/i18n/routing";
 import { getBranding, getClubNames } from "@/lib/branding";
 import { getSiteSettings } from "@/lib/data/settings";
 import { getSiteUrl, jsonLd } from "@/lib/seo";

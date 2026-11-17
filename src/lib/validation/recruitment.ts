@@ -77,4 +77,3 @@ export const periodInputSchema = z
     path: ["closesAt"],
     error: "Хаагдах цаг нь нээгдэх цагаас хойш байх ёстой.",
   });
-export type PeriodInput = z.output<typeof periodInputSchema>;

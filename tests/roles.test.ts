@@ -3,12 +3,12 @@
  * (self / last admin), user filters, Clerk key helpers, the D1 mirror and the admin script.
  */
 import { describe, expect, test } from "bun:test";
-import { planRoleChange, instanceOf, type ClerkUserLite } from "../scripts/lib/admin-role";
 import { frontendApiFromPublishableKey, signInPathFor } from "@/lib/auth/clerk";
 import { decideAccess, homePathFor, routeArea, toRole } from "@/lib/auth/roles";
 import { filterUsers, parseUserFilters } from "@/lib/users/list";
 import { checkUserAction, roleAfter } from "@/lib/users/rules";
 import { mirrorFromClerk } from "@/lib/users/sync";
+import { planRoleChange, instanceOf, type ClerkUserLite } from "../scripts/lib/admin-role";
 
 describe("route access (middleware)", () => {
   test("areas", () => {

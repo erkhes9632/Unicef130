@@ -1,28 +1,28 @@
-import { ViewTransition } from "react";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { findSlugRedirect } from "@/lib/data/redirects";
-import { withoutRepeatedLead } from "@/lib/rich-text/sanitize";
 import { getTranslations } from "next-intl/server";
+import { ViewTransition } from "react";
 import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cover-image";
+import { RichText } from "@/components/common/rich-text";
+import { Section, SectionHeading } from "@/components/common/section";
+import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { ActivityFacts } from "@/components/impact/activity-facts";
 import { SdgBadges } from "@/components/impact/sdg-badges";
-import { RichText } from "@/components/common/rich-text";
-import { GalleryGrid } from "@/components/gallery/gallery-grid";
-import { getAlbumById } from "@/lib/data/gallery";
-import { Section, SectionHeading } from "@/components/common/section";
 import { NewsCard } from "@/components/news/news-card";
-import { newsCoverTransition } from "@/lib/motion/transitions";
 import { ShareButtons } from "@/components/news/share-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { getClubNames } from "@/lib/branding";
 import { getEventById } from "@/lib/data/events";
+import { getAlbumById } from "@/lib/data/gallery";
 import { getNewsBySlug, getRelatedNews } from "@/lib/data/news";
+import { findSlugRedirect } from "@/lib/data/redirects";
 import { formatDate } from "@/lib/dates/format";
+import { newsCoverTransition } from "@/lib/motion/transitions";
+import { withoutRepeatedLead } from "@/lib/rich-text/sanitize";
 import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({

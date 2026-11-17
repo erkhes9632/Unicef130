@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { applications, recruitmentPeriods, type RecruitmentQuestion } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import { pick } from "@/lib/data/localize";
+import { logger } from "@/lib/logger";
 import { countedStatuses, findNextPeriod, findOpenPeriod, intakeFor, type Intake } from "./logic";
 
 export type PeriodRow = typeof recruitmentPeriods.$inferSelect;
@@ -58,7 +59,7 @@ export const getRecruitmentState = cache(async (locale: Locale): Promise<Recruit
   try {
     periods = await listPeriods();
   } catch (err) {
-    console.error("[recruitment] could not load periods", err);
+    logger.error("recruitment", "could not load periods", err);
   }
   const open = findOpenPeriod(periods);
   if (open) {

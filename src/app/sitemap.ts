@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { getDb } from "@/db";
 import { albums, events, news } from "@/db/schema";
 import { routing } from "@/i18n/routing";
+import { logger } from "@/lib/logger";
 import { getSiteUrl, localizedPath } from "@/lib/seo";
 
 // Built from D1 at request time (content changes without redeploys).
@@ -70,7 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...albumRows.map((r) => entry(`/gallery/${r.slug}`, r.updatedAt, 0.5)),
     );
   } catch (err) {
-    console.error("[sitemap] D1 unavailable, static entries only", err);
+    logger.error("sitemap", "D1 unavailable, static entries only", err);
   }
   return items;
 }

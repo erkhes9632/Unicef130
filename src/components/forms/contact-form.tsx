@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { contactFormSchema, type ContactFormValues } from "@/lib/validation/forms";
-import { Turnstile } from "./turnstile";
 import { FormField } from "./form-field";
+import { Turnstile } from "./turnstile";
 
 const defaultValues: ContactFormValues = { name: "", email: "", subject: "", message: "" };
 

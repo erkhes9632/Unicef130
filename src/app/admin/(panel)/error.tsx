@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { logger } from "@/lib/logger";
 
 export default function AdminError({
   error,
@@ -11,7 +12,7 @@ export default function AdminError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    logger.error("admin", "render failed", error);
   }, [error]);
   return (
     <div role="alert" className="space-y-3 rounded-2xl bg-card p-8 text-center ring-1 ring-border">

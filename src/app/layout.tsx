@@ -1,15 +1,11 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { getLocale } from "next-intl/server";
-import { getSiteUrl } from "@/lib/seo";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
-import { clerkPublishableKey, signInPathFor } from "@/lib/auth/clerk";
-import { clerkAppearance, clerkLocalizationMn } from "@/lib/auth/clerk-ui";
-import { AFTER_SIGN_IN_PATH } from "@/lib/auth/roles";
 import { getSiteSettings, safeImageUrl } from "@/lib/data/settings";
+import { getSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { fontBody, fontDisplay } from "./fonts";
 import "./globals.css";
@@ -32,25 +28,13 @@ export const viewport: Viewport = {
   ],
 };
 
-/** Root layout shared by the public site ([locale]) and /admin. */
+/**
+ * Root layout shared by the public site ([locale]) and /admin. Clerk is not loaded here: only the
+ * account areas wrap themselves in `ClerkShell` (components/auth/clerk-shell.tsx).
+ */
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const nonce = (await headers()).get("x-nonce") ?? undefined;
-  const signInPath = signInPathFor(locale === "en" ? "/en" : "/");
-  const afterSignIn = `${AFTER_SIGN_IN_PATH}?locale=${locale}`;
-  // Without a Clerk key the site still renders (sign-in is unavailable until it is set).
-  const publishableKey = clerkPublishableKey();
-  const app = (
-    <ThemeProvider nonce={nonce}>
-      {children}
-      <Toaster
-        richColors
-        position="top-center"
-        customAriaLabel={locale === "en" ? "Notifications" : "Мэдэгдлүүд"}
-      />
-    </ThemeProvider>
-  );
-
   return (
     <html
       lang={locale}
@@ -58,24 +42,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={cn(fontDisplay.variable, fontBody.variable, "h-full antialiased")}
     >
       <body className="flex min-h-full flex-col overflow-x-clip">
-        {publishableKey ? (
-          <ClerkProvider
-            publishableKey={publishableKey}
-            nonce={nonce}
-            signInUrl={signInPath}
-            signUpUrl={signInPath}
-            signInFallbackRedirectUrl={afterSignIn}
-            signUpFallbackRedirectUrl={afterSignIn}
-            afterSignOutUrl={locale === "en" ? "/en" : "/"}
-            appearance={clerkAppearance}
-            localization={locale === "en" ? undefined : clerkLocalizationMn}
-            telemetry={false}
-          >
-            {app}
-          </ClerkProvider>
-        ) : (
-          app
-        )}
+        <ThemeProvider nonce={nonce}>
+          {children}
+          <Toaster
+            richColors
+            position="top-center"
+            customAriaLabel={locale === "en" ? "Notifications" : "Мэдэгдлүүд"}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

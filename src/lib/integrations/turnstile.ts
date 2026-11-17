@@ -1,5 +1,6 @@
 import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { logger } from "@/lib/logger";
 
 /**
  * Cloudflare Turnstile.
@@ -54,7 +55,7 @@ async function getConfig(): Promise<TurnstileConfig> {
   const cfg = resolveTurnstileConfig(env as Env);
   if (cfg.status === "unavailable" && !warned) {
     warned = true;
-    console.error(`[turnstile] forms disabled in production: ${cfg.reason}`);
+    logger.error("turnstile", "forms disabled in production", { reason: cfg.reason });
   }
   return cfg;
 }
@@ -86,15 +87,16 @@ export async function verifyTurnstile(
       body,
     });
     const data = (await res.json()) as { success?: boolean; "error-codes"?: string[] };
-    if (!data.success) console.info("[turnstile] verification failed", data["error-codes"]);
+    if (!data.success)
+      logger.info("turnstile", "verification failed", { codes: data["error-codes"] });
     return data.success === true ? "ok" : "failed";
   } catch (err) {
     // Offline local development with test keys: don't block the form.
     if (cfg.status === "test") {
-      console.warn("[turnstile] siteverify unreachable, allowing (test keys only)", err);
+      logger.warn("turnstile", "siteverify unreachable, allowing (test keys only)", err);
       return "ok";
     }
-    console.error("[turnstile] siteverify request failed", err);
+    logger.error("turnstile", "siteverify request failed", err);
     return "failed";
   }
 }

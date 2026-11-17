@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { logger } from "@/lib/logger";
 
 export default function LocaleError({
   error,
@@ -14,7 +15,7 @@ export default function LocaleError({
 }) {
   const t = useTranslations("Errors");
   useEffect(() => {
-    console.error(error);
+    logger.error("page", "render failed", error);
   }, [error]);
 
   return (

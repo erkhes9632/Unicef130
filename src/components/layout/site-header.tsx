@@ -1,12 +1,11 @@
 import { Search } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
-import type { Locale } from "@/i18n/routing";
-import { clerkPublishableKey } from "@/lib/auth/clerk";
-import { getClubNames } from "@/lib/branding";
-import { AccountMenu } from "@/components/auth/account-menu";
+import { HeaderAccount } from "@/components/auth/header-account";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
+import { getClubNames } from "@/lib/branding";
 import { LocaleSwitcher } from "./locale-switcher";
 import { MobileNav } from "./mobile-nav";
 import { NavLinks } from "./nav-links";
@@ -16,12 +15,6 @@ export async function SiteHeader() {
   const t = await getTranslations();
   const locale = (await getLocale()) as Locale;
   const { name: clubName } = await getClubNames(locale);
-  const accountLabels = {
-    signIn: t("Auth.signIn"),
-    admin: t("Auth.menuAdmin"),
-    me: t("Auth.menuMe"),
-    application: t("Auth.menuApplication"),
-  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur [view-transition-name:site-header] supports-backdrop-filter:bg-background/70 print:hidden">
@@ -60,7 +53,7 @@ export async function SiteHeader() {
           <Button asChild className="ml-1 hidden sm:inline-flex xl:hidden 2xl:inline-flex">
             <Link href="/join">{t("Common.joinCta")}</Link>
           </Button>
-          {clerkPublishableKey() && <AccountMenu labels={accountLabels} locale={locale} />}
+          <HeaderAccount />
           <MobileNav />
         </div>
       </div>

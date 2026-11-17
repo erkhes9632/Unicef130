@@ -4,6 +4,7 @@ import { cache } from "react";
 import { getDb } from "@/db";
 import { impactStats, type ImpactDirection } from "@/db/schema";
 import { formatNumber } from "@/lib/dates/format";
+import { logger } from "@/lib/logger";
 
 export type ImpactRow = {
   direction: ImpactDirection;
@@ -36,7 +37,7 @@ export const listImpactYears = cache(async (): Promise<string[]> => {
       .orderBy(desc(impactStats.schoolYear));
     return rows.map((r) => r.y);
   } catch (err) {
-    console.error("[impact] D1 read failed", err);
+    logger.error("impact", "D1 read failed", err);
     return [];
   }
 });

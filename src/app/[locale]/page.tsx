@@ -2,28 +2,28 @@ import { ArrowRight, BarChart3, GraduationCap, HandHeart, Megaphone } from "luci
 import { getTranslations } from "next-intl/server";
 import { LogoImage, Monogram } from "@/components/brand/logo-image";
 import { SocialLinks } from "@/components/brand/social-links";
+import { CountUp } from "@/components/common/count-up";
 import {
   ColorRibbon,
   DecorativeShapes,
   HeroHighlight,
 } from "@/components/common/decorative-shapes";
-import { CountUp } from "@/components/common/count-up";
 import { Eyebrow, Section, SectionHeading } from "@/components/common/section";
 import { DateBadge } from "@/components/events/date-badge";
 import { EventCard } from "@/components/events/event-card";
 import { NewsCard } from "@/components/news/news-card";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { getBranding } from "@/lib/branding";
 import { getUpcomingEvents } from "@/lib/data/events";
-import { pageMetadata } from "@/lib/seo";
 import { getGalleryPreview } from "@/lib/data/gallery";
-import { pick } from "@/lib/data/localize";
 import { displayYear, getLatestImpact } from "@/lib/data/impact";
+import { pick } from "@/lib/data/localize";
 import { getLatestNews } from "@/lib/data/news";
-import { formatMnt, formatNumber } from "@/lib/dates/format";
 import { getHomeStats, getSiteSettings, safeExternalUrl, safeImageUrl } from "@/lib/data/settings";
+import { formatMnt, formatNumber } from "@/lib/dates/format";
+import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 const pillars = [

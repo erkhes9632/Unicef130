@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { eventSignups, events, members } from "@/db/schema";
 import { logActivity, shortId } from "@/lib/admin/activity";
 import { AuthError, assertMember, assertSignedIn } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 import {
   DELETE_CONFIRM_WORDS,
   placeHolding,
@@ -33,7 +34,7 @@ export type MeResult = {
 
 function fail(err: unknown): MeResult {
   if (err instanceof AuthError) return { ok: false, error: err.code };
-  console.error("[me] action failed", err);
+  logger.error("me", "action failed", err);
   return { ok: false, error: "server" };
 }
 

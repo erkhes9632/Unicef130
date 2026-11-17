@@ -1,6 +1,6 @@
 // TODO(content): placeholder members — replace with real names/roles/classes via /admin → Гишүүд.
 // Photos of minors are shown only with consent (`showPhoto`).
-import type { Member } from "@/lib/types";
+import type { Member } from "./types";
 
 export const mockMembers: Member[] = [
   {

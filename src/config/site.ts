@@ -26,5 +26,3 @@ export const mainNav = [
   { key: "contact", href: "/contact" },
   { key: "faq", href: "/faq" },
 ] as const;
-
-export type NavKey = (typeof mainNav)[number]["key"];

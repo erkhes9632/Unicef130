@@ -63,7 +63,7 @@ export function PeriodForm({
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
       data-guard
-      className="grid max-w-5xl gap-6 xl:grid-cols-[1fr_20rem]"
+      className="grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]"
     >
       <div className="space-y-6">
         <FormAlert state={state} />

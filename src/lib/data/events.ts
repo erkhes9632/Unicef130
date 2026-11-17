@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
-import type { Locale } from "@/i18n/routing";
 import { getDb } from "@/db";
 import { eventSignups, events } from "@/db/schema";
+import type { Locale } from "@/i18n/routing";
 import { placeHolding, signupOpen } from "@/lib/members/logic";
 import { normalizeSdgs } from "@/lib/sdg";
 import { clubDirections, type ClubDirection, type RichTextDoc } from "@/lib/types";

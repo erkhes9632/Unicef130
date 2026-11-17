@@ -6,8 +6,8 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
 import { AlbumCard } from "@/components/gallery/album-card";
 import { resolveLocale } from "@/i18n/locale";
-import { pageMetadata } from "@/lib/seo";
 import { listAlbums } from "@/lib/data/gallery";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
   params,

@@ -28,19 +28,22 @@
 
 ```
 src/
-  app/[locale]/        нийтийн хуудсууд (mn: /about, en: /en/about)
-  app/admin/           админ хэсэг ((panel)/...); app/[locale]/me — гишүүний хэсэг
+  app/[locale]/        нийтийн хуудсууд (mn: /about, en: /en/about); me/ — гишүүний хэсэг;
+                       sign-in/, sign-out/, join/, me/ — Clerk зөвхөн эдгээрт ачаалагдана
+  app/admin/           админ хэсэг ((panel)/...)
   app/api/             Clerk webhook, зураг upload, .ics
   app/media/           R2 зургийг үзүүлэх
-  components/          UI (ui/ = shadcn, admin/, layout/, forms/ ...)
+  assets/fonts/        өөрсдийн фонт файлууд (OFL)
+  components/          UI (ui/ = shadcn, admin/, auth/, layout/, forms/, impact/ ...)
   config/site.ts       сайтын үндсэн тохиргоо, fallback утгууд
   db/schema.ts         D1 хүснэгтүүд (Drizzle)
   i18n/                хэлний тохиргоо
-  lib/                 өгөгдөл (data/), баталгаажуулалт, огноо, media, auth ...
+  lib/                 өгөгдөл (data/), auth, recruitment, members, огноо, media, logger.ts ...
 messages/              орчуулгууд (mn.json, en.json)
 drizzle/migrations/    SQL migration-ууд
-scripts/               локал seed, админ үүсгэх, брэнд зураг (OG/favicon)
-tests/                 bun test
+scripts/               локал seed, админ эрх, тайлан импорт, брэнд зураг, фонт
+tests/                 bun test (unit + static шалгалт) · e2e/ — Playwright
+worker.ts              Worker-ийн оролт (OpenNext + өдөр бүрийн cron)
 ```
 
 ## Локал дээр ажиллуулах
@@ -72,25 +75,30 @@ bun run preview                 # build + локал workerd (http://localhost:8
 
 ### Түгээмэл командууд
 
-| Команд                                     | Үүрэг                                                 |
-| ------------------------------------------ | ----------------------------------------------------- |
-| `bun run dev`                              | Хөгжүүлэлтийн сервер                                  |
-| `bun run check`                            | lint + typecheck + format шалгах + тест               |
-| `bun run test`                             | Тестүүд (`bun test`)                                  |
-| `bun run format`                           | Prettier-ээр форматлах                                |
-| `bun run build`                            | Next.js production build                              |
-| `bun run cf:build`                         | Cloudflare Worker bundle                              |
-| `bun run preview`                          | Локал Workers preview                                 |
-| `bun run db:generate`                      | `src/db/schema.ts` өөрчилсний дараа migration үүсгэх  |
-| `bun run db:migrate:local`                 | Migration-ийг локал D1 дээр ажиллуулах                |
-| `bun run db:seed:local`                    | Жишээ контент (локал)                                 |
-| `bun run db:reset:local`                   | Локал D1-ийг бүрэн шинэчлэх                           |
-| `bun run admin:grant -- <и-мэйл> [--dev]`  | Админ эрх олгох (Clerk; `--dev` = локал instance)     |
-| `bun run admin:revoke -- <и-мэйл> [--dev]` | Админ эрх хасах (сүүлчийн админыг хасахгүй)           |
-| `bun run test:e2e`                         | E2E (Playwright + @clerk/testing; preview асаалттай)  |
-| `bun run db:migrate:remote`                | Migration-ийг **production** D1 дээр ажиллуулах       |
-| `bun run deploy`                           | **Production** руу гаргах                             |
-| `bun run cf-typegen`                       | `wrangler.jsonc` өөрчилсний дараа төрлүүдийг шинэчлэх |
+| Команд                                     | Үүрэг                                                    |
+| ------------------------------------------ | -------------------------------------------------------- |
+| `bun run dev`                              | Хөгжүүлэлтийн сервер                                     |
+| `bun run check`                            | lint + typecheck + format шалгах + тест                  |
+| `bun run test`                             | Тестүүд (`bun test`)                                     |
+| `bun run format`                           | Prettier-ээр форматлах                                   |
+| `bun run build`                            | Next.js production build                                 |
+| `bun run cf:build`                         | Cloudflare Worker bundle                                 |
+| `bun run preview`                          | Локал Workers preview                                    |
+| `bun run db:generate`                      | `src/db/schema.ts` өөрчилсний дараа migration үүсгэх     |
+| `bun run db:migrate:local`                 | Migration-ийг локал D1 дээр ажиллуулах                   |
+| `bun run db:seed:local`                    | Жишээ контент (локал)                                    |
+| `bun run db:reset:local`                   | Локал D1-ийг бүрэн шинэчлэх                              |
+| `bun run admin:grant -- <и-мэйл> [--dev]`  | Админ эрх олгох (Clerk; `--dev` = локал instance)        |
+| `bun run admin:revoke -- <и-мэйл> [--dev]` | Админ эрх хасах (сүүлчийн админыг хасахгүй)              |
+| `bun run test:e2e`                         | E2E (Playwright + @clerk/testing; preview асаалттай)     |
+| `bun run db:migrate:remote`                | Migration-ийг **production** D1 дээр ажиллуулах          |
+| `bun run deploy`                           | **Production** руу гаргах                                |
+| `bun run cf-typegen`                       | `wrangler.jsonc` өөрчилсний дараа төрлүүдийг шинэчлэх    |
+| `bun run lint -- --fix`                    | ESLint (import дараалал зэргийг автоматаар засна)        |
+| `bun run hooks:install`                    | Commit бүрийн өмнө `bun run check` ажиллуулах (нэг удаа) |
+| `bun run fonts`                            | Фонтын файлуудыг дахин татах (`src/assets/fonts`)        |
+| `bun run brand:assets`                     | Логоноос OG зураг, favicon үүсгэх                        |
+| `bun run report:seed`                      | Жилийн тайлангийн SQL (`private/`-аас)                   |
 
 ## Production (Cloudflare Workers)
 
@@ -461,10 +469,16 @@ db:migrate:local` → (production) `bunx wrangler d1 migrations apply DB --remot
   `bun run brand:assets` — `public/logos/` доторх логоноос `public/og-default.png`,
   `src/app/icon.png`, `src/app/apple-icon.png`, `src/app/favicon.ico`-г дахин үүсгэнэ. Лого
   солих бүрт дахин ажиллуулаад deploy хийнэ.
-- **Чанар шалгах**: Chrome DevTools → Lighthouse (Mobile) — гол хуудсууд дээр ≥ 90 байхаар.
+- **Чанар шалгах**: Chrome DevTools → Lighthouse (Mobile) — гол хуудсууд дээр ≥ 95 байхаар
+  (2026-11-16: 99, PRODUCTION_REPORT §6).
 
 ## Хөгжүүлэгчдэд
 
 - Код, тайлбар, commit message — англиар. Сайтын текст — монголоор (+ англи орчуулга).
-- Commit бүрийн өмнө: `bun run check`. Нэвтрэлт, эрхийн өөрчлөлтийн дараа `bun run preview` асааж
-  `bun run test:e2e` (Clerk Development instance, `+clerk_test` хаягууд, код 424242).
+- Commit бүрийн өмнө: `bun run check` (`bun run hooks:install` хийсэн бол автоматаар). Нэвтрэлт,
+  эрхийн өөрчлөлтийн дараа `bun run preview` асааж `bun run test:e2e` (Clerk Development instance,
+  `+clerk_test` хаягууд, код 424242).
+- Лог: `console.*` биш `logger` (`src/lib/logger.ts`) — нэг мөр JSON, хувийн мэдээлэлгүй (ID л).
+  ESLint `no-console` үүнийг шаардана.
+- Import дараалал: built-in → package → `@/` → харьцангуй; ESLint `import/order` автоматаар засна.
+- TypeScript: `strict` + `noUncheckedIndexedAccess`, `noUnused*`, `noImplicitReturns` гэх мэт.

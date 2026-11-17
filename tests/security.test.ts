@@ -138,3 +138,47 @@ describe("every Server Action checks the role on the server", () => {
     expect(old.test(readFileSync("package.json", "utf8"))).toBe(false);
   });
 });
+
+describe("Clerk is loaded only in the account areas", () => {
+  test("the client SDK (@clerk/nextjs) is imported only by the allowed files", () => {
+    // Server-only entry points (/server, /webhooks) never reach the browser.
+    const allowed = new Set([
+      "src/components/auth/clerk-shell.tsx",
+      "src/components/auth/account-menu.tsx", // admin header (inside ClerkShell)
+      "src/components/auth/member-area-link.tsx", // /join
+      "src/components/auth/sign-out-runner.tsx", // /sign-out
+      "src/components/me/me-client.tsx", // /me
+      "src/app/[locale]/sign-in/[[...sign-in]]/page.tsx",
+    ]);
+    const files = walkFiles("src", (f) => /\.(ts|tsx)$/.test(f));
+    const clientImports = files.filter((f) =>
+      /from "@clerk\/nextjs"/.test(readFileSync(f, "utf8")),
+    );
+    expect(clientImports.filter((f) => !allowed.has(f))).toEqual([]);
+  });
+
+  test("only the account-area layouts wrap their pages in ClerkShell", () => {
+    expect(readFileSync("src/app/layout.tsx", "utf8")).not.toContain("ClerkProvider");
+    const users = walkFiles("src/app", (f) => /\.tsx$/.test(f)).filter((f) =>
+      readFileSync(f, "utf8").includes("<ClerkShell"),
+    );
+    expect(users.sort()).toEqual(
+      [
+        "src/app/[locale]/join/layout.tsx",
+        "src/app/[locale]/me/layout.tsx",
+        "src/app/[locale]/sign-in/layout.tsx",
+        "src/app/[locale]/sign-out/layout.tsx",
+        "src/app/admin/layout.tsx",
+      ].sort(),
+    );
+  });
+
+  test("the public header renders the account button on the server", () => {
+    const header = readFileSync("src/components/layout/site-header.tsx", "utf8");
+    expect(header).toContain("<HeaderAccount");
+    expect(header).not.toContain("AccountMenu");
+    expect(readFileSync("src/components/auth/header-account.tsx", "utf8")).toContain(
+      'from "@clerk/nextjs/server"',
+    );
+  });
+});
