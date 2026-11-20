@@ -1,4 +1,4 @@
-// TODO(content): sample events — replace with real events via /admin → Арга хэмжээ.
+// Local sample data for `bun run db:seed:local` (never production): sample events.
 import { eventContentEn } from "./content-en";
 import { doc, p, ul } from "./rich-text";
 import type { ClubEvent } from "./types";
@@ -52,7 +52,7 @@ const baseEvents: ClubEvent[] = [
     summaryEn: "We hand out New Year gifts to children at the care centre and celebrate together.",
     content: doc(p("Тоглолт, тоглоом, бэлэг — хүүхдүүдтэй хамт баярын өдрийг өнгөрүүлнэ.")),
     coverUrl: null,
-    location: "Улаанбаатар, хүүхдийн асрамжийн төв", // TODO(content): exact place
+    location: "Улаанбаатар, хүүхдийн асрамжийн төв", // sample place
     locationEn: "Ulaanbaatar, children's care centre",
     startsAt: "2026-12-27T11:00:00+08:00",
     endsAt: "2026-12-27T14:00:00+08:00",

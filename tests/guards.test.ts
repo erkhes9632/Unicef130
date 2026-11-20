@@ -133,14 +133,14 @@ describe("getCurrentUser", () => {
 });
 
 describe("page guards (redirect)", () => {
-  test("requireAdmin: signed out → /sign-in, member/applicant → /", async () => {
+  test("requireAdmin: signed out → /sign-in, member/applicant → /admin (explains), admin passes", async () => {
     expect(await redirectOf(guards.requireAdmin())).toBe("/sign-in");
     d1.set("m", row("m", "member"));
     signIn("m", "member");
-    expect(await redirectOf(guards.requireAdmin())).toBe("/");
+    expect(await redirectOf(guards.requireAdmin())).toBe("/admin");
     d1.set("u", row("u", null));
     signIn("u", null);
-    expect(await redirectOf(guards.requireAdmin())).toBe("/");
+    expect(await redirectOf(guards.requireAdmin())).toBe("/admin");
     d1.set("a", row("a", "admin"));
     signIn("a", "admin");
     expect(await redirectOf(guards.requireAdmin())).toBeNull();
@@ -157,6 +157,51 @@ describe("page guards (redirect)", () => {
     expect(await redirectOf(guards.requireMember())).toBeNull();
     d1.set("a", row("a", "admin"));
     signIn("a", "admin");
+    expect(await redirectOf(guards.requireMember())).toBeNull();
+  });
+});
+
+describe("admin access and fresh role checks", () => {
+  test("getAdminAccess: signed out / admin / forbidden", async () => {
+    expect(await guards.getAdminAccess()).toEqual({ status: "signed-out" });
+    d1.set("a", row("a", "admin"));
+    signIn("a", "admin");
+    expect((await guards.getAdminAccess()).status).toBe("admin");
+    d1.set("u", row("u", null));
+    clerkUsers.set("u", row("u", null));
+    signIn("u", null);
+    const access = await guards.getAdminAccess();
+    expect(access.status).toBe("forbidden");
+    expect(access.status !== "signed-out" && access.user.email).toBe("u@x.mn");
+  });
+
+  test("role granted in Clerk, webhook missed, token claim missing → admin gets in", async () => {
+    // The first-admin case: D1 still says applicant and the session token has no role claim.
+    d1.set("o", row("o", null));
+    clerkUsers.set("o", row("o", "admin"));
+    signIn("o", null);
+    expect((await guards.getAdminAccess()).status).toBe("admin");
+    expect(d1.get("o")?.role).toBe("admin");
+  });
+
+  test("Clerk unreachable → falls back to the mirror (still forbidden, no crash)", async () => {
+    d1.set("x", row("x", null));
+    signIn("x", null);
+    expect((await guards.getAdminAccess()).status).toBe("forbidden");
+  });
+
+  test("getFreshUser always asks Clerk (post-sign-in landing page)", async () => {
+    d1.set("m", row("m", null));
+    clerkUsers.set("m", row("m", "member"));
+    signIn("m", null);
+    expect((await guards.getFreshUser())?.role).toBe("member");
+    expect(clerkFetches).toBe(1);
+  });
+
+  test("requireMember: an approval made a moment ago counts (no /join bounce)", async () => {
+    d1.set("n", row("n", null));
+    clerkUsers.set("n", row("n", "member"));
+    signIn("n", null);
     expect(await redirectOf(guards.requireMember())).toBeNull();
   });
 });

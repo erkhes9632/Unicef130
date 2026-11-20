@@ -1,4 +1,4 @@
-// TODO(content): sample news posts — replace with real posts via /admin → Мэдээ.
+// Local sample data for `bun run db:seed:local` (never production): sample news posts.
 import { newsContentEn } from "./content-en";
 import { b, doc, h, p, quote, ul } from "./rich-text";
 import type { NewsPost } from "./types";

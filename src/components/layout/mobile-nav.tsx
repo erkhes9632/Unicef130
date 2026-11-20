@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, ShieldCheck } from "lucide-react";
+import NextLink from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,11 @@ import {
 import { Link } from "@/i18n/navigation";
 import { MobileNavLinks } from "./nav-links";
 
-export function MobileNav() {
+/**
+ * `adminLabel` is set by the server for admins (D1 role): it only adds a shortcut to /admin,
+ * which checks the role itself.
+ */
+export function MobileNav({ adminLabel }: { adminLabel?: string }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
 
@@ -35,6 +40,13 @@ export function MobileNav() {
           <MobileNavLinks onNavigate={() => setOpen(false)} />
         </nav>
         <div className="space-y-2 p-4">
+          {adminLabel && (
+            <Button asChild variant="secondary" size="lg" className="w-full">
+              <NextLink href="/admin" prefetch={false}>
+                <ShieldCheck /> {adminLabel}
+              </NextLink>
+            </Button>
+          )}
           <Button asChild variant="outline" size="lg" className="w-full">
             <Link href="/search" onClick={() => setOpen(false)}>
               <Search /> {t("Common.search")}

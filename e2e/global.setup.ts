@@ -5,6 +5,13 @@ import { E2E, deleteUser, ensureUser, localSql } from "./support";
 setup("Clerk testing token, accounts and an open recruitment period", async ({ request }) => {
   // Warm the preview up (the first requests after a start are slow).
   for (const path of ["/", "/join", "/sign-in"]) await request.get(path, { timeout: 60_000 });
+  // Safety: the preview must use the Clerk DEVELOPMENT instance. .dev.vars lines win over the
+  // pk_live_ key in wrangler.jsonc only if they are the last ones for that name.
+  const signIn = await (await request.get("/sign-in")).text();
+  if (signIn.includes("pk_live_") || !signIn.includes(".clerk.accounts.dev"))
+    throw new Error(
+      "The preview is not on the Clerk Development instance — check .dev.vars (pk_test_/sk_test_ only).",
+    );
   await clerkSetup();
   await deleteUser(E2E.applicant);
   await ensureUser(E2E.admin, "admin", "E2E");

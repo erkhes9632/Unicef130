@@ -43,19 +43,16 @@ export function routeArea(pathname: string): RouteArea {
   return "public";
 }
 
-type AccessDecision = { allow: true } | { allow: false; redirect: "sign-in" | string };
+type AccessDecision = { allow: true } | { allow: false; redirect: "sign-in" };
 
 /**
- * Who may open an area. Not signed in → sign-in; an applicant on /me → /join; anyone but an
- * admin on /admin → home. Checked in the middleware and again in every page and Server Action.
+ * The middleware's early gate: /admin and /me need a signed-in session, nothing more. Roles are
+ * decided on the server from D1 (repaired from Clerk), never from the session token's `role`
+ * claim alone — the claim can lag after a role change, or be missing if the token template is
+ * misconfigured, and a silent redirect would then lock a real admin out. Every page, layout and
+ * Server Action checks the role itself (`getAdminAccess`, `requireMember`, `assert*`).
  */
-export function decideAccess(
-  area: RouteArea,
-  who: { signedIn: boolean; role: AppRole | null },
-): AccessDecision {
-  if (area === "public") return { allow: true };
-  if (!who.signedIn) return { allow: false, redirect: "sign-in" };
-  if (area === "admin")
-    return who.role === "admin" ? { allow: true } : { allow: false, redirect: "/" };
-  return who.role ? { allow: true } : { allow: false, redirect: "/join" };
+export function decideAccess(area: RouteArea, who: { signedIn: boolean }): AccessDecision {
+  if (area === "public" || who.signedIn) return { allow: true };
+  return { allow: false, redirect: "sign-in" };
 }

@@ -22,36 +22,21 @@ describe("route access (middleware)", () => {
   });
 
   test("not signed in → sign-in for /admin and /me; public pages stay open", () => {
-    expect(decideAccess("admin", { signedIn: false, role: null })).toEqual({
+    expect(decideAccess("admin", { signedIn: false })).toEqual({
       allow: false,
       redirect: "sign-in",
     });
-    expect(decideAccess("member", { signedIn: false, role: null })).toEqual({
+    expect(decideAccess("member", { signedIn: false })).toEqual({
       allow: false,
       redirect: "sign-in",
     });
-    expect(decideAccess("public", { signedIn: false, role: null })).toEqual({ allow: true });
+    expect(decideAccess("public", { signedIn: false })).toEqual({ allow: true });
   });
 
-  test("/admin is admin-only; others go home", () => {
-    expect(decideAccess("admin", { signedIn: true, role: "admin" })).toEqual({ allow: true });
-    expect(decideAccess("admin", { signedIn: true, role: "member" })).toEqual({
-      allow: false,
-      redirect: "/",
-    });
-    expect(decideAccess("admin", { signedIn: true, role: null })).toEqual({
-      allow: false,
-      redirect: "/",
-    });
-  });
-
-  test("/me is for members and admins; applicants go to /join", () => {
-    expect(decideAccess("member", { signedIn: true, role: "member" })).toEqual({ allow: true });
-    expect(decideAccess("member", { signedIn: true, role: "admin" })).toEqual({ allow: true });
-    expect(decideAccess("member", { signedIn: true, role: null })).toEqual({
-      allow: false,
-      redirect: "/join",
-    });
+  test("signed in → the middleware lets the page decide the role (D1 + Clerk, not the claim)", () => {
+    // A missing or stale `role` claim must not lock a real admin out with a silent redirect.
+    expect(decideAccess("admin", { signedIn: true })).toEqual({ allow: true });
+    expect(decideAccess("member", { signedIn: true })).toEqual({ allow: true });
   });
 
   test("role values and landing pages", () => {

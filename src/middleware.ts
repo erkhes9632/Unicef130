@@ -8,7 +8,7 @@ import {
   frontendApiFromPublishableKey,
   signInPathFor,
 } from "./lib/auth/clerk";
-import { decideAccess, routeArea, toRole } from "./lib/auth/roles";
+import { decideAccess, routeArea } from "./lib/auth/roles";
 import { buildCsp, generateNonce, staticSecurityHeaders } from "./lib/security-headers";
 
 // NOTE: Next 16 renamed middleware → proxy (Node runtime). OpenNext Cloudflare only supports
@@ -28,8 +28,8 @@ function withSecurityHeaders(response: Response, csp: string, https: boolean) {
 
 /**
  * 1. Clerk reads the session (no network call: the token is verified locally).
- * 2. Role gate: /admin/* → admin, /me/* → member or admin (session-token `role` claim). Pages and
- *    Server Actions check again against D1 — this layer only keeps people out early.
+ * 2. Sign-in gate: /admin/* and /me/* need a session (→ sign-in with a return address). Roles
+ *    are checked by the pages and Server Actions against D1 (see `decideAccess`).
  * 3. Security headers on every response, with a fresh CSP nonce per request (Next.js and Clerk
  *    read it from the request headers and add it to their scripts).
  * 4. next-intl locale routing for public pages.
@@ -48,18 +48,9 @@ const withClerk = clerkMiddleware(
 
     const area = routeArea(pathname);
     if (area !== "public") {
-      const { userId, sessionClaims, redirectToSignIn } = await auth();
-      const decision = decideAccess(area, {
-        signedIn: !!userId,
-        role: toRole(sessionClaims?.role),
-      });
-      if (!decision.allow) {
-        const response =
-          decision.redirect === "sign-in"
-            ? redirectToSignIn({ returnBackUrl: request.url })
-            : NextResponse.redirect(new URL(decision.redirect, request.url));
-        return withSecurityHeaders(response, csp, https);
-      }
+      const { userId, redirectToSignIn } = await auth();
+      if (!decideAccess(area, { signedIn: !!userId }).allow)
+        return withSecurityHeaders(redirectToSignIn({ returnBackUrl: request.url }), csp, https);
     }
 
     const headers = new Headers(request.headers);

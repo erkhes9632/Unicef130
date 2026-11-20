@@ -257,12 +257,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                   bar,
                 )}
               />
+              {/* Decorative numeral drawn with CSS content: not text, so not read or contrast-checked. */}
               <span
                 aria-hidden="true"
-                className="absolute -right-2 -bottom-6 -z-10 font-heading text-[7rem] leading-none font-extrabold text-muted/80 dark:text-muted"
-              >
-                0{i + 1}
-              </span>
+                data-n={`0${i + 1}`}
+                className="absolute -right-2 -bottom-6 -z-10 font-heading text-[7rem] leading-none font-extrabold text-muted/80 before:content-[attr(data-n)] dark:text-muted"
+              />
               <span
                 className={cn(
                   "mb-5 flex size-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:-rotate-6",

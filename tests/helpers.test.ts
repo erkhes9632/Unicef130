@@ -30,6 +30,16 @@ describe("audit diff", () => {
     expect(diffFields({ a: 1, b: 2 }, { a: 1 }, ["a", "b"])).toBeUndefined();
     expect(diffFields({ a: null }, { a: undefined }, ["a"])).toBeUndefined();
   });
+  test("personal fields are logged as changed without their values (no names in the audit log)", () => {
+    const out = diffFields(
+      { name: "Бат", className: "9А", active: true },
+      { name: "Болд", className: "10А", active: false },
+      ["name", "className", "active"],
+      ["name", "className"],
+    )!;
+    expect(out).toEqual({ name: ["…", "…"], className: ["…", "…"], active: [true, false] });
+    expect(JSON.stringify(out)).not.toContain("Бат");
+  });
   test("short ids never carry more than 8 characters", () => {
     expect(shortId("0123456789abcdef")).toBe("01234567");
   });

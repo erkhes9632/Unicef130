@@ -1,30 +1,21 @@
-import { auth } from "@clerk/nextjs/server";
-import { LogIn } from "lucide-react";
+import { LogIn, ShieldCheck } from "lucide-react";
+import NextLink from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { clerkPublishableKey } from "@/lib/auth/clerk";
-import { toRole } from "@/lib/auth/roles";
+import { getHeaderSession } from "@/lib/auth/header-session";
 import { AccountDropdown, type AccountLink } from "./account-dropdown";
 
 /**
- * Header account control for public pages, rendered on the server from the session the
- * middleware already verified — no Clerk code in the browser. Signed out: "Нэвтрэх" link.
- * Signed in: a menu with links for the role and "Гарах" (/sign-out loads Clerk to sign out).
- * Links only help navigation: every page checks the role itself.
+ * Header account control for public pages, rendered on the server — no Clerk code in the
+ * browser. Signed out: "Нэвтрэх" link. Signed in: a menu with links for the role and "Гарах"
+ * (/sign-out loads Clerk to sign out). Admins also get a visible "Админ" button.
  */
 export async function HeaderAccount() {
-  if (!clerkPublishableKey()) return null;
+  const session = await getHeaderSession();
+  if (!session) return null;
   const t = await getTranslations("Auth");
-  let signedIn = false;
-  let role: ReturnType<typeof toRole> = null;
-  try {
-    const session = await auth();
-    signedIn = !!session.userId;
-    role = toRole(session.sessionClaims?.role);
-  } catch {
-    // No Clerk context for this request (e.g. a static error page): show the sign-in link.
-  }
+  const { signedIn, role } = session;
 
   if (!signedIn) {
     return (
@@ -51,10 +42,20 @@ export async function HeaderAccount() {
         },
   ];
   return (
-    <AccountDropdown
-      links={links}
-      label={t("accountMenu")}
-      signOut={{ href: "/sign-out", label: t("signOut") }}
-    />
+    <>
+      {role === "admin" && (
+        <Button asChild variant="outline" className="ml-1 hidden sm:inline-flex">
+          <NextLink href="/admin" prefetch={false}>
+            <ShieldCheck aria-hidden="true" />
+            {t("adminButton")}
+          </NextLink>
+        </Button>
+      )}
+      <AccountDropdown
+        links={links}
+        label={t("accountMenu")}
+        signOut={{ href: "/sign-out", label: t("signOut") }}
+      />
+    </>
   );
 }

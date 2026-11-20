@@ -2,6 +2,7 @@ import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { logger } from "@/lib/logger";
 import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MEDIA_PREFIX, type MediaKind } from "./constants";
+import { stripImageMetadata } from "./strip-metadata";
 
 const EXT: Record<string, string> = {
   "image/webp": "webp",
@@ -53,7 +54,8 @@ export async function storeImage(file: File, kind: MediaKind, variant: "full" | 
   const now = new Date();
   const key = `${kind}/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${crypto.randomUUID()}${variant === "thumb" ? "-thumb" : ""}.${EXT[type]}`;
   const { env } = await getCloudflareContext({ async: true });
-  await env.MEDIA.put(key, bytes, {
+  // EXIF/GPS, XMP and text chunks out, even if the browser's re-encode was skipped.
+  await env.MEDIA.put(key, stripImageMetadata(bytes, type), {
     httpMetadata: { contentType: type, cacheControl: "public, max-age=31536000, immutable" },
   });
   return { key, url: `${MEDIA_PREFIX}${key}` };

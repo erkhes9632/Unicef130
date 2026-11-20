@@ -87,7 +87,10 @@ async function secretKey(): Promise<string> {
       fail("CLERK_SECRET_KEY in .dev.vars is not an sk_test_ key.");
     return key;
   }
-  if (process.env.CLERK_SECRET_KEY) return process.env.CLERK_SECRET_KEY.trim();
+  if (process.env.CLERK_SECRET_KEY) {
+    console.log("Using CLERK_SECRET_KEY from the environment.");
+    return process.env.CLERK_SECRET_KEY.trim();
+  }
   if (!process.stdin.isTTY) fail("Run this in an interactive terminal (the key is typed hidden).");
   console.log("Clerk dashboard → (Production instance) → API keys → Secret key.");
   return (await readHidden("Clerk secret key (hidden): ")).trim();
@@ -97,6 +100,9 @@ const key = await secretKey();
 const instance = instanceOf(key);
 if (!instance) fail("That does not look like a Clerk secret key (sk_live_… or sk_test_…).");
 const clerk = createClerkClient({ secretKey: key });
+console.log(
+  `Clerk ${instance === "production" ? "PRODUCTION (live site)" : "Development (local)"} instance.`,
+);
 
 async function listAll(): Promise<ClerkUserLite[]> {
   const out: ClerkUserLite[] = [];
@@ -121,7 +127,16 @@ if (plan.action === "unban-and-set-admin") await clerk.users.unbanUser(target.id
 await clerk.users.updateUserMetadata(target.id, {
   publicMetadata: { role: plan.action === "remove-admin" ? null : "admin" },
 });
+// Read it back so a wrong instance or a failed write can't go unnoticed.
+const after = (await clerk.users.getUser(target.id)).publicMetadata.role ?? null;
+const expected = plan.action === "remove-admin" ? null : "admin";
+if (after !== expected) fail(`Clerk still shows role = ${String(after)}. Nothing else changed.`);
 console.log(
-  `✓ ${email} ${plan.action === "remove-admin" ? "is no longer an admin" : "is now an admin"} (${instance} instance).`,
+  `✓ ${email} ${expected ? "is now an admin" : "is no longer an admin"} (${instance} instance, verified).`,
 );
-console.log("  The change reaches the site within a minute (or sign out and in again).");
+console.log(
+  expected
+    ? "  Open /admin on the site (or use the «Админ» button in the header). It works right away;\n" +
+        "  if an old browser session still says «Танд админ эрх байхгүй», sign out and in again."
+    : "  The site stops showing the admin panel to this account on its next request.",
+);

@@ -123,11 +123,25 @@ describe("every Server Action checks the role on the server", () => {
     }
   });
 
-  test("the middleware gates /admin and /me by the session's role claim", () => {
+  test("the middleware requires a session for /admin and /me (roles are checked by the pages)", () => {
     const src = readFileSync("src/middleware.ts", "utf8");
     expect(src).toContain("clerkMiddleware(");
     expect(src).toMatch(/decideAccess\(area/);
     expect(src).toContain("redirectToSignIn");
+  });
+
+  test("audit summaries never contain a person's name (ids only)", () => {
+    // Periods are named by admins ("2026 намар"), not people: that file may use `.name`.
+    const files = [
+      ...walkFiles("src/app/admin", (f) => f === "actions.ts"),
+      ...walkFiles("src/lib", (f) => /\.ts$/.test(f)),
+    ].filter((f) => !f.endsWith("recruitment/actions.ts"));
+    const bad: string[] = [];
+    for (const f of files)
+      for (const line of readFileSync(f, "utf8").split("\n"))
+        if (/summary:.*\$\{[^}]*\b(name|fullName|email|phone)\b/.test(line))
+          bad.push(`${f}: ${line.trim()}`);
+    expect(bad).toEqual([]);
   });
 
   test("the previous password-based auth library is gone (code and package.json)", () => {
@@ -177,8 +191,21 @@ describe("Clerk is loaded only in the account areas", () => {
     const header = readFileSync("src/components/layout/site-header.tsx", "utf8");
     expect(header).toContain("<HeaderAccount");
     expect(header).not.toContain("AccountMenu");
-    expect(readFileSync("src/components/auth/header-account.tsx", "utf8")).toContain(
-      'from "@clerk/nextjs/server"',
-    );
+    const account = readFileSync("src/components/auth/header-account.tsx", "utf8");
+    expect(account).toContain("getHeaderSession");
+    expect(account).not.toContain('"use client"');
+    const session = readFileSync("src/lib/auth/header-session.ts", "utf8");
+    expect(session).toContain('from "@clerk/nextjs/server"');
+    // The header role comes from D1 (getCurrentUser), not from the token claim alone.
+    expect(session).toContain("getCurrentUser");
+    expect(session).not.toContain("sessionClaims");
+  });
+
+  test("the middleware only checks sign-in; roles are decided on the server", () => {
+    const mw = readFileSync("src/middleware.ts", "utf8");
+    expect(mw).not.toContain("sessionClaims");
+    const panel = readFileSync("src/app/admin/(panel)/layout.tsx", "utf8");
+    expect(panel).toContain("getAdminAccess");
+    expect(panel).toContain("<AdminForbidden");
   });
 });

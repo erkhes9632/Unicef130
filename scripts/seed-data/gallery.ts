@@ -1,4 +1,4 @@
-// TODO(content): sample albums with placeholder images — replace via /admin → Зургийн цомог.
+// Local sample data for `bun run db:seed:local` (never production): sample albums with placeholder images.
 import type { GalleryImage } from "@/lib/types";
 import type { Album } from "./types";
 

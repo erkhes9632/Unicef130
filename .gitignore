@@ -48,14 +48,10 @@ next-env.d.ts
 .dev.vars*
 !.dev.vars.example
 
-# local AI-tooling / working notes (kept locally, not published)
-CLAUDE.md
-AGENTS.md
+# local working notes and task prompts (kept locally, not published)
 PROGRESS.md
 PROGRESS.archive.md
-.claude/
-DEPLOY_PROMPT.md
-CLAUDE_CODE_PROMPT.md
+*_PROMPT.md
 
 # private club data (member names, hours) and generated production seed SQL
 private/

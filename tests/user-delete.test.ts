@@ -42,7 +42,8 @@ mock.module("@/lib/admin/activity", () => ({
 mock.module("@/lib/users/clerk-admin", () => ({ setRole: async () => {} }));
 
 const { removeUserData, ANONYMIZED_MEMBER } = await import("@/lib/users/delete");
-const { purgeExpiredRejected } = await import("@/lib/recruitment/retention");
+const { purgeExpiredRejected, purgeStaleRateLimits, RATE_LIMIT_KEEP_MS } =
+  await import("@/lib/recruitment/retention");
 const { retentionCutoff, DEFAULT_REJECTED_RETENTION_DAYS } =
   await import("@/lib/recruitment/logic");
 const { SQLiteSyncDialect } = await import("drizzle-orm/sqlite-core");
@@ -155,5 +156,16 @@ describe("retention of rejected applications", () => {
     queued.push([], []);
     expect(await purgeExpiredRejected(chain(true) as never, now)).toBe(0);
     expect(calls.filter((c) => c.op === "delete" || c.op === "insert")).toEqual([]);
+  });
+});
+
+describe("rate-limit clean-up (daily cron)", () => {
+  test("deletes rows idle for more than a day", async () => {
+    const now = Date.UTC(2026, 10, 20);
+    await purgeStaleRateLimits(chain(true) as never, now);
+    expect(op("delete", "rate_limit")).toHaveLength(1);
+    const where = toSql(calls.find((c) => c.op === "where")!.arg);
+    expect(where.sql).toContain('"rate_limit"."last_request" < ?');
+    expect(where.params).toEqual([now - RATE_LIMIT_KEEP_MS]);
   });
 });

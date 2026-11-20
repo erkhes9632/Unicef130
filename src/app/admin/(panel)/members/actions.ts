@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
-import { diffFields, logActivity } from "@/lib/admin/activity";
+import { diffFields, logActivity, shortId } from "@/lib/admin/activity";
 import { revalidatePublic } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 import { deleteMediaUrls } from "@/lib/media/server";
@@ -51,21 +51,26 @@ export async function saveMember(
       await logActivity(user, "member.update", {
         type: "member",
         id,
-        summary: `${input.name} гишүүний мэдээллийг засав`,
+        summary: `Гишүүн #${shortId(id)} — мэдээллийг засав`,
         changes: prev
-          ? diffFields(prev, input, [
-              "name",
-              "role",
-              "className",
-              "group",
-              "sortOrder",
-              "active",
-              "showPublicly",
-              "showPhoto",
-              "schoolYear",
-              "volunteerHours",
-              "team",
-            ])
+          ? diffFields(
+              prev,
+              input,
+              [
+                "name",
+                "role",
+                "className",
+                "group",
+                "sortOrder",
+                "active",
+                "showPublicly",
+                "showPhoto",
+                "schoolYear",
+                "volunteerHours",
+                "team",
+              ],
+              ["name", "className", "team"],
+            )
           : undefined,
       });
     } else {
@@ -73,7 +78,7 @@ export async function saveMember(
       await logActivity(user, "member.create", {
         type: "member",
         id: row!.id,
-        summary: `${input.name} гишүүнийг нэмэв`,
+        summary: `Гишүүн #${shortId(row!.id)} нэмэв`,
       });
     }
     revalidatePublic();
@@ -90,13 +95,13 @@ export async function deleteMember(id: string): Promise<ActionState> {
     const [row] = await db
       .delete(members)
       .where(eq(members.id, id))
-      .returning({ name: members.name, photoUrl: members.photoUrl });
+      .returning({ photoUrl: members.photoUrl });
     if (!row) return { ok: false, message: "Гишүүн олдсонгүй." };
     await deleteMediaUrls([row.photoUrl]);
     await logActivity(user, "member.delete", {
       type: "member",
       id,
-      summary: `${row.name} гишүүнийг устгав`,
+      summary: `Гишүүн #${shortId(id)} устгав`,
     });
     revalidatePublic();
     return { ok: true, message: "Гишүүн устгагдлаа." };

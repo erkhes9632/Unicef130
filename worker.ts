@@ -9,15 +9,21 @@ import { drizzle } from "drizzle-orm/d1";
 import handler from "./.open-next/worker.js";
 import * as schema from "./src/db/schema";
 import { logger } from "./src/lib/logger";
-import { purgeExpiredRejected } from "./src/lib/recruitment/retention";
+import { purgeExpiredRejected, purgeStaleRateLimits } from "./src/lib/recruitment/retention";
 
 export default {
   fetch: handler.fetch,
   async scheduled(_controller, env, ctx) {
+    const db = drizzle(env.DB, { schema });
     ctx.waitUntil(
-      purgeExpiredRejected(drizzle(env.DB, { schema })).then(
+      purgeExpiredRejected(db).then(
         (n) => logger.info("retention", "deleted expired rejected applications", { count: n }),
         (err) => logger.error("retention", "failed", err),
+      ),
+    );
+    ctx.waitUntil(
+      purgeStaleRateLimits(db).catch((err) =>
+        logger.error("retention", "rate-limit clean-up failed", err),
       ),
     );
   },

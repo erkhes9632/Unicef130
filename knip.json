@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["open-next.config.ts", "scripts/*.ts", "e2e/**/*.ts", "tests/**/*.test.ts"],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "e2e/**/*.ts", "tests/**/*.ts", "*.ts"],
+  "ignoreDependencies": ["@tailwindcss/turbopack", "tailwindcss", "tw-animate-css", "shadcn"],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "types": "warn"
+  },
+  "includeEntryExports": false
+}

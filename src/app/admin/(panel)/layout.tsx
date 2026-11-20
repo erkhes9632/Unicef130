@@ -1,5 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { AdminForbidden } from "@/components/admin/admin-forbidden";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { CommandPalette } from "@/components/admin/command-palette";
@@ -7,7 +9,8 @@ import { ThemeToggleAdmin } from "@/components/admin/theme-toggle-admin";
 import { UnsavedChangesGuard } from "@/components/admin/unsaved-changes-guard";
 import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandLockup } from "@/components/brand/brand-lockup";
-import { requireAdmin } from "@/lib/auth/session";
+import { SIGN_IN_PATH } from "@/lib/auth/roles";
+import { getAdminAccess } from "@/lib/auth/session";
 
 const accountLabels = {
   signIn: "Нэвтрэх",
@@ -16,9 +19,15 @@ const accountLabels = {
   application: "Өргөдөл",
 };
 
-/** Protected admin shell. Every page below is server-checked here AND in each Server Action. */
+/**
+ * Protected admin shell. Every page below is server-checked here AND in each Server Action.
+ * A signed-in non-admin gets an explanation instead of the panel (the pages never render).
+ */
 export default async function AdminPanelLayout({ children }: LayoutProps<"/admin">) {
-  const user = await requireAdmin();
+  const access = await getAdminAccess();
+  if (access.status === "signed-out") redirect(SIGN_IN_PATH);
+  if (access.status === "forbidden") return <AdminForbidden user={access.user} />;
+  const { user } = access;
 
   return (
     <div className="flex flex-1">

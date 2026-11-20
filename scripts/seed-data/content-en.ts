@@ -1,5 +1,4 @@
 // English versions of the sample content (merged into mock news/events by slug).
-// TODO(content): replace together with the Mongolian sample content.
 import type { RichTextDoc } from "@/lib/types";
 import { b, doc, h, p, quote, ul } from "./rich-text";
 

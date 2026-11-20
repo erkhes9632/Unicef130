@@ -4,6 +4,8 @@ NEXTJS_ENV=development
 
 # Clerk (sign-in) — Development instance keys: Clerk dashboard → API keys.
 # The publishable key is public; the secret key must stay out of git and chat.
+# Required locally: wrangler.jsonc holds the PRODUCTION key (pk_live_); these lines override it so
+# local dev, preview and e2e never touch the production instance.
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 # Webhook signing secret (Clerk dashboard → Webhooks → endpoint). Optional locally: without it

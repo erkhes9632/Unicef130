@@ -1,4 +1,4 @@
-// TODO(content): placeholder members — replace with real names/roles/classes via /admin → Гишүүд.
+// Local sample data for `bun run db:seed:local` (never production): placeholder members.
 // Photos of minors are shown only with consent (`showPhoto`).
 import type { Member } from "./types";
 

@@ -5,14 +5,11 @@
   "Common": {
     "brandPair": "School No. 130 × UNICEF",
     "clubName": "UNICEF Club of School No. 130",
-    "schoolName": "School No. 130",
     "joinCta": "Become a member",
-    "learnMore": "Learn more",
     "viewAll": "View all",
     "backHome": "Back to home",
     "skipToContent": "Skip to main content",
     "search": "Search",
-    "readMore": "Read more",
     "schoolLogoAlt": "School No. 130 logo",
     "unicefLogoAlt": "UNICEF logo",
     "website": "Website",
@@ -30,8 +27,6 @@
     "contact": "Contact",
     "join": "Join",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "menu": "Menu",
     "impact": "Impact",
     "newsGroup": "News",
     "getInvolved": "Get involved",
@@ -56,7 +51,8 @@
     "follow": "Follow us",
     "rights": "© {year} {name}.",
     "disclaimer": "This is a school student club website, not an official UNICEF website.",
-    "admin": "Admin"
+    "admin": "Admin",
+    "privacy": "Privacy policy"
   },
   "NotFound": {
     "title": "Page not found",
@@ -105,8 +101,6 @@
     "missionTitle": "Mission",
     "valuesTitle": "Our values",
     "doTitle": "What we do",
-    "insideTitle": "Inside school",
-    "outsideTitle": "Outside school",
     "leadershipTitle": "Club leadership",
     "leadershipDescription": "The team that organises the club's work.",
     "allMembers": "See all members",
@@ -132,7 +126,6 @@
     },
     "filterLabel": "Filter by category",
     "empty": "No news in this category yet.",
-    "readMore": "Read",
     "tags": "Tags",
     "related": "More news",
     "backToList": "All news",
@@ -204,7 +197,7 @@
     "metaTitle": "Join",
     "eyebrow": "Become a member",
     "title": "Join the club!",
-    "description": "Fill in the form below. After sending it you will get a tracking code.",
+    "description": "Sign in, fill in the form below and send it. You can follow your application's status on this page.",
     "whyTitle": "Why join?",
     "why": [
       "Make a real difference for children",
@@ -218,7 +211,6 @@
     "closedBody": "The club accepts new members during recruitment periods. The next one will be announced on this page.",
     "closedHint": "The next recruitment period has not been announced yet.",
     "fullTitle": "Recruitment is full",
-    "fullBody": "All places for this recruitment period are taken, so new applications are not accepted.",
     "fullHint": "If you already applied, check your status with the button below.",
     "opensOn": "Opens on {date}",
     "seeEvents": "See events",
@@ -383,8 +375,7 @@
   "Errors": {
     "title": "Sorry, something went wrong",
     "body": "There was a problem loading this page. Please try again.",
-    "retry": "Try again",
-    "loading": "Loading..."
+    "retry": "Try again"
   },
   "Activity": {
     "factsTitle": "Key figures",
@@ -425,7 +416,6 @@
     "sdgList": "Related SDGs",
     "timelineTitle": "Activity timeline",
     "sdgTitle": "Sustainable Development Goals",
-    "sdgDescription": "The club's activities relate to these goals.",
     "sdgActivities": "{count, plural, one {# activity} other {# activities}}",
     "autoMembers": "Active members",
     "autoActivities": "Activities organised",
@@ -450,10 +440,11 @@
     "accountMenu": "Account menu",
     "signOut": "Sign out",
     "signingOut": "Signing out…",
-    "menuAdmin": "Admin",
+    "menuAdmin": "Admin panel",
     "menuMe": "My page",
     "menuApplication": "Application",
-    "unavailable": "Sign-in is temporarily unavailable. Please try again later."
+    "unavailable": "Sign-in is temporarily unavailable. Please try again later.",
+    "adminButton": "Admin"
   },
   "Me": {
     "title": "My page",
@@ -532,5 +523,40 @@
     "empty": "No questions have been added yet.",
     "more": "Didn't find your answer?",
     "contact": "Contact us"
+  },
+  "Privacy": {
+    "metaTitle": "Privacy policy",
+    "eyebrow": "Privacy",
+    "title": "Privacy policy",
+    "description": "What we collect, who can see it, when we delete it and how to ask us to delete your data.",
+    "updated": "Last updated: 20 November 2026",
+    "intro": "Most people who use this site are students, so we collect only the minimum the club needs.",
+    "collectTitle": "What we collect",
+    "collect": [
+      "When you sign in: your e-mail address and name.",
+      "Membership application: full name, class, phone number, why you want to join, how you would like to help, answers to that recruitment's extra questions, and your consent.",
+      "After you become a member: class, team, volunteer hours and the events you signed up for.",
+      "Contact form: name, e-mail address, subject and message."
+    ],
+    "notCollected": "We don't store IP addresses and use no advertising or tracking cookies and no analytics. Your browser only keeps the cookies needed to sign in and the colour theme you chose.",
+    "googleTitle": "Signing in with Google",
+    "google": "When you sign in with Google we only receive your name, e-mail address and profile picture. We never see your password, contacts, files or any other Google data. Sign-in is handled by the Clerk service.",
+    "whoTitle": "Who can see it",
+    "who": [
+      "Applications, phone numbers and messages are seen only by the club's admins (student leaders and the supervising teacher).",
+      "A member's name appears on the site only with their consent. Individual volunteer hours are never shown publicly.",
+      "We never sell or share your data. The site runs on Cloudflare (database and images); Clerk handles sign-in."
+    ],
+    "sheets": "The club keeps a copy of applications in its own Google Sheet, which only the admins can see.",
+    "retentionTitle": "How long we keep it",
+    "retentionRejected": "Applications that were not accepted are deleted automatically {days} days after the recruitment closes.",
+    "retentionAccount": "When you delete your account, your account, applications and event sign-ups are removed and your member record is anonymised. Your hours stay in the club's yearly totals without your name.",
+    "retentionMessages": "Contact messages are deleted by the admins once they have been answered.",
+    "deleteTitle": "Asking us to delete your data",
+    "deleteMember": "Members: open “My page” → “Delete my account” to do it yourself.",
+    "deleteOthers": "Applicants, parents and guardians: send us a request through the contact form and a club admin will delete the account and applications.",
+    "deleteEmail": "You can also e-mail <mail>{email}</mail>.",
+    "contactLink": "Send a request",
+    "meLink": "My page"
   }
 }

@@ -51,11 +51,16 @@
   // set with `wrangler secret put`. NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (public) is added here for
   // the Clerk production instance (see DEPLOY_CHECKLIST).
   "vars": {
-    "SITE_URL": "https://unicef-club-130.erkhes-labs.workers.dev",
+    "SITE_URL": "https://130foreverychild.site",
+    // Clerk production instance (public value, not a secret).
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuMTMwZm9yZXZlcnljaGlsZC5zaXRlJA",
     // Public Turnstile site key (not a secret). Cloudflare's test keys are refused in production.
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGAxVpYS2hRdPPVO",
     "GOOGLE_SHEET_TAB": "Applications",
   },
-  // Custom domain later: add it in the dashboard, or uncomment and redeploy (see README).
-  // "routes": [{ "pattern": "unicef130.example.mn", "custom_domain": true }],
+  // Custom domain: created/attached by `wrangler deploy` (DNS record managed by Cloudflare).
+  "routes": [{ "pattern": "130foreverychild.site", "custom_domain": true }],
+  // Local `wrangler dev` / preview would otherwise rewrite request URLs to the route's host above,
+  // and Clerk's dev handshake would then send the browser to the live site.
+  "dev": { "host": "localhost:8787", "upstream_protocol": "http" },
 }

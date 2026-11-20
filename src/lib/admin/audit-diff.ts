@@ -13,6 +13,8 @@ export function diffFields<T extends Record<string, unknown>>(
   before: T,
   after: Partial<T>,
   fields: readonly (keyof T & string)[],
+  /** Personal fields (a member's name, class…): logged as changed, values left out. */
+  personal: readonly (keyof T & string)[] = [],
 ): Changes | undefined {
   const out: Changes = {};
   const show = (v: unknown) => {
@@ -29,7 +31,7 @@ export function diffFields<T extends Record<string, unknown>>(
       a instanceof Date && b instanceof Date
         ? a.getTime() === b.getTime()
         : JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-    if (!same) out[f] = [show(a), show(b)];
+    if (!same) out[f] = personal.includes(f) ? ["…", "…"] : [show(a), show(b)];
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }

@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p scripts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "bun run lint && bun run typecheck && bun run format:check && bun run test",
+    "check": "bun run lint && bun run typecheck && bun run format:check && bun run knip && bun run test",
     "cf:build": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
@@ -29,7 +29,8 @@
     "hooks:install": "git config core.hooksPath .githooks",
     "report:seed": "bun scripts/seed-report.ts",
     "test": "bun test --isolate",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "knip": "knip"
   },
   "dependencies": {
     "@clerk/localizations": "4.24.8",
@@ -69,6 +70,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
     "eslint-config-prettier": "^10.1.8",
+    "knip": "^5",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "sharp": "0.35.5",

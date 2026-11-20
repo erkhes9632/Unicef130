@@ -5,7 +5,7 @@
  */
 import { and, eq, inArray, isNotNull, lt } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import { activityLog, applications, recruitmentPeriods, settings } from "@/db/schema";
+import { activityLog, applications, rateLimit, recruitmentPeriods, settings } from "@/db/schema";
 import type * as schema from "@/db/schema";
 import { DEFAULT_REJECTED_RETENTION_DAYS, retentionCutoff } from "./logic";
 
@@ -53,4 +53,12 @@ export async function purgeExpiredRejected(db: Db, now: number = Date.now()): Pr
     summary: `Хадгалах хугацаа дууссан ${ids.length} тэнцээгүй өргөдлийг автоматаар устгав`,
   });
   return ids.length;
+}
+
+/** Rate-limit rows (keyed by a hashed address or an account id) older than a day are useless. */
+export const RATE_LIMIT_KEEP_MS = 86_400_000;
+
+/** Deletes stale rate-limit rows so the table doesn't grow forever (daily cron). */
+export async function purgeStaleRateLimits(db: Db, now: number = Date.now()): Promise<void> {
+  await db.delete(rateLimit).where(lt(rateLimit.lastRequest, now - RATE_LIMIT_KEEP_MS));
 }
