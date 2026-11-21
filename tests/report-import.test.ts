@@ -6,7 +6,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { parseDocumentXml, parseRels } from "../scripts/report/docx";
-import { buildImport, reachLabels, splitText, statItems } from "../scripts/report/lib";
+import {
+  buildImport,
+  matchMemberNames,
+  reachLabels,
+  splitText,
+  statItems,
+} from "../scripts/report/lib";
 import type { Manifest, Report } from "../scripts/report/types";
 
 const report: Report = {
@@ -23,8 +29,8 @@ const report: Report = {
   leaders: [{ role: "Ахлагч", roleEn: "Club leader", name: "Test Leader" }],
   membership: { totalJoined: 3, active: 2, hours: 7 },
   activeMembers: [
-    { n: 1, name: "Test Member One", hours: 3 },
-    { n: 2, name: "Test Member Two", hours: 4 },
+    { n: 1, name: "Тест Нэг", nameEn: "Test One", hours: 3 },
+    { n: 2, name: "Test Two", nameEn: "Test Two", hours: 4 },
   ],
   organisations: [{ name: "Partner", nameEn: "Partner", type: "partner" }],
   activities: [1, 2].map((n) => ({
@@ -153,6 +159,24 @@ describe("report import helpers", () => {
     expect(s.filter((x) => x.featured).length).toBeLessThanOrEqual(5);
   });
 
+  test("member names: previous Cyrillic only on a clear match", () => {
+    const rows = [
+      { n: 1, latin: "Anu Bold", hours: 5 },
+      { n: 2, latin: "Saran Dorj", hours: 8 },
+      { n: 3, latin: "Tuya Gan", hours: 2 },
+      { n: 4, latin: "Nomin Bat", hours: 3 },
+    ];
+    const known = [
+      { n: 1, mn: "Ану", nameEn: "B. Anu", hours: 5, review: false },
+      { n: 2, mn: "Саран", nameEn: "D. Saran", hours: 9, review: false }, // hours differ
+      { n: 4, mn: "Номин", nameEn: "B. Nomin", hours: 3, review: true }, // uncertain spelling
+    ];
+    const { members, review } = matchMemberNames(rows, known);
+    expect(members.map((m) => m.name)).toEqual(["Ану", "Saran Dorj", "Tuya Gan", "Номин"]);
+    expect(members.every((m, i) => m.nameEn === rows[i]!.latin)).toBe(true);
+    expect(review.map((r) => r.n)).toEqual([2, 3, 4]);
+  });
+
   test("docx tokenizer keeps tables, cells and images", () => {
     const xml =
       '<w:document><w:body><w:p><w:r><w:t>Title</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:r><w:t xml:space="preserve">A &amp; B</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><a:blip r:embed="rId9"/></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>';
@@ -234,6 +258,14 @@ describe("report import SQL", () => {
     expect(setting("branding").schoolLogoUrl).toBe("/media/site/x.webp");
     expect(setting("page.about")).toMatchObject({ mission: "Keep me", historyPublished: true });
     expect(setting("page.about").intro).toContain("2025");
+    expect(db.query("SELECT alt, alt_en FROM images ORDER BY id LIMIT 1").get()).toEqual({
+      alt: "Гишүүд мод тарьж байна",
+      alt_en: "Members planting a tree",
+    });
+    expect(db.query("SELECT name, name_en FROM members WHERE id = 'm2526-mem-01'").get()).toEqual({
+      name: "Тест Нэг",
+      name_en: "Test One",
+    });
     const leader = db
       .query("SELECT show_publicly, active FROM members WHERE id = 'm2526-lead-1'")
       .get();

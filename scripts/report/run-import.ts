@@ -207,6 +207,14 @@ for (const u of uploads)
 console.log(
   `Target: ${args.remote ? "PRODUCTION (remote)" : "local"}${dryRun ? " — dry run" : ""}`,
 );
+// The SQL writes images.alt_en (migration 0009): stop before anything is written if it's missing.
+const [schema] = await query<{ altEn: number }>(
+  `SELECT count(*) AS altEn FROM pragma_table_info('images') WHERE name = 'alt_en'`,
+);
+if (!schema?.altEn)
+  fail(
+    `images.alt_en is missing: run the migrations first (bun run db:migrate:${args.remote ? "remote" : "local"}).`,
+  );
 const before = await counts();
 
 // User-linked rows are kept by the SQL (WHERE clauses). Make that visible, and stop if a kept

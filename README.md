@@ -183,6 +183,7 @@ Production (only by hand, after a backup):
 
 ```bash
 bunx wrangler d1 export DB --remote --output private/backups/before-import-$(date +%F-%H%M).sql
+bun run db:migrate:remote        # before deploying code that reads new columns (e.g. images.alt_en)
 bun scripts/report/run-import.ts --remote --dry-run
 bun scripts/report/run-import.ts --remote --confirm-production   # refuses without a backup < 60 min
 ```

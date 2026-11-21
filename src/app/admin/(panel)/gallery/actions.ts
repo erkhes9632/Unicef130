@@ -2,6 +2,7 @@
 
 import { and, asc, eq, gt, lt, max, ne, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
@@ -189,13 +190,20 @@ export async function moveAlbumImage(
   }
 }
 
-export async function updateImageAlt(imageId: string, alt: string): Promise<ActionState> {
+export async function updateImageAlt(
+  imageId: string,
+  alt: string,
+  lang: "mn" | "en" = "mn",
+): Promise<ActionState> {
   try {
     await assertAdmin();
+    const parsed = z
+      .object({ alt: z.string().trim().max(200), lang: z.enum(["mn", "en"]) })
+      .parse({ alt: String(alt), lang });
     const db = await getDb();
     await db
       .update(images)
-      .set({ alt: String(alt).trim().slice(0, 200) })
+      .set(parsed.lang === "en" ? { altEn: parsed.alt || null } : { alt: parsed.alt })
       .where(eq(images.id, imageId));
     revalidatePublic();
     return { ok: true, message: "Тайлбар хадгалагдлаа." };

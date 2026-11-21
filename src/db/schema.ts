@@ -312,6 +312,8 @@ export const images = sqliteTable(
     width: integer("width").notNull().default(0),
     height: integer("height").notNull().default(0),
     alt: text("alt").notNull().default(""),
+    /** English alt text; empty → "<album title> — <n>" on English pages. */
+    altEn: text("alt_en"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamps.createdAt,
   },

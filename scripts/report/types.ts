@@ -28,7 +28,14 @@ export const reportSchema = z.object({
   }),
   /** Private: names and hours never appear on public pages. */
   activeMembers: z.array(
-    z.object({ n: z.number().int(), name: z.string(), hours: z.number().int().min(0) }),
+    z.object({
+      n: z.number().int(),
+      /** Cyrillic spelling when it clearly matches the previous import, else the .docx Latin. */
+      name: z.string(),
+      /** As written in the .docx (Latin). */
+      nameEn: z.string(),
+      hours: z.number().int().min(0),
+    }),
   ),
   organisations: z.array(
     z.object({
@@ -119,3 +126,20 @@ export const manifestSchema = z.object({
   ),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
+
+/** private/member-names-<year>.json: spellings from the previous import (private). */
+export const knownNamesSchema = z.object({
+  source: z.string(),
+  members: z.array(
+    z.object({
+      n: z.number().int(),
+      mn: z.string(),
+      /** Previous import's short Latin form, e.g. "B. Bat-Erdene" (family initial + given name). */
+      nameEn: z.string(),
+      hours: z.number().int(),
+      /** Spelling was already marked uncertain. */
+      review: z.boolean(),
+    }),
+  ),
+});
+export type KnownName = z.infer<typeof knownNamesSchema>["members"][number];

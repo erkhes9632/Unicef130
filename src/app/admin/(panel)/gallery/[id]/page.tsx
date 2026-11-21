@@ -33,7 +33,13 @@ export default async function EditAlbumPage({
   const [album] = await db.select().from(albums).where(eq(albums.id, id)).limit(1);
   if (!album) notFound();
   const imgs = await db
-    .select({ id: images.id, url: images.url, thumbUrl: images.thumbUrl, alt: images.alt })
+    .select({
+      id: images.id,
+      url: images.url,
+      thumbUrl: images.thumbUrl,
+      alt: images.alt,
+      altEn: images.altEn,
+    })
     .from(images)
     .where(eq(images.albumId, id))
     .orderBy(asc(images.sortOrder));

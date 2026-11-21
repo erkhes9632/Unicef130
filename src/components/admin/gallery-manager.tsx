@@ -10,7 +10,7 @@ import { processImage, uploadImage } from "@/lib/media/client";
 import { FULL_MAX_EDGE, THUMB_MAX_EDGE } from "@/lib/media/constants";
 import { cn } from "@/lib/utils";
 
-type Img = { id: string; url: string; thumbUrl: string; alt: string };
+type Img = { id: string; url: string; thumbUrl: string; alt: string; altEn: string | null };
 type NewImage = { url: string; thumbUrl: string; width: number; height: number; alt: string };
 
 export function GalleryManager({
@@ -29,7 +29,7 @@ export function GalleryManager({
   addImages: (images: NewImage[]) => Promise<ActionState>;
   deleteImage: (id: string) => Promise<ActionState>;
   moveImage: (id: string, direction: "up" | "down") => Promise<ActionState>;
-  updateAlt: (id: string, alt: string) => Promise<ActionState>;
+  updateAlt: (id: string, alt: string, lang?: "mn" | "en") => Promise<ActionState>;
   setCover: (id: string) => Promise<ActionState>;
 }) {
   const input = useRef<HTMLInputElement>(null);
@@ -130,6 +130,18 @@ export function GalleryManager({
                 onBlur={(e) => {
                   if (e.target.value !== img.alt)
                     start(async () => notify(await updateAlt(img.id, e.target.value)));
+                }}
+              />
+              <Input
+                defaultValue={img.altEn ?? ""}
+                aria-label="Зургийн тайлбар, англиар (alt)"
+                placeholder="English alt"
+                lang="en"
+                maxLength={200}
+                className="h-8 text-xs"
+                onBlur={(e) => {
+                  if (e.target.value !== (img.altEn ?? ""))
+                    start(async () => notify(await updateAlt(img.id, e.target.value, "en")));
                 }}
               />
               <div className="flex items-center gap-1">

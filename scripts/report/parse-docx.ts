@@ -14,7 +14,7 @@
  * Logs contain counts only, never names.
  */
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import sharp from "sharp";
@@ -34,8 +34,8 @@ import {
   type CuratedActivity,
 } from "./content-2025-2026";
 import { blipIds, parseDocumentXml, parseRels, readZip, type Row, type Table } from "./docx";
-import { reachLabels, sumBy } from "./lib";
-import type { Manifest, Report } from "./types";
+import { matchMemberNames, memberReviewMarkdown, reachLabels, sumBy } from "./lib";
+import { knownNamesSchema, type Manifest, type Report } from "./types";
 
 const { values: args } = parseArgs({
   args: Bun.argv.slice(2),
@@ -44,6 +44,8 @@ const { values: args } = parseArgs({
 const DOCX = args.docx!;
 const OUT_JSON = `private/report-${SCHOOL_YEAR}.json`;
 const MEDIA_DIR = "private/report-media";
+const KNOWN_NAMES = `private/member-names-${SCHOOL_YEAR}.json`;
+const REVIEW_FILE = "private/members-review.md";
 const FULL_EDGE = 1600;
 const THUMB_EDGE = 480;
 const WEBP_QUALITY = 80;
@@ -110,14 +112,22 @@ const active = Number(cellText(joinTable.rows[0]!, 3));
 if (joined !== MEMBERSHIP.totalJoined) issues.push(`Total joined in the .docx: ${joined}`);
 if (active !== MEMBERSHIP.active) issues.push(`Active members in the .docx: ${active}`);
 
-const activeMembers = memberTable.rows.slice(1).map((row) => ({
+const docMembers = memberTable.rows.slice(1).map((row) => ({
   n: Number(cellText(row, 0)),
-  name: cellText(row, 1),
+  latin: cellText(row, 1),
   hours: Number(cellText(row, 2)),
 }));
-for (const m of activeMembers)
-  if (!Number.isInteger(m.n) || !m.name || !Number.isInteger(m.hours))
+for (const m of docMembers)
+  if (!Number.isInteger(m.n) || !m.latin || !Number.isInteger(m.hours))
     throw new Error(`Active member row #${m.n}: could not read the row`);
+
+// Cyrillic spellings from the previous import (private file), used only where the row clearly
+// matches (same number, hours and given name); otherwise the Latin name from the .docx is kept.
+const knownNames = existsSync(KNOWN_NAMES)
+  ? knownNamesSchema.parse(JSON.parse(readFileSync(KNOWN_NAMES, "utf8"))).members
+  : [];
+const { members: activeMembers, review: nameReview } = matchMemberNames(docMembers, knownNames);
+writeFileSync(REVIEW_FILE, memberReviewMarkdown(docMembers, activeMembers, nameReview));
 const hoursSum = sumBy(activeMembers, (m) => m.hours);
 if (activeMembers.length !== MEMBERSHIP.active)
   issues.push(`Active member list has ${activeMembers.length} rows, the report says ${active}`);
@@ -470,6 +480,9 @@ console.log(
 );
 console.log(
   `✅ ${MEDIA_DIR}/manifest.json: ${manifest.images.length} image references, ${kept.length} photos kept, ${manifest.images.length - kept.length} skipped.`,
+);
+console.log(
+  `✅ ${REVIEW_FILE}: ${activeMembers.filter((m) => m.name !== m.nameEn).length} Cyrillic spellings kept, ${nameReview.length} to review.`,
 );
 console.log("\nDifferences between the .docx and the values used:");
 for (const i of issues) console.log(`  • ${i}`);

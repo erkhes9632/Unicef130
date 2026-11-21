@@ -71,7 +71,10 @@ describe.skipIf(!has)("2025–2026 report data", () => {
 
   test("photos: kept ones have alt text in both languages and no names", () => {
     const m = manifestSchema.parse(JSON.parse(readFileSync(MANIFEST, "utf8")));
-    const names = [...r.activeMembers.map((x) => x.name), ...r.leaders.map((x) => x.name)];
+    const names = [
+      ...r.activeMembers.flatMap((x) => [x.name, x.nameEn]),
+      ...r.leaders.map((x) => x.name),
+    ];
     for (const img of m.images.filter((i) => i.keep)) {
       expect(img.alt.length).toBeGreaterThan(10);
       expect(img.altEn.length).toBeGreaterThan(10);
@@ -90,7 +93,10 @@ describe.skipIf(!has)("2025–2026 report data", () => {
       .split("\n")
       .filter((l) => !l.startsWith('INSERT INTO "members"'))
       .join("\n");
-    for (const n of [...r.activeMembers.map((x) => x.name), ...r.leaders.map((x) => x.name)])
+    for (const n of [
+      ...r.activeMembers.flatMap((x) => [x.name, x.nameEn]),
+      ...r.leaders.map((x) => x.name),
+    ])
       expect(publicPart).not.toContain(n);
     // Leaders: active = 1, show_publicly = 0.
     const leaders = sql

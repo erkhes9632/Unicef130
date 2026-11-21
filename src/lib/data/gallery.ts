@@ -35,10 +35,10 @@ function toImage(r: ImageRow): GalleryImage {
 
 function toItem(locale: Locale, a: AlbumRow, imgs: ImageRow[]): AlbumItem {
   const title = pick(locale, a.title, a.titleEn);
-  // Image alt texts are entered in Mongolian; in English use the album title instead.
+  // English pages use the English alt text, else the album title + number.
   const list = imgs.map((r, i) => {
     const img = toImage(r);
-    return locale === "en" ? { ...img, alt: `${title} — ${i + 1}` } : img;
+    return locale === "en" ? { ...img, alt: r.altEn?.trim() || `${title} — ${i + 1}` } : img;
   });
   return {
     id: a.id,
