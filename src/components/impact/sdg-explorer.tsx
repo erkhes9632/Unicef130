@@ -50,7 +50,7 @@ export function SdgExplorer({
                   style={{ backgroundColor: g.color }}
                   className={cn(
                     "relative flex aspect-square w-full flex-col items-center justify-center rounded-xl font-heading font-extrabold shadow-sm transition-[scale,box-shadow] duration-200 hover:scale-105 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none sm:rounded-2xl",
-                    g.light ? "text-white" : "text-brand-ink",
+                    g.light ? "text-white" : "text-black",
                     isSelected &&
                       "scale-105 shadow-lg ring-3 ring-foreground ring-offset-2 ring-offset-background",
                   )}
@@ -96,7 +96,7 @@ export function SdgExplorer({
         >
           <div
             style={{ backgroundColor: goal.color }}
-            className={cn("p-5 sm:p-6", goal.light ? "text-white" : "text-brand-ink")}
+            className={cn("p-5 sm:p-6", goal.light ? "text-white" : "text-black")}
           >
             <p className="font-heading text-4xl font-extrabold">SDG {goal.n}</p>
             <p className="mt-1 text-lg font-bold">{goal.name}</p>

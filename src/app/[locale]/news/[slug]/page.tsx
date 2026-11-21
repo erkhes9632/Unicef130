@@ -55,6 +55,8 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
     notFound();
   }
   const album = item.albumId ? await getAlbumById(locale, item.albumId) : null;
+  // The cover is already shown above: the album grid lists the other photos.
+  const albumImages = album?.images.filter((img) => img.url !== item.coverUrl) ?? [];
 
   const t = await getTranslations("News");
   const ta = await getTranslations("Activity");
@@ -137,14 +139,14 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
           >
             <RichText doc={withoutRepeatedLead(item.content, item.excerpt)} />
           </div>
-          {album && album.images.length > 0 && (
+          {album && albumImages.length > 0 && (
             <section aria-labelledby="post-album" className="space-y-3">
               <h2 id="post-album" className="text-xl font-extrabold">
                 <Link href={`/gallery/${album.slug}`} className="hover:underline">
                   {album.title}
                 </Link>
               </h2>
-              <GalleryGrid images={album.images} title={album.title} />
+              <GalleryGrid images={albumImages} title={album.title} />
             </section>
           )}
           {event && <ActivityFacts facts={event.facts} />}

@@ -1,6 +1,7 @@
 /**
  * UN Sustainable Development Goals: official colors, number and short names (mn/en).
- * Text color per goal is chosen for WCAG AA contrast on the official background.
+ * Text color per goal is chosen for WCAG AA contrast on the official background ("dark" = black:
+ * the ink colour is below 4.5:1 on goals 3, 5 and 14).
  */
 type SdgInfo = { color: string; text: "light" | "dark"; mn: string; en: string };
 

@@ -143,7 +143,7 @@ export function CoverImage({
               style={{ backgroundColor: SDGS[n]!.color }}
               className={cn(
                 "flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 font-heading text-xs leading-none font-extrabold shadow-sm ring-2 ring-card/80",
-                SDGS[n]!.text === "light" ? "text-white" : "text-brand-ink",
+                SDGS[n]!.text === "light" ? "text-white" : "text-black",
               )}
             >
               <span className="mr-0.5 text-[0.6rem]">SDG</span>

@@ -66,7 +66,7 @@ Run `bun run hooks:install` once so that `bun run check` runs before every commi
 | `bun run admin:grant -- <email> [--dev]`  | give someone admin                           |
 | `bun run admin:revoke -- <email> [--dev]` | remove admin (won't remove the last admin)   |
 | `bun run brand:assets`                    | generate favicon and OG image from the logo  |
-| `bun run report:seed`                     | build the yearly report SQL from `private/`  |
+| `bun run report:import -- --local`        | rebuild the yearly report content locally    |
 
 ## Deploying
 
@@ -154,7 +154,41 @@ Admins can't demote, ban or delete themselves, and the last admin can't be remov
 
 Shortcuts: `Ctrl/⌘ + K` to search, `Ctrl/⌘ + S` to save.
 
-The yearly report is loaded from `private/report-<year>.json`. Run `bun run report:seed`, then execute the generated SQL on the remote DB. It's safe to run more than once and won't overwrite admin edits.
+## Yearly report
+
+The club's annual report (`private/report-<year>.docx`, never committed) is the source of the
+report content: activities (news posts + past events), photo albums, official totals, home/impact
+numbers, partners, the About story and the private member list (names and hours stay hidden).
+Curated numbers, translations and photo decisions live in `scripts/report/content-<year>.ts`.
+
+```bash
+bun run report:import -- --local                 # parse → build → apply to the local D1 + R2
+bun scripts/report/run-import.ts --local --dry-run
+```
+
+1. `scripts/report/parse-docx.ts` reads the .docx → `private/report-<year>.json` (no phone numbers)
+   and `private/report-media/` (manifest, originals, WebP 1600 px + 480 px thumbs, no EXIF/GPS).
+   Every image needs a decision in `PHOTO_REVIEW`; differences with the .docx are printed.
+2. `scripts/report/build-import.ts` → `private/import-<year>.sql` + `private/r2-upload-list.txt`.
+3. `scripts/report/run-import.ts` applies the SQL and syncs R2 under `content/` (uploads changed
+   objects, deletes unreferenced `content/` objects). Running it twice changes nothing.
+
+**Wiped and rebuilt:** news, events, albums, images, impact numbers, slug redirects, members,
+settings `stats` / `partners` and the report fields of `club` / `page.about`. Rows linked to an
+account, an application, an event sign-up or logged hours are kept. **Never touched:** users,
+applications, enrollment rounds, sign-ups, logged hours, audit log, rate limits, messages, FAQ and
+all other settings.
+
+Production (only by hand, after a backup):
+
+```bash
+bunx wrangler d1 export DB --remote --output private/backups/before-import-$(date +%F-%H%M).sql
+bun scripts/report/run-import.ts --remote --dry-run
+bun scripts/report/run-import.ts --remote --confirm-production   # refuses without a backup < 60 min
+```
+
+Pages are rendered per request (`no-store`), so no cache purge is needed. Roll back with the
+backup or D1 Time Travel (`bunx wrangler d1 time-travel restore DB --timestamp <before-import>`).
 
 ## Privacy
 

@@ -171,7 +171,7 @@ export function ImpactTimeline({
                                 style={{ backgroundColor: s.color }}
                                 className={cn(
                                   "inline-flex h-6 items-center rounded-md px-2 text-xs font-extrabold transition-transform hover:scale-105",
-                                  s.light ? "text-white" : "text-brand-ink",
+                                  s.light ? "text-white" : "text-black",
                                 )}
                               >
                                 SDG {s.n}

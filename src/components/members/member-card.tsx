@@ -25,6 +25,8 @@ export async function MemberCard({
 }) {
   const t = await getTranslations("Members");
   const large = size === "large";
+  // Leaders without a public name come back with name "" (see listMembers).
+  const hideName = anonymous || !member.name;
 
   return (
     <li className="flex flex-col items-center gap-3 rounded-3xl bg-card p-5 text-center shadow-soft ring-1 ring-border">
@@ -35,7 +37,7 @@ export async function MemberCard({
           avatarTones[index % avatarTones.length],
         )}
       >
-        {anonymous ? (
+        {hideName ? (
           <span aria-hidden="true">{initials(member.role || "•")}</span>
         ) : member.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- R2 photo shown with consent
@@ -45,16 +47,16 @@ export async function MemberCard({
         )}
       </div>
       <div className="space-y-1">
-        {!anonymous && <p className={cn("font-bold", large && "text-lg")}>{member.name}</p>}
+        {!hideName && <p className={cn("font-bold", large && "text-lg")}>{member.name}</p>}
         <p
           className={cn(
             "font-semibold text-brand-cyan-strong",
-            anonymous ? (large ? "text-lg" : "text-base") : "text-sm",
+            hideName ? (large ? "text-lg" : "text-base") : "text-sm",
           )}
         >
           {member.role}
         </p>
-        {!anonymous && member.className && !/^(багш|teacher)$/i.test(member.className) && (
+        {!hideName && member.className && !/^(багш|teacher)$/i.test(member.className) && (
           <p className="text-xs text-muted-foreground">
             {t("classLabel", { className: member.className })}
           </p>

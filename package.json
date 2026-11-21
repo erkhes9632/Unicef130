@@ -27,7 +27,7 @@
     "brand:assets": "bun scripts/brand-assets.ts",
     "fonts": "bun scripts/fonts.ts",
     "hooks:install": "git config core.hooksPath .githooks",
-    "report:seed": "bun scripts/seed-report.ts",
+    "report:import": "bun scripts/report/parse-docx.ts && bun scripts/report/build-import.ts && bun scripts/report/run-import.ts",
     "test": "bun test --isolate",
     "test:e2e": "playwright test",
     "knip": "knip"

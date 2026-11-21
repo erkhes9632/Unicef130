@@ -1,4 +1,5 @@
 import { and, asc, count, eq } from "drizzle-orm";
+import { SHOW_LEADER_NAMES } from "@/config/site";
 import { getDb } from "@/db";
 import { members } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
@@ -28,9 +29,10 @@ function toItem(locale: Locale, m: Row): MemberItem {
 }
 
 /**
- * Public member lists. Leadership is year-scoped: the latest school year that has public leaders
- * is shown (or `leadershipYear` when given and valid). Leaders without a school year are used only
- * when no year-scoped leaders exist.
+ * Public member lists. Leadership is year-scoped: the latest school year that has leaders is shown
+ * (or `leadershipYear` when given and valid). Leaders without a school year are used only when no
+ * year-scoped leaders exist. Leaders come back with role only (name "") unless SHOW_LEADER_NAMES
+ * is on and the row has consent.
  */
 export async function listMembers(
   locale: Locale,
@@ -43,7 +45,13 @@ export async function listMembers(
     // Minors' names are only listed after consent (show_publicly), never by default.
     .where(and(eq(members.active, true), eq(members.showPublicly, true)))
     .orderBy(asc(members.sortOrder), asc(members.name));
-  const leaders = rows.filter((m) => m.group === "leadership");
+  // Leadership roles are public; a leader's name and photo leave the server only when
+  // SHOW_LEADER_NAMES is on AND the row has consent (show_publicly).
+  const leaders = await db
+    .select()
+    .from(members)
+    .where(and(eq(members.active, true), eq(members.group, "leadership")))
+    .orderBy(asc(members.sortOrder), asc(members.name));
   const years = [...new Set(leaders.map((m) => m.schoolYear).filter((y): y is string => !!y))]
     .sort()
     .reverse();
@@ -52,20 +60,27 @@ export async function listMembers(
   const [{ hidden } = { hidden: 0 }] = await db
     .select({ hidden: count() })
     .from(members)
-    .where(and(eq(members.active, true), eq(members.showPublicly, false)));
+    .where(
+      and(eq(members.active, true), eq(members.showPublicly, false), eq(members.group, "member")),
+    );
+  const publicMembers = rows.filter((m) => m.group === "member");
   return {
     leadership: leaders
       .filter((m) => (year ? m.schoolYear === year : !m.schoolYear))
-      .map((m) => toItem(locale, m)),
+      .map((m) =>
+        SHOW_LEADER_NAMES && m.showPublicly
+          ? toItem(locale, m)
+          : { ...toItem(locale, m), name: "", className: "", photoUrl: null },
+      ),
     /** School year of the leadership shown ("2025-2026"), null for undated leaders. */
     leadershipYear: year,
-    /** All years with public leaders, newest first. */
+    /** All years with leaders, newest first. */
     leadershipYears: years,
-    members: rows.filter((m) => m.group === "member").map((m) => toItem(locale, m)),
+    members: publicMembers.map((m) => toItem(locale, m)),
     /** Active members whose names are not public (no consent yet). */
     hiddenCount: hidden,
-    /** All active members and leaders (public or not) — an aggregate, no names. */
-    activeCount: rows.length + hidden,
+    /** Active members (public or not, leadership roles not counted) — an aggregate, no names. */
+    activeCount: publicMembers.length + hidden,
   };
 }
 
