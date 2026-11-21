@@ -1,12 +1,4 @@
-import {
-  BarChart3,
-  CalendarHeart,
-  Clock,
-  Coins,
-  HeartHandshake,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { CalendarHeart, Clock, Coins, HeartHandshake, Sparkles, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { coverIconFor, coverIcons } from "@/components/common/cover-image";
@@ -121,7 +113,7 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
       <>
         <PageHero eyebrow={t("eyebrow")} title={t("metaTitle")} description={t("description")} />
         <Section className="pt-8 sm:pt-10">
-          <JoinEmptyState icon={BarChart3} title={t("noData")} />
+          <JoinEmptyState title={t("noData")} />
         </Section>
       </>
     );

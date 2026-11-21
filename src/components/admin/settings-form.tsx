@@ -25,7 +25,6 @@ import {
 } from "./form";
 import { ImageField } from "./image-field";
 import { ListEditor } from "./list-editor";
-import { OgImageField } from "./og-image-field";
 
 const socialLabels: Record<SocialPlatform, string> = {
   facebook: "Facebook",
@@ -104,8 +103,6 @@ export function SettingsForm({
   const [helpOptions, setHelpOptions] = useState(() =>
     withIds<HelpOptionItem>(initial.helpOptions),
   );
-  const [schoolLogo, setSchoolLogo] = useState(initial.branding.schoolLogoUrl);
-  const [unicefLogo, setUnicefLogo] = useState(initial.branding.unicefLogoUrl);
   const socialUrl = (p: SocialPlatform) => initial.socials.find((s) => s.platform === p)?.url;
 
   return (
@@ -209,7 +206,7 @@ export function SettingsForm({
 
       <FormSection
         title="Лого ба нүүр зураг"
-        description="Лого оруулаагүй бол public/logos/ доторх файл, тэр ч байхгүй бол «130» тэмдэг харагдана. Ил тод (PNG/WebP) лого тохиромжтой."
+        description="Клубын лого, favicon, хуваалцах зураг нь public/brand/ доторх албан ёсны файлууд (README → Лого). Энд зөвхөн сургуулийн лого (Бидний тухай хуудсанд жижгээр) болон нүүр зургийг оруулна."
       >
         <div className="grid gap-6 sm:grid-cols-2">
           <AdminField label="130-р сургуулийн лого" htmlFor="branding.schoolLogoUrl">
@@ -221,33 +218,9 @@ export function SettingsForm({
               fit="contain"
               maxEdge={1024}
               label="Сургуулийн лого"
-              onChange={setSchoolLogo}
-            />
-          </AdminField>
-          <AdminField label="UNICEF лого" htmlFor="branding.unicefLogoUrl">
-            <ImageField
-              id="branding.unicefLogoUrl"
-              name="branding.unicefLogoUrl"
-              defaultValue={initial.branding.unicefLogoUrl}
-              kind="site"
-              fit="contain"
-              maxEdge={1024}
-              label="UNICEF лого"
-              onChange={setUnicefLogo}
             />
           </AdminField>
         </div>
-        <AdminField
-          label="Хуваалцах зураг (Facebook гэх мэт)"
-          htmlFor="branding.ogImageUrl"
-          hint="Лого солигдоход автоматаар шинэчлэгдэнэ. Сургуулийн лого нь мөн хөтчийн icon (favicon) болно."
-        >
-          <OgImageField
-            schoolLogo={schoolLogo}
-            unicefLogo={unicefLogo}
-            initial={initial.branding.ogImageUrl}
-          />
-        </AdminField>
         <AdminField
           label="Нүүр хуудасны зураг (жишээ: клубын хамтын зураг)"
           htmlFor="branding.heroImageUrl"

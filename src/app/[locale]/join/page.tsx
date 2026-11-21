@@ -14,6 +14,7 @@ import {
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { MemberAreaLink } from "@/components/auth/member-area-link";
+import { BrandLockup } from "@/components/brand/brand-lockup";
 import { Countdown } from "@/components/common/countdown";
 import { PageHero } from "@/components/common/page-hero";
 import { JoinForm } from "@/components/forms/join-form";
@@ -125,9 +126,12 @@ function Notice({
   title,
   body,
   tone = "purple",
+  logo,
   children,
 }: {
   icon: typeof Check;
+  /** Shown instead of the icon tile (the club logo on the visitor's card). */
+  logo?: React.ReactNode;
   title: string;
   body: string;
   tone?: keyof typeof noticeTones;
@@ -135,11 +139,13 @@ function Notice({
 }) {
   return (
     <div className="flex flex-col items-center gap-5 rounded-[2rem] bg-card p-6 text-center shadow-soft ring-1 ring-border sm:p-10">
-      <span
-        className={cn("flex size-16 items-center justify-center rounded-3xl", noticeTones[tone])}
-      >
-        <Icon className="size-8" aria-hidden="true" />
-      </span>
+      {logo ?? (
+        <span
+          className={cn("flex size-16 items-center justify-center rounded-3xl", noticeTones[tone])}
+        >
+          <Icon className="size-8" aria-hidden="true" />
+        </span>
+      )}
       <div className="max-w-md">
         <h2 className="text-2xl font-extrabold">{title}</h2>
         <p className="mt-1 text-muted-foreground">{body}</p>
@@ -252,7 +258,13 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
   let main: React.ReactNode;
   if (!me) {
     main = canApplyNow ? (
-      <Notice icon={LogIn} tone="cyan" title={t("signInFirstTitle")} body={t("signInFirstBody")}>
+      <Notice
+        icon={LogIn}
+        tone="cyan"
+        title={t("signInFirstTitle")}
+        body={t("signInFirstBody")}
+        logo={<BrandLockup variant="stacked" height={140} />}
+      >
         <Button asChild size="lg">
           <Link href={signInHref}>
             <LogIn /> {t("signInToApply")}

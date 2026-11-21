@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { cache } from "react";
 import { routing, type Locale } from "@/i18n/routing";
-import { getBranding, getClubNames } from "@/lib/branding";
+import { getClubNames } from "@/lib/branding";
 
 /**
  * Public origin of the site. Order: SITE_URL var (set in production) → NEXT_PUBLIC_SITE_URL
@@ -37,7 +37,11 @@ export function localizedPath(locale: Locale, path: string) {
   return locale === routing.defaultLocale ? clean || "/" : `/${locale}${clean}`;
 }
 
-const DEFAULT_OG_IMAGE = { url: "/og-default.png", width: 1200, height: 630 };
+/** Share images built by `bun run brand:assets` from the stacked logo (one per locale). */
+const DEFAULT_OG_IMAGE = {
+  mn: { url: "/og-default.png", width: 1200, height: 630 },
+  en: { url: "/og-default-en.png", width: 1200, height: 630 },
+} as const;
 
 /** Per-page metadata with canonical URL, hreflang alternates and Open Graph defaults. */
 export async function pageMetadata({
@@ -64,10 +68,7 @@ export async function pageMetadata({
   const languages = Object.fromEntries(
     routing.locales.map((l) => [l, `${base}${localizedPath(l, path)}`]),
   );
-  const branding = await getBranding(locale);
-  const fallback = branding.ogImage
-    ? { url: branding.ogImage, width: 1200, height: 630 }
-    : DEFAULT_OG_IMAGE;
+  const fallback = DEFAULT_OG_IMAGE[locale === "en" ? "en" : "mn"];
   const images = image && !image.endsWith(".svg") ? [{ url: image }] : [fallback];
   return {
     ...(title ? { title } : {}),

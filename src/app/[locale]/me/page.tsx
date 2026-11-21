@@ -1,6 +1,7 @@
 import { Award, CalendarCheck, CalendarDays, Clock, MapPin, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { BrandLockup } from "@/components/brand/brand-lockup";
 import { PageHero } from "@/components/common/page-hero";
 import { ClassForm, DeleteMyAccount, SignupButton } from "@/components/me/me-client";
 import { resolveLocale } from "@/i18n/locale";
@@ -231,7 +232,10 @@ export default async function MePage({ params }: PageProps<"/[locale]/me">) {
                 <p className="text-xs text-muted-foreground">{t("profileHint")}</p>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">{t("noMemberRecord")}</p>
+              <div className="flex flex-col items-center gap-4 py-2 text-center">
+                <BrandLockup variant="stacked" height={140} />
+                <p className="text-sm text-muted-foreground">{t("noMemberRecord")}</p>
+              </div>
             )}
           </section>
           <section aria-labelledby="me-account" className="space-y-3 rounded-3xl bg-muted/60 p-6">

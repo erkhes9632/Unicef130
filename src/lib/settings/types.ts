@@ -33,14 +33,15 @@ export type ClubInfo = {
   foundedYear: number | null;
 };
 
+/**
+ * The club logo is the static kit in public/brand/ (not a setting). The school's own logo is an
+ * optional upload, shown small on the About page only.
+ */
 export type Branding = {
   schoolLogoUrl: string;
-  unicefLogoUrl: string;
   heroImageUrl: string;
   heroImageAlt: string;
   heroImageAltEn: string;
-  /** 1200×630 share image built from the logos in admin (empty → public/og-default.png). */
-  ogImageUrl: string;
 };
 
 export type ContactInfo = {
@@ -211,11 +212,9 @@ export const defaultSettings: SiteSettings = {
   },
   branding: {
     schoolLogoUrl: "",
-    unicefLogoUrl: "",
     heroImageUrl: "",
     heroImageAlt: "",
     heroImageAltEn: "",
-    ogImageUrl: "",
   },
   contact: {
     address: "",
@@ -280,11 +279,9 @@ const storedSchemas = {
   }),
   branding: z.object({
     schoolLogoUrl: str(500),
-    unicefLogoUrl: str(500),
     heroImageUrl: str(500),
     heroImageAlt: str(200),
     heroImageAltEn: str(200),
-    ogImageUrl: str(500),
   }),
   contact: z.object({
     address: str(300),

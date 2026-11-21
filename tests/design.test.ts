@@ -23,7 +23,7 @@ const WHITE_BLACK = /\b(?:bg|text|border|ring|from|to|via)-(?:white|black)\b/;
 
 /** Places where literal white/black is the point, with the reason. */
 const WHITE_BLACK_ALLOWED: Record<string, string> = {
-  "src/components/brand/brand-lockup.tsx": "logo tile: the logo files have white backgrounds",
+  "src/app/[locale]/about/page.tsx": "school logo tile: the uploaded logo has a white background",
   "src/components/common/partner-chip.tsx": "partner logo tile",
   "src/components/common/cover-image.tsx": "text on official SDG colours",
   "src/components/impact/sdg-badges.tsx": "text on official SDG colours",

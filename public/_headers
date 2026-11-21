@@ -10,3 +10,7 @@
 
 /_next/static/*
   Cache-Control: public,max-age=31536000,immutable
+
+# Logo kit: stable file names (swapped in place, see README → Logo), so a day + revalidate.
+/brand/*
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800

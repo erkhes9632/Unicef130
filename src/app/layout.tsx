@@ -4,7 +4,7 @@ import { getLocale } from "next-intl/server";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
-import { getSiteSettings, safeImageUrl } from "@/lib/data/settings";
+import { getSiteSettings } from "@/lib/data/settings";
 import { getSiteUrl } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { fontBody, fontDisplay } from "./fonts";
@@ -12,19 +12,25 @@ import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
-  const logo = safeImageUrl(settings.branding.schoolLogoUrl);
   return {
     metadataBase: new URL(await getSiteUrl()),
     applicationName: settings.club.name || siteConfig.name,
-    // An uploaded school logo replaces the generated favicon / app icon.
-    ...(logo ? { icons: { icon: [{ url: logo }], apple: [{ url: logo }] } } : {}),
+    // Logo kit (public/brand/): SVG favicon, 32 px PNG fallback, 180 px apple-touch-icon.
+    // /favicon.ico (public/, built by `bun run brand:assets`) is only for clients that ask for it.
+    icons: {
+      icon: [
+        { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
+        { url: "/brand/favicon.svg", type: "image/svg+xml" },
+      ],
+      apple: [{ url: "/brand/favicon-180.png", sizes: "180x180", type: "image/png" }],
+    },
   };
 }
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFBF5" },
+    { media: "(prefers-color-scheme: dark)", color: "#17181C" },
   ],
 };
 

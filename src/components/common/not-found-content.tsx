@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { BrandLockup } from "@/components/brand/brand-lockup";
 import { Button } from "@/components/ui/button";
 import { DecorativeShapes } from "./decorative-shapes";
 
@@ -8,7 +9,8 @@ export async function NotFoundContent({ homeLink }: { homeLink: React.ReactEleme
   return (
     <div className="relative isolate flex flex-1 items-center">
       <DecorativeShapes variant="hero" />
-      <div className="container-page py-24 text-center">
+      <div className="container-page flex flex-col items-center py-20 text-center">
+        <BrandLockup variant="mark" height={120} className="mb-6" />
         <p className="font-heading text-7xl font-extrabold text-brand-cyan-strong sm:text-8xl">
           {t("NotFound.code")}
         </p>

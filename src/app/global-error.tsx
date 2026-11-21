@@ -21,6 +21,15 @@ export default function GlobalError({
         }}
       >
         <div>
+          {/* No CSS or theme here (white page): the light mark, fixed size. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, no providers here */}
+          <img
+            src="/brand/logo-mark-light.svg"
+            alt="130-р сургуулийн UNICEF клуб"
+            width={120}
+            height={120}
+            style={{ display: "block", margin: "0 auto 16px" }}
+          />
           <h1>Уучлаарай, алдаа гарлаа</h1>
           <p>Sorry, something went wrong.</p>
           <button

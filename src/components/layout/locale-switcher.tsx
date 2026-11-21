@@ -45,7 +45,7 @@ export function LocaleSwitcher() {
       <Languages className="size-4.5" aria-hidden="true" />
       {/* Name = visible "EN" + the full action (WCAG 2.5.3: the label contains the visible text). */}
       {/* Icon only at lg–2xl, where the desktop nav needs the room. */}
-      <span lang={target} className="text-xs font-bold lg:max-2xl:sr-only">
+      <span lang={target} className="text-xs font-bold max-sm:sr-only lg:max-2xl:sr-only">
         {SHORT[target]}
       </span>
       <span className="sr-only">{label}</span>

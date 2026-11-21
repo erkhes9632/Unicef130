@@ -49,7 +49,13 @@ export async function SiteFooter() {
 
       <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
         <div className="space-y-4">
-          <BrandLockup variant="footer" />
+          {/* The club name is visible next to the logo, so the logo itself is decorative. */}
+          <div className="flex items-center gap-4">
+            <BrandLockup variant="stacked" height={120} decorative />
+            <p className="font-heading text-base leading-snug font-extrabold text-balance">
+              {clubName}
+            </p>
+          </div>
           <p className="max-w-xs text-sm text-muted-foreground">{about}</p>
           {socials.length > 0 && (
             <div>

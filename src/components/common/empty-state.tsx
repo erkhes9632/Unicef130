@@ -3,12 +3,15 @@ import { cn } from "@/lib/utils";
 
 export function EmptyState({
   icon: Icon,
+  visual,
   title,
   description,
   children,
   className,
 }: {
   icon?: LucideIcon;
+  /** Replaces the icon tile (e.g. the club mark). */
+  visual?: React.ReactNode;
   title: string;
   description?: string;
   children?: React.ReactNode;
@@ -21,7 +24,8 @@ export function EmptyState({
         className,
       )}
     >
-      {Icon && (
+      {visual}
+      {!visual && Icon && (
         <span className="flex size-14 items-center justify-center rounded-2xl bg-brand-cyan-soft text-brand-cyan-strong">
           <Icon className="size-7" aria-hidden="true" />
         </span>

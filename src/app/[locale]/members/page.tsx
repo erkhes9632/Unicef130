@@ -224,7 +224,7 @@ export default async function MembersPage({
 
       {isEmpty ? (
         <Section className="pt-8 sm:pt-10">
-          <JoinEmptyState icon={Users} title={t("Members.empty")} />
+          <JoinEmptyState title={t("Members.empty")} />
         </Section>
       ) : (
         <Section>

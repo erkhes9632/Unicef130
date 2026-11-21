@@ -103,7 +103,7 @@ export default async function NewsPage({ params, searchParams }: PageProps<"/[lo
             ))}
           </div>
         ) : noNewsAtAll ? (
-          <JoinEmptyState icon={Newspaper} title={t("emptyAll")} />
+          <JoinEmptyState title={t("emptyAll")} />
         ) : (
           <EmptyState icon={Newspaper} title={t("empty")}>
             <Link href="/news" className="font-semibold text-brand-cyan-strong hover:underline">

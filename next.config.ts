@@ -2,10 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
-// Logo files the developer adds to public/logos/ are detected at build time, so pages never
-// request a missing file (no 404s). Uploads in admin → Site settings take precedence at runtime.
-const logoFile = (name: string) => (existsSync(`public/logos/${name}`) ? `/logos/${name}` : "");
-
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 // `next dev` does not read .dev.vars (only wrangler does). Copy it into process.env in development
@@ -21,8 +17,6 @@ if (process.env.NODE_ENV === "development" && existsSync(".dev.vars")) {
 
 const nextConfig: NextConfig = {
   env: {
-    BRAND_SCHOOL_LOGO_FILE: logoFile("school-130.png"),
-    BRAND_UNICEF_LOGO_FILE: logoFile("unicef.png"),
     // Clerk: no usage telemetry (users are mostly minors) and no "keyless" demo app.
     NEXT_PUBLIC_CLERK_TELEMETRY_DISABLED: "1",
     CLERK_TELEMETRY_DISABLED: "1",

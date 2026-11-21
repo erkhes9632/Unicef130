@@ -245,11 +245,34 @@ export const SHOW_MEMBER_NAMES = false; // /members: aggregate numbers only
 
 Set one to `true` and deploy to show names. Even then, a name is shown only if an admin has marked that person as public (Admin → Members → "Нэрийг нийтэд харуулах").
 
-## Swapping the logo
+## Logo
 
-The logo slot is the `BrandLockup` component. No code change is needed to swap logos:
+The club has one official logo (globe with 130, hands, children, laurel, book, ribbon). The kit
+lives in `public/brand/`; every SVG has a transparent background and real cut-outs, so nothing
+goes behind it. Use the files as they are: no redrawing, recolouring, stretching or effects.
 
-1. Go to Admin → Site settings → Logo and upload the school and UNICEF logos (PNG, JPG or WebP; files with white backgrounds are fine, because the logos sit on a light tile).
-2. Or put `public/logos/school-130.png` and `public/logos/unicef.png` in the repo, run `bun run brand:assets` (this also regenerates the social image and icons) and deploy.
+| File                                                         | Used for                                                                                                                                                          |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `logo-horizontal-{mn,en}-{light,dark}.svg`                   | header from `lg` up (44 px tall); `/en` uses `en`                                                                                                                 |
+| `logo-compact-{mn,en}-{light,dark}.svg`                      | header below `lg` (32 px tall)                                                                                                                                    |
+| `logo-stacked-{light,dark}.svg`                              | footer (120 px), sign-in, `/join` visitor card and `/me` empty state (140 px), certificate (light file, 112 px)                                                   |
+| `logo-mark-{light,dark}.svg`                                 | admin sidebar (40 px, mark only when collapsed), 404 + error pages (120 px), admin loading (56 px), empty list states (64 px), Clerk card (`logo-mark-light.svg`) |
+| `logo-stacked-white.svg`, `logo-*-mono.svg`                  | on photos / coloured bands; print                                                                                                                                 |
+| `favicon.svg` (= the mark) + `favicon-32/48/180/192/512.png` | favicon (SVG + 32 px fallback), apple-touch-icon (180), manifest icons (192, 512)                                                                                 |
+| `app-icon-1024.png`, `avatar-1080.png`                       | not used by the site: social media profile / app stores                                                                                                           |
+| `logo-stacked-light-1200.png`                                | source of the share images (`bun run brand:assets`)                                                                                                               |
 
-Each logo fits into a fixed square box, so wide or tall logos never overlap the club name. With no logo at all, a "130" badge is shown instead.
+In code, use `BrandLockup` (server components; picks the `mn`/`en` file from the locale) or
+`BrandLogo` (anywhere, locale passed in) from `src/components/brand/`. Both theme files are
+rendered and CSS shows the right one (`dark:hidden` / `hidden dark:block`), with fixed `width` and
+`height` (no layout shift). Alt text is the club name, or empty when the same name is visible
+next to the logo.
+
+**Swapping a file:** replace it in `public/brand/` with the same file name (same artboard; if the
+proportions change, update `RATIO` in `src/components/brand/brand-logo.tsx` from the new
+`viewBox`). Then run `bun run brand:assets` (rebuilds `public/og-default.png`,
+`public/og-default-en.png` and `public/favicon.ico`), check, and deploy. Browsers may keep the old
+file for up to a day (`public/_headers`).
+
+The school's own logo is separate: Admin → Site settings → «130-р сургуулийн лого». It appears
+small on the About page only.

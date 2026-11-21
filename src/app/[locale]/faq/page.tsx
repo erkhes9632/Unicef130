@@ -1,4 +1,4 @@
-import { ChevronDown, HelpCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
@@ -42,7 +42,7 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
       <PageHero eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
       <Section className="pt-8 sm:pt-12">
         {items.length === 0 ? (
-          <JoinEmptyState icon={HelpCircle} title={t("empty")} />
+          <JoinEmptyState title={t("empty")} />
         ) : (
           <div className="mx-auto max-w-3xl space-y-3">
             <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structured)} />

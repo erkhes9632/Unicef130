@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SHOW_LEADER_NAMES } from "@/config/site";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
+import { getBranding } from "@/lib/branding";
 import { listDirectionActivities } from "@/lib/data/events";
 import { displayYear } from "@/lib/data/impact";
 import { pick } from "@/lib/data/localize";
@@ -49,11 +50,10 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
   const locale = await resolveLocale(params);
   const t = await getTranslations("About");
   const tn = await getTranslations("News");
-  const [{ leadership, leadershipYear }, { about, club }, activities] = await Promise.all([
-    listMembers(locale),
-    getSiteSettings(),
-    listDirectionActivities(locale),
-  ]);
+  const tc = await getTranslations("Common");
+  const [{ leadership, leadershipYear }, { about, club }, activities, branding] = await Promise.all(
+    [listMembers(locale), getSiteSettings(), listDirectionActivities(locale), getBranding(locale)],
+  );
   const newsSlugs = await getNewsSlugsForEvents(activities.map((a) => a.id));
   const intro = pick(locale, about.intro, about.introEn);
   const mission = pick(locale, about.mission, about.missionEn);
@@ -106,9 +106,23 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
             )}
             <div className={cn("grid gap-4", history.length === 0 && "sm:grid-cols-[auto_1fr]")}>
               {club.foundedYear && (
-                <div className="rounded-3xl bg-brand-cyan p-6 text-brand-ink">
-                  <p className="text-sm font-bold uppercase">{t("foundedLabel")}</p>
-                  <p className="font-heading text-6xl font-extrabold">{club.foundedYear}</p>
+                <div className="flex items-center justify-between gap-4 rounded-3xl bg-brand-cyan p-6 text-brand-ink">
+                  <div>
+                    <p className="text-sm font-bold uppercase">{t("foundedLabel")}</p>
+                    <p className="font-heading text-6xl font-extrabold">{club.foundedYear}</p>
+                  </div>
+                  {/* The school's own logo (admin upload): small, on this page only. */}
+                  {branding.schoolLogo && (
+                    // eslint-disable-next-line @next/next/no-img-element -- small admin upload from R2
+                    <img
+                      src={branding.schoolLogo}
+                      alt={tc("schoolLogoAlt")}
+                      width={56}
+                      height={56}
+                      loading="lazy"
+                      className="size-14 shrink-0 rounded-xl bg-white object-contain p-1"
+                    />
+                  )}
                 </div>
               )}
               {mission && (

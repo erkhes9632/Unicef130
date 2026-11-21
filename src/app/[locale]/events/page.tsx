@@ -149,10 +149,7 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
             </div>
           </div>
         ) : (
-          <JoinEmptyState
-            icon={CalendarX2}
-            title={scope === "upcoming" ? t("emptyUpcoming") : t("emptyPast")}
-          />
+          <JoinEmptyState title={scope === "upcoming" ? t("emptyUpcoming") : t("emptyPast")} />
         )}
       </Section>
     </>

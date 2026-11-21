@@ -30,7 +30,7 @@ export function MobileNav({ cta }: { cta: DrawerCta }) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t("Nav.openMenu")}>
+        <Button variant="ghost" size="icon" className="xl:hidden" aria-label={t("Nav.openMenu")}>
           <Menu className="size-6" />
         </Button>
       </SheetTrigger>

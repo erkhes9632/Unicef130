@@ -224,11 +224,9 @@ export const settingsInputSchema = z.object({
   }),
   branding: z.object({
     schoolLogoUrl: imageUrlText,
-    unicefLogoUrl: imageUrlText,
     heroImageUrl: imageUrlText,
     heroImageAlt: text(200, "Зургийн тайлбар"),
     heroImageAltEn: text(200, "Image description"),
-    ogImageUrl: imageUrlText,
   }),
   contact: z
     .object({

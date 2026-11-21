@@ -1,11 +1,11 @@
-/* eslint-disable @next/next/no-img-element -- logos are small admin uploads, printed as-is */
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { PrintButton } from "@/components/me/print-button";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { requireMember } from "@/lib/auth/session";
-import { getBranding, getClubNames } from "@/lib/branding";
+import { getClubNames } from "@/lib/branding";
 import { formatDate, formatNumber } from "@/lib/dates/format";
 import { getMyMemberPage } from "@/lib/members/data";
 import { schoolYearOf } from "@/lib/members/logic";
@@ -30,11 +30,7 @@ export default async function CertificatePage({
   const me = await requireMember(locale);
   const t = await getTranslations("Certificate");
   const sp = await searchParams;
-  const [page, names, branding] = await Promise.all([
-    getMyMemberPage(me.id, locale),
-    getClubNames(locale),
-    getBranding(locale),
-  ]);
+  const [page, names] = await Promise.all([getMyMemberPage(me.id, locale), getClubNames(locale)]);
   const year =
     typeof sp.year === "string" && page.totals.some((y) => y.schoolYear === sp.year)
       ? sp.year
@@ -77,14 +73,14 @@ export default async function CertificatePage({
       </div>
 
       <article className="flex aspect-[1.414] w-full max-w-4xl flex-col items-center justify-between rounded-3xl border-8 border-double border-brand-cyan bg-white p-8 text-center text-slate-900 shadow-sm sm:p-12 print:max-w-none print:rounded-none print:shadow-none">
-        <div className="flex items-center gap-6">
-          {branding.schoolLogo && (
-            <img src={branding.schoolLogo} alt="" className="h-16 w-auto object-contain" />
-          )}
-          {branding.unicefLogo && (
-            <img src={branding.unicefLogo} alt="" className="h-12 w-auto object-contain" />
-          )}
-        </div>
+        {/* White paper in every theme and in print: always the light file. */}
+        <BrandLogo
+          variant="stacked"
+          locale={locale === "en" ? "en" : "mn"}
+          alt=""
+          height={112}
+          tone="light"
+        />
         <div className="space-y-4">
           <p className="text-sm font-bold tracking-[0.3em] text-sky-700 uppercase">{names.name}</p>
           <h1 className="font-heading text-3xl font-extrabold sm:text-5xl">{t("heading")}</h1>

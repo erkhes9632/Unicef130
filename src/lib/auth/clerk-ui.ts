@@ -5,6 +5,8 @@ import { mnMN } from "@clerk/localizations";
  * (src/app/globals.css), so light and dark mode switch together with the rest of the page.
  */
 export const clerkAppearance = {
+  // Club mark from the logo kit (public/brand/), shown in Clerk's own cards.
+  layout: { logoImageUrl: "/brand/logo-mark-light.svg" },
   variables: {
     colorPrimary: "var(--primary)",
     colorPrimaryForeground: "var(--primary-foreground)",

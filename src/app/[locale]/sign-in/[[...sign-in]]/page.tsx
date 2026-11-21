@@ -1,6 +1,7 @@
 import { SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { BrandLockup } from "@/components/brand/brand-lockup";
 import { resolveLocale } from "@/i18n/locale";
 import { clerkPublishableKey } from "@/lib/auth/clerk";
 import { AFTER_SIGN_IN_PATH, SIGN_IN_PATH } from "@/lib/auth/roles";
@@ -22,6 +23,7 @@ export default async function SignInPage({
   const path = `${locale === "en" ? "/en" : ""}${SIGN_IN_PATH}`;
   return (
     <div className="container-page flex flex-1 flex-col items-center gap-6 py-10 sm:py-16">
+      <BrandLockup variant="stacked" height={140} />
       {clerkPublishableKey() ? (
         <SignIn
           routing="path"

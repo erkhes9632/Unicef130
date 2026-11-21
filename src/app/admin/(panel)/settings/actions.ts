@@ -29,16 +29,14 @@ async function upsert(entries: { key: string; value: unknown }[]) {
     });
 }
 
-/** Site images (logos, hero, partner logos) that are no longer referenced after a save. */
+/** Site images (school logo, hero, partner logos) that are no longer referenced after a save. */
 function removedSiteImages(
   before: SiteSettings,
   after: Pick<SiteSettings, "branding" | "partners">,
 ) {
   const urls = (s: Pick<SiteSettings, "branding" | "partners">) => [
     s.branding.schoolLogoUrl,
-    s.branding.unicefLogoUrl,
     s.branding.heroImageUrl,
-    s.branding.ogImageUrl,
     ...s.partners.map((p) => p.logoUrl),
   ];
   const kept = new Set(urls(after));
@@ -74,11 +72,9 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
       },
       branding: {
         schoolLogoUrl: fd.str(data, "branding.schoolLogoUrl"),
-        unicefLogoUrl: fd.str(data, "branding.unicefLogoUrl"),
         heroImageUrl: fd.str(data, "branding.heroImageUrl"),
         heroImageAlt: fd.str(data, "branding.heroImageAlt"),
         heroImageAltEn: fd.str(data, "branding.heroImageAltEn"),
-        ogImageUrl: fd.str(data, "branding.ogImageUrl"),
       },
       contact: {
         address: fd.str(data, "contact.address"),

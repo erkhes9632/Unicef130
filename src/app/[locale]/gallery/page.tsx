@@ -1,4 +1,3 @@
-import { Images } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
@@ -44,7 +43,7 @@ export default async function GalleryPage({ params }: PageProps<"/[locale]/galle
             ))}
           </div>
         ) : (
-          <JoinEmptyState icon={Images} title={t("empty")} />
+          <JoinEmptyState title={t("empty")} />
         )}
       </Section>
     </>

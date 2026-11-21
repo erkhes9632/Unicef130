@@ -146,11 +146,9 @@ describe("admin schemas", () => {
       },
       branding: {
         schoolLogoUrl: "/media/site/2026/11/a.webp",
-        unicefLogoUrl: "",
         heroImageUrl: "",
         heroImageAlt: "",
         heroImageAltEn: "",
-        ogImageUrl: "",
       },
       socials: [{ platform: "facebook", url: "https://facebook.com/x" }],
       stats: [{ kind: "custom", label: "Гишүүн", labelEn: "", value: "25", featured: true }],

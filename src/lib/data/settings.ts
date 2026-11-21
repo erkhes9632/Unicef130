@@ -102,7 +102,7 @@ export function safeExternalUrl(url: string): string | null {
   }
 }
 
-/** Own uploads (/media/...), bundled files (/logos/...) or https images. */
+/** Own uploads (/media/...), bundled files (/brand/...) or https images. */
 export function safeImageUrl(url: string): string | null {
   if (!url) return null;
   if (url.startsWith("/") && !url.startsWith("//") && !url.includes("..")) return url;
