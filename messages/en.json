@@ -13,7 +13,8 @@
     "schoolLogoAlt": "School No. 130 logo",
     "unicefLogoAlt": "UNICEF logo",
     "website": "Website",
-    "emptyDescription": "Join the club and do good together."
+    "emptyDescription": "Join the club and do good together.",
+    "untranslated": "Available in Mongolian"
   },
   "Nav": {
     "label": "Main navigation",
@@ -30,18 +31,20 @@
     "impact": "Impact",
     "newsGroup": "News",
     "getInvolved": "Get involved",
-    "faq": "FAQ"
+    "faq": "FAQ",
+    "aboutGroup": "About us"
   },
   "Theme": {
     "toggle": "Toggle color mode",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "cycle": "Color theme: {current}. Switch to {next}"
   },
   "Locale": {
-    "switch": "Change language",
     "mn": "Монгол",
-    "en": "English"
+    "en": "English",
+    "switchTo": "Switch to {language}"
   },
   "Footer": {
     "about": "A student club of School No. 130 and a member of the UNICEF Club Mongolia network.",
@@ -52,7 +55,9 @@
     "rights": "© {year} {name}.",
     "disclaimer": "This is a school student club website, not an official UNICEF website.",
     "admin": "Admin",
-    "privacy": "Privacy policy"
+    "privacy": "Privacy policy",
+    "schoolPlace": "School No. 130, Ulaanbaatar",
+    "writeToUs": "Write to us"
   },
   "NotFound": {
     "title": "Page not found",
@@ -130,7 +135,10 @@
     "related": "More news",
     "backToList": "All news",
     "emptyAll": "No news published yet.",
-    "clearFilter": "Clear filter"
+    "clearFilter": "Clear filter",
+    "moreArticles": "More posts",
+    "newer": "Newer post",
+    "older": "Older post"
   },
   "Events": {
     "metaTitle": "Events",
@@ -159,7 +167,11 @@
     "signupClosed": "Volunteer sign-up is closed",
     "placesLeft": "{count} places left",
     "signupHow": "Members sign up in “My page”",
-    "photos": "Photo album ({count})"
+    "photos": "Photo album ({count})",
+    "emptyUpcomingHint": "New events will appear here once they are scheduled. Meanwhile, see what we've done below.",
+    "emptyUpcomingCta": "Become a member",
+    "pastTitle": "Past events",
+    "allPast": "All past events"
   },
   "Members": {
     "metaTitle": "Members",
@@ -169,15 +181,17 @@
     "leadership": "Leadership",
     "members": "Members",
     "classLabel": "Class: {className}",
-    "count": "{count, plural, one {# member} other {# members}}",
     "joinTitle": "Want to join our team?",
     "joinBody": "Students from any class can join the club.",
     "empty": "The member list is empty for now.",
-    "hiddenNote": "To protect members' privacy, other members' names are not published.",
     "leadershipOfYear": "Leadership {year}",
     "otherYears": "Other years",
     "activeTitle": "Active members {year}",
-    "activeBody": "Members who volunteered at least {hours} hours this school year (with consent to show their names)."
+    "activeBody": "Members who volunteered at least {hours} hours this school year (with consent to show their names).",
+    "statMembers": "Active members",
+    "statsTitle": "The club in numbers",
+    "whatTitle": "What do members do?",
+    "namesHiddenNote": "Students' names are published only with consent from parents or guardians. For now only the roles are shown."
   },
   "Gallery": {
     "metaTitle": "Gallery",
@@ -247,7 +261,8 @@
     "goToMe": "Go to my page",
     "goToAdmin": "Go to admin",
     "blockedTitle": "You can't apply",
-    "blockedBody": "New applications from this account are not possible. Please contact the club if you have questions."
+    "blockedBody": "New applications from this account are not possible. Please contact the club if you have questions.",
+    "contactUs": "Contact us"
   },
   "Contact": {
     "metaTitle": "Contact",
@@ -260,7 +275,10 @@
     "hours": "Hours",
     "social": "Social media",
     "mapTitle": "Location",
-    "formTitle": "Send a message"
+    "formTitle": "Send a message",
+    "infoTitle": "Get in touch",
+    "infoBody": "Send us your question or idea with the form. The club leaders will reply.",
+    "schoolPlace": "School No. 130, Ulaanbaatar"
   },
   "Support": {
     "metaTitle": "Support",
@@ -331,7 +349,6 @@
     "name": "Name",
     "subject": "Subject",
     "message": "Message",
-    "messagePlaceholder": "Your message...",
     "submit": "Send",
     "submitting": "Sending...",
     "joinSuccessTitle": "Thank you! We've received your application.",
@@ -370,7 +387,8 @@
     "alreadyMemberError": "You are already a club member.",
     "applyBlockedError": "Applications from this account are not possible.",
     "emailFromAccount": "The e-mail of the account you signed in with.",
-    "emailPlaceholder": "Your email address"
+    "errorSummary": "Please check these fields before sending:",
+    "consentShort": "Consent"
   },
   "Errors": {
     "title": "Sorry, something went wrong",
@@ -431,7 +449,8 @@
     "recruitmentOpen": "Recruitment is open — until {date}!",
     "timeLeft": "Time left:",
     "cta": "Apply now",
-    "label": "Announcement"
+    "label": "Announcement",
+    "recruitmentOpenShort": "Recruitment is open!"
   },
   "Auth": {
     "signIn": "Sign in",

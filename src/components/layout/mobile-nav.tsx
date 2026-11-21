@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
 import NextLink from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -14,49 +14,64 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Link } from "@/i18n/navigation";
+import { LocaleChoice } from "./locale-switcher";
 import { MobileNavLinks } from "./nav-links";
+import { ThemeChoice } from "./theme-toggle";
 
-/**
- * `adminLabel` is set by the server for admins (D1 role): it only adds a shortcut to /admin,
- * which checks the role itself.
- */
-export function MobileNav({ adminLabel }: { adminLabel?: string }) {
+/** The role button computed on the server (see `HeaderCta`); display only. */
+export type DrawerCta = { kind: "join" | "me" | "admin"; label: string };
+
+/** Drawer below `lg`: grouped links, the role button, search, language and theme. */
+export function MobileNav({ cta }: { cta: DrawerCta }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="xl:hidden" aria-label={t("Nav.openMenu")}>
+        <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t("Nav.openMenu")}>
           <Menu className="size-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[85vw] max-w-sm gap-0 overflow-y-auto">
+      <SheetContent side="right" className="w-[88vw] max-w-sm gap-0 overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="font-heading text-lg">{t("Common.clubName")}</SheetTitle>
           <SheetDescription>{t("Common.brandPair")}</SheetDescription>
         </SheetHeader>
-        <nav aria-label={t("Nav.label")} className="px-2">
-          <MobileNavLinks onNavigate={() => setOpen(false)} />
-        </nav>
-        <div className="space-y-2 p-4">
-          {adminLabel && (
-            <Button asChild variant="secondary" size="lg" className="w-full">
-              <NextLink href="/admin" prefetch={false}>
-                <ShieldCheck /> {adminLabel}
+        <div className="px-4 pb-2">
+          {cta.kind === "admin" ? (
+            <Button asChild size="lg" variant="secondary" className="w-full">
+              <NextLink href="/admin" prefetch={false} onClick={close}>
+                <ShieldCheck aria-hidden="true" /> {cta.label}
               </NextLink>
             </Button>
+          ) : (
+            <Button
+              asChild
+              size="lg"
+              variant={cta.kind === "me" ? "secondary" : "default"}
+              className="w-full"
+            >
+              <Link href={cta.kind === "me" ? "/me" : "/join"} onClick={close}>
+                {cta.kind === "me" && <UserRound aria-hidden="true" />}
+                {cta.label}
+                {cta.kind === "join" && <ArrowRight aria-hidden="true" />}
+              </Link>
+            </Button>
           )}
+        </div>
+        <nav aria-label={t("Nav.label")} className="px-2 py-2">
+          <MobileNavLinks onNavigate={close} />
+        </nav>
+        <div className="space-y-2 border-t p-4">
           <Button asChild variant="outline" size="lg" className="w-full">
-            <Link href="/search" onClick={() => setOpen(false)}>
-              <Search /> {t("Common.search")}
+            <Link href="/search" onClick={close}>
+              <Search aria-hidden="true" /> {t("Common.search")}
             </Link>
           </Button>
-          <Button asChild size="lg" className="w-full">
-            <Link href="/join" onClick={() => setOpen(false)}>
-              {t("Common.joinCta")}
-            </Link>
-          </Button>
+          <LocaleChoice />
+          <ThemeChoice />
         </div>
       </SheetContent>
     </Sheet>

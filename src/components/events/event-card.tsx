@@ -1,5 +1,6 @@
 import { Clock, MapPin } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { UntranslatedBadge } from "@/components/common/untranslated-badge";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
 import { isUpcoming, type EventItem } from "@/lib/data/events";
@@ -17,15 +18,23 @@ export async function EventCard({ item }: { item: EventItem }) {
     : formatTimeRange(locale, item.startsAt, item.endsAt);
 
   return (
-    <article className="group relative flex gap-4 rounded-3xl bg-card p-4 ring-1 ring-border transition-shadow hover:shadow-lg hover:shadow-brand-purple/10 sm:p-5">
+    <article className="group relative flex hover-lift gap-4 rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border sm:p-5">
       <DateBadge date={item.startsAt} />
       <div className="min-w-0 flex-1 space-y-2">
-        {past && (
-          <Badge variant="outline" className="rounded-full">
-            {t("pastBadge")}
-          </Badge>
+        {(past || item.untranslated) && (
+          <div className="flex flex-wrap gap-2">
+            {past && (
+              <Badge variant="outline" className="rounded-full">
+                {t("pastBadge")}
+              </Badge>
+            )}
+            {item.untranslated && <UntranslatedBadge />}
+          </div>
         )}
-        <h3 className="leading-snug font-bold sm:text-lg">
+        <h3
+          className="leading-snug font-bold sm:text-lg"
+          lang={item.untranslated ? "mn" : undefined}
+        >
           <Link
             href={`/events/${item.slug}`}
             className="after:absolute after:inset-0 hover:text-brand-purple-strong"

@@ -7,7 +7,7 @@ type LogoImageProps = {
   /** null → no logo available: the monogram fallback is rendered. */
   src: string | null;
   alt: string;
-  /** Rendered height in px (width follows the image aspect ratio). */
+  /** Side of the square box in px (the logo is fitted inside, keeping its aspect ratio). */
   size?: number;
   /** Text shown in the fallback badge (e.g. "130"). */
   monogram: string;
@@ -32,7 +32,7 @@ export function Monogram({
       {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
       style={{ height: size, width: size, fontSize: Math.round(size * 0.36) }}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-brand-cyan font-heading leading-none font-extrabold tracking-tight text-brand-night shadow-sm ring-2 ring-background",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-brand-cyan font-heading leading-none font-extrabold tracking-tight text-brand-ink shadow-sm ring-2 ring-background",
         className,
       )}
     >
@@ -57,8 +57,11 @@ export function LogoImage({ src, alt, size = 40, monogram, className }: LogoImag
     <img
       src={src}
       alt={alt}
+      width={size}
       height={size}
-      style={{ height: size, width: "auto" }}
+      // A fixed square box: wide and tall logos both fit (object-contain) and never push or
+      // overlap the text next to them.
+      style={{ height: size, width: size, maxWidth: "none" }}
       className={cn("shrink-0 object-contain", className)}
       onError={() => setFailed(true)}
       // The image may fail before hydration attaches onError: detect that on mount.

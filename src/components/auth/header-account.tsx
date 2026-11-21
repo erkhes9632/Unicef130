@@ -1,5 +1,4 @@
-import { LogIn, ShieldCheck } from "lucide-react";
-import NextLink from "next/link";
+import { LogIn } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -9,7 +8,7 @@ import { AccountDropdown, type AccountLink } from "./account-dropdown";
 /**
  * Header account control for public pages, rendered on the server — no Clerk code in the
  * browser. Signed out: "Нэвтрэх" link. Signed in: a menu with links for the role and "Гарах"
- * (/sign-out loads Clerk to sign out). Admins also get a visible "Админ" button.
+ * (/sign-out loads Clerk to sign out). The role button itself is `HeaderCta`.
  */
 export async function HeaderAccount() {
   const session = await getHeaderSession();
@@ -22,7 +21,7 @@ export async function HeaderAccount() {
       <Button asChild variant="outline" className="ml-1">
         <Link href="/sign-in">
           <LogIn aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">{t("signIn")}</span>
+          <span className="sr-only sm:not-sr-only lg:sr-only 2xl:not-sr-only">{t("signIn")}</span>
         </Link>
       </Button>
     );
@@ -42,20 +41,10 @@ export async function HeaderAccount() {
         },
   ];
   return (
-    <>
-      {role === "admin" && (
-        <Button asChild variant="outline" className="ml-1 hidden sm:inline-flex">
-          <NextLink href="/admin" prefetch={false}>
-            <ShieldCheck aria-hidden="true" />
-            {t("adminButton")}
-          </NextLink>
-        </Button>
-      )}
-      <AccountDropdown
-        links={links}
-        label={t("accountMenu")}
-        signOut={{ href: "/sign-out", label: t("signOut") }}
-      />
-    </>
+    <AccountDropdown
+      links={links}
+      label={t("accountMenu")}
+      signOut={{ href: "/sign-out", label: t("signOut") }}
+    />
   );
 }

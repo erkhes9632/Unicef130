@@ -48,7 +48,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
             href={v === "all" ? "/admin/messages" : `/admin/messages?filter=${v}`}
             className={cn(
               "rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-border",
-              filter === v && "bg-brand-cyan text-brand-night ring-brand-cyan",
+              filter === v && "bg-brand-cyan text-brand-ink ring-brand-cyan",
             )}
           >
             {label}

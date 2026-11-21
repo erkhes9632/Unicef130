@@ -21,24 +21,31 @@ const hrefOf = (key: NavKeyT) =>
   key === "join" ? "/join" : mainNav.find((i) => i.key === key)!.href;
 
 /**
- * Desktop navigation. Grouped so the header fits next to the full club name at 1280px:
- * "Мэдээ" holds news + gallery, "Оролцох" holds support + join. Home is the logo link.
+ * Desktop navigation (from `lg`): five entries, three of them small menus, so the header never
+ * crowds — «Бидний тухай» (about, members), «Мэдээ» (news, gallery), «Оролцох» (join, support,
+ * FAQ, contact). Home is the logo link.
  */
-const desktopNav: ({ key: NavKeyT } | { group: "newsGroup" | "getInvolved"; items: NavKeyT[] })[] =
-  [
-    { key: "about" },
-    { key: "impact" },
-    { group: "newsGroup", items: ["news", "gallery"] },
-    { key: "events" },
-    { key: "members" },
-    { group: "getInvolved", items: ["support", "join", "faq"] },
-    { key: "contact" },
-  ];
+type Group = "aboutGroup" | "newsGroup" | "getInvolved";
+const desktopNav: ({ key: NavKeyT } | { group: Group; items: NavKeyT[] })[] = [
+  { group: "aboutGroup", items: ["about", "members"] },
+  { key: "impact" },
+  { group: "newsGroup", items: ["news", "gallery"] },
+  { key: "events" },
+  { group: "getInvolved", items: ["join", "support", "faq", "contact"] },
+];
+
+/** Mobile drawer: the same structure as titled sections. */
+const mobileNav: { title?: Group; items: NavKeyT[] }[] = [
+  { items: ["home", "impact", "events"] },
+  { title: "aboutGroup", items: ["about", "members"] },
+  { title: "newsGroup", items: ["news", "gallery"] },
+  { title: "getInvolved", items: ["join", "support", "faq", "contact"] },
+];
 
 const linkCls = (active: boolean) =>
   cn(
-    "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
-    active && "bg-brand-cyan-soft text-foreground",
+    "inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-semibold whitespace-nowrap text-foreground/80 transition-colors hover:bg-muted hover:text-foreground aria-expanded:bg-muted",
+    active && "bg-brand-cyan-soft text-brand-cyan-strong",
   );
 
 export function NavLinks({ className }: { className?: string }) {
@@ -94,31 +101,43 @@ export function NavLinks({ className }: { className?: string }) {
   );
 }
 
-/** Vertical list used inside the mobile menu sheet. */
+/** Grouped list used inside the mobile menu sheet. */
 export function MobileNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations("Nav");
   const pathname = usePathname();
 
   return (
-    <ul className="flex flex-col gap-1">
-      {mainNav.map((item) => {
-        const active = isActive(pathname, item.href);
-        return (
-          <li key={item.key}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center rounded-2xl px-4 py-3 text-base font-semibold transition-colors hover:bg-muted",
-                active && "bg-brand-cyan-soft",
-              )}
-            >
-              {t(item.key)}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="space-y-4">
+      {mobileNav.map((section, i) => (
+        <div key={section.title ?? i}>
+          {section.title && (
+            <p className="px-4 pb-1 text-xs font-bold tracking-[0.08em] text-muted-foreground uppercase">
+              {t(section.title)}
+            </p>
+          )}
+          <ul className="flex flex-col">
+            {section.items.map((key) => {
+              const href = hrefOf(key);
+              const active = isActive(pathname, href);
+              return (
+                <li key={key}>
+                  <Link
+                    href={href}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex min-h-11 items-center rounded-2xl px-4 text-base font-semibold transition-colors hover:bg-muted",
+                      active && "bg-brand-cyan-soft text-brand-cyan-strong",
+                    )}
+                  >
+                    {t(key)}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }

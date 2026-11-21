@@ -51,6 +51,7 @@ next-env.d.ts
 # local working notes and task prompts (kept locally, not published)
 PROGRESS.md
 PROGRESS.archive.md
+UI_DIRECTION.md
 *_PROMPT.md
 
 # private club data (member names, hours) and generated production seed SQL

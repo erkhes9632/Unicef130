@@ -1,16 +1,28 @@
-import { Users } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarHeart,
+  GraduationCap,
+  HandHeart,
+  HeartHandshake,
+  Megaphone,
+  Users,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { InfoNote } from "@/components/common/info-note";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
+import { StatTile } from "@/components/common/stat-tile";
 import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
+import { SHOW_LEADER_NAMES, SHOW_MEMBER_NAMES } from "@/config/site";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
-import { displayYear } from "@/lib/data/impact";
+import { displayYear, getLatestImpact } from "@/lib/data/impact";
 import { listActiveMembers, listMembers } from "@/lib/data/members";
 import { getSiteSettings } from "@/lib/data/settings";
+import { formatNumber } from "@/lib/dates/format";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +39,18 @@ export async function generateMetadata({
   });
 }
 
+const pillars = [
+  { key: "activity", icon: Megaphone, tone: "bg-brand-cyan-soft text-brand-cyan-strong" },
+  { key: "education", icon: GraduationCap, tone: "bg-brand-purple-soft text-brand-purple-strong" },
+  { key: "charity", icon: HandHeart, tone: "bg-brand-gold-soft text-brand-gold-strong" },
+] as const;
+
+/**
+ * Who we are, without exposing students: aggregate numbers, what members do (the three
+ * pillars), the leadership (names only when SHOW_LEADER_NAMES) and how to join. Individual
+ * member names appear only when SHOW_MEMBER_NAMES is turned on (consent), and then only for
+ * rows marked public by an admin.
+ */
 export default async function MembersPage({
   params,
   searchParams,
@@ -34,13 +58,38 @@ export default async function MembersPage({
   const locale = await resolveLocale(params);
   const t = await getTranslations();
   const requested = (await searchParams).year;
-  const { leadership, leadershipYear, leadershipYears, members, hiddenCount } = await listMembers(
-    locale,
-    { leadershipYear: typeof requested === "string" ? requested : undefined },
-  );
-  const isEmpty = leadership.length === 0 && members.length === 0;
-  const { membership } = await getSiteSettings();
-  const active = await listActiveMembers(locale, membership.activeMemberHours);
+  const [{ leadership, leadershipYear, leadershipYears, members, activeCount }, settings, impact] =
+    await Promise.all([
+      listMembers(locale, {
+        leadershipYear: typeof requested === "string" ? requested : undefined,
+      }),
+      getSiteSettings(),
+      getLatestImpact().catch(() => null),
+    ]);
+  const active = SHOW_MEMBER_NAMES
+    ? await listActiveMembers(locale, settings.membership.activeMemberHours)
+    : null;
+  const isEmpty = activeCount === 0 && leadership.length === 0;
+
+  const stats = [
+    ...(activeCount > 0
+      ? [{ icon: Users, value: formatNumber(activeCount), label: t("Members.statMembers") }]
+      : []),
+    ...(impact?.total
+      ? [
+          {
+            icon: CalendarHeart,
+            value: formatNumber(impact.total.activities),
+            label: t("Impact.activities"),
+          },
+          {
+            icon: HeartHandshake,
+            value: formatNumber(impact.total.total),
+            label: t("Impact.reachTotal"),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
@@ -50,8 +99,51 @@ export default async function MembersPage({
         title={t("Members.title")}
         description={t("Members.description")}
       />
+
+      {stats.length > 0 && (
+        <section aria-labelledby="members-stats" className="border-b bg-card">
+          <div className="container-page py-8">
+            <h2 id="members-stats" className="sr-only">
+              {t("Members.statsTitle")}
+            </h2>
+            <div className="grid gap-6 sm:grid-cols-3">
+              {stats.map((s, i) => (
+                <StatTile
+                  key={s.label}
+                  icon={s.icon}
+                  value={s.value}
+                  label={s.label}
+                  tone={(["green", "cyan", "purple"] as const)[i % 3]}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <Section>
+        <SectionHeading
+          eyebrow={t("Home.whatEyebrow")}
+          eyebrowColor="purple"
+          title={t("Members.whatTitle")}
+        />
+        <ul className="reveal-group grid gap-4 md:grid-cols-3">
+          {pillars.map(({ key, icon: Icon, tone }) => (
+            <li key={key} className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border">
+              <span
+                className={cn("mb-4 flex size-12 items-center justify-center rounded-2xl", tone)}
+              >
+                <Icon className="size-6" aria-hidden="true" />
+              </span>
+              <h3 className="mb-2 text-lg font-bold">{t(`News.categories.${key}`)}</h3>
+              <p className="text-sm text-muted-foreground">{t(`About.directions.${key}`)}</p>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
       {leadership.length > 0 && (
-        <Section>
+        <Section surface="tint">
           <SectionHeading
             title={
               leadershipYear
@@ -71,7 +163,7 @@ export default async function MembersPage({
                       }}
                       aria-current={y === leadershipYear ? "page" : undefined}
                       className={cn(
-                        "inline-flex h-8 items-center rounded-full px-3 font-semibold ring-1 ring-border hover:bg-muted",
+                        "inline-flex min-h-11 items-center rounded-full px-4 font-semibold ring-1 ring-border hover:bg-muted",
                         y === leadershipYear && "bg-brand-green-soft",
                       )}
                     >
@@ -84,17 +176,24 @@ export default async function MembersPage({
           )}
           <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
-              <MemberCard key={m.id} member={m} index={i} size="large" />
+              <MemberCard
+                key={m.id}
+                member={m}
+                index={i}
+                size="large"
+                anonymous={!SHOW_LEADER_NAMES}
+              />
             ))}
           </ul>
+          {!SHOW_LEADER_NAMES && (
+            <InfoNote className="mt-6">{t("Members.namesHiddenNote")}</InfoNote>
+          )}
         </Section>
       )}
-      {members.length > 0 && (
-        <Section className="bg-muted/30">
-          <SectionHeading
-            title={t("Members.members")}
-            description={t("Members.count", { count: leadership.length + members.length })}
-          />
+
+      {SHOW_MEMBER_NAMES && members.length > 0 && (
+        <Section>
+          <SectionHeading title={t("Members.members")} />
           <ul className="reveal-group grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {members.map((m, i) => (
               <MemberCard key={m.id} member={m} index={i + 2} />
@@ -102,11 +201,13 @@ export default async function MembersPage({
           </ul>
         </Section>
       )}
-      {active.names.length > 0 && (
+      {active && active.names.length > 0 && (
         <Section>
           <SectionHeading
             title={t("Members.activeTitle", { year: displayYear(active.year) })}
-            description={t("Members.activeBody", { hours: membership.activeMemberHours ?? 0 })}
+            description={t("Members.activeBody", {
+              hours: settings.membership.activeMemberHours ?? 0,
+            })}
           />
           <ul className="flex flex-wrap gap-2">
             {active.names.map((m) => (
@@ -120,23 +221,24 @@ export default async function MembersPage({
           </ul>
         </Section>
       )}
-      {!isEmpty && hiddenCount > 0 && (
-        <p className="container-page -mt-4 pb-6 text-center text-sm text-muted-foreground">
-          {t("Members.hiddenNote")}
-        </p>
-      )}
-      {isEmpty && (
+
+      {isEmpty ? (
         <Section className="pt-8 sm:pt-10">
           <JoinEmptyState icon={Users} title={t("Members.empty")} />
         </Section>
-      )}
-      {!isEmpty && (
+      ) : (
         <Section>
-          <div className="flex flex-col items-center gap-4 rounded-[2rem] bg-brand-green-soft p-8 text-center sm:p-12">
+          <div className="relative isolate flex flex-col items-center gap-4 overflow-hidden rounded-[2rem] bg-brand-green-soft p-8 text-center ring-1 ring-border sm:p-12">
+            <span
+              aria-hidden="true"
+              className="absolute -top-16 -right-12 -z-10 size-48 rounded-full bg-brand-sun/30"
+            />
             <h2 className="text-2xl font-extrabold sm:text-3xl">{t("Members.joinTitle")}</h2>
             <p className="text-muted-foreground">{t("Members.joinBody")}</p>
             <Button asChild size="lg">
-              <Link href="/join">{t("Common.joinCta")}</Link>
+              <Link href="/join">
+                {t("Common.joinCta")} <ArrowRight />
+              </Link>
             </Button>
           </div>
         </Section>

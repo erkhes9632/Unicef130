@@ -13,7 +13,7 @@ export async function DateBadge({ date, className }: { date: string; className?:
         className,
       )}
     >
-      <span className="w-full bg-brand-cyan py-1 text-[11px] font-bold text-brand-night">
+      <span className="w-full bg-brand-cyan py-1 text-[11px] font-bold text-brand-ink">
         {formatDate(locale, d, "monthShort")}
       </span>
       <span className="py-1.5 font-heading text-2xl leading-none font-extrabold">

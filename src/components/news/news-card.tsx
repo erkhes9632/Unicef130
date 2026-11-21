@@ -1,8 +1,10 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { ViewTransition } from "react";
 import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cover-image";
+import { UntranslatedBadge } from "@/components/common/untranslated-badge";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
 import type { NewsItem } from "@/lib/data/news";
 import { formatDate } from "@/lib/dates/format";
 import { newsCoverTransition } from "@/lib/motion/transitions";
@@ -12,17 +14,19 @@ export async function NewsCard({ item, priority }: { item: NewsItem; priority?: 
   const locale = await getLocale();
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-3xl bg-card ring-1 ring-border transition-shadow hover:shadow-lg hover:shadow-brand-cyan/10">
+    <article className="group relative flex hover-lift flex-col overflow-hidden rounded-3xl bg-card shadow-soft ring-1 ring-border">
       <ViewTransition name={newsCoverTransition(item.id)} share="morph" default="none">
-        <div className="aspect-[16/10] overflow-hidden">
+        <div className="@container aspect-[16/10] overflow-hidden">
           <CoverImage
             src={item.coverUrl}
             alt={item.title}
             tone={categoryTone[item.category]}
             icon={coverIconFor(item.category)}
             sdgs={item.sdgs}
+            date={item.publishedAt}
+            locale={locale as Locale}
             priority={priority}
-            className="transition-transform duration-500 group-hover:scale-105"
+            className="transition-transform duration-500 motion-safe:group-hover:scale-105"
           />
         </div>
       </ViewTransition>
@@ -32,8 +36,9 @@ export async function NewsCard({ item, priority }: { item: NewsItem; priority?: 
             {t(`categories.${item.category}`)}
           </Badge>
           <time dateTime={item.publishedAt}>{formatDate(locale, item.publishedAt, "long")}</time>
+          {item.untranslated && <UntranslatedBadge />}
         </div>
-        <h3 className="text-lg leading-snug font-bold">
+        <h3 className="text-lg leading-snug font-bold" lang={item.untranslated ? "mn" : undefined}>
           <Link
             href={`/news/${item.slug}`}
             className="after:absolute after:inset-0 hover:text-brand-cyan-strong"

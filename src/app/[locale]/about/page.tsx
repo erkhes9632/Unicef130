@@ -5,6 +5,7 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
 import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
+import { SHOW_LEADER_NAMES } from "@/config/site";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { listDirectionActivities } from "@/lib/data/events";
@@ -105,7 +106,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
             )}
             <div className={cn("grid gap-4", history.length === 0 && "sm:grid-cols-[auto_1fr]")}>
               {club.foundedYear && (
-                <div className="rounded-3xl bg-brand-cyan p-6 text-brand-night">
+                <div className="rounded-3xl bg-brand-cyan p-6 text-brand-ink">
                   <p className="text-sm font-bold uppercase">{t("foundedLabel")}</p>
                   <p className="font-heading text-6xl font-extrabold">{club.foundedYear}</p>
                 </div>
@@ -122,7 +123,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
       )}
 
       {values.length > 0 && (
-        <Section className="bg-muted/30">
+        <Section surface="tint">
           <SectionHeading title={t("valuesTitle")} align="center" />
           <ul
             className={cn(
@@ -185,7 +186,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
       )}
 
       {leadership.length > 0 && (
-        <Section className="bg-muted/30">
+        <Section surface="tint">
           <SectionHeading
             title={
               leadershipYear
@@ -203,7 +204,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
           />
           <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
-              <MemberCard key={m.id} member={m} index={i} />
+              <MemberCard key={m.id} member={m} index={i} anonymous={!SHOW_LEADER_NAMES} />
             ))}
           </ul>
         </Section>

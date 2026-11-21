@@ -29,6 +29,17 @@
   --color-brand-green-soft: var(--brand-green-soft);
   --color-brand-blue-soft: var(--brand-blue-soft);
   --color-brand-gold-soft: var(--brand-gold-soft);
+  --color-brand-sun: var(--brand-sun);
+  --color-brand-coral: var(--brand-coral);
+  --color-brand-coral-strong: var(--brand-coral-strong);
+  --color-brand-coral-soft: var(--brand-coral-soft);
+  --color-surface-2: var(--surface-2);
+  --color-on-primary: var(--on-primary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -68,14 +79,14 @@
 }
 
 /* ==========================================================================
-   BRAND PALETTE — single source of truth. Tweak the hex values here.
-   Raw colors are approximations from the School 130 logo + UNICEF cyan.
-   - `--brand-*`         raw color: decorative shapes, fills, icons, borders.
-   - `--brand-*-strong`  text-safe variant (>= 4.5:1 on --background, WCAG AA).
-   - `--brand-*-soft`    tinted background for chips/cards (text on it: --foreground).
-   Contrast notes (light): cyan-strong 5.3, purple-strong 6.7, green-strong 5.1,
-   blue-strong 5.8, gold-strong 5.9 on #FFF. Primary button = cyan bg + navy text (7.1).
-   Dark mode: strong variants 7.0–12.2 on #0B1220.
+   BRAND PALETTE — single source of truth (see UI_DIRECTION.md for every contrast ratio).
+   Warm & friendly: off-white + cream in light, warm charcoal in dark. Components use the
+   semantic tokens below (never raw hex or Tailwind palette classes — tests/design.test.ts).
+   - `--brand-*`         raw colour: fills, decorative shapes, icons on tinted tiles.
+   - `--brand-*-strong`  text-safe (>= 4.5:1 on --background, --card and --surface-2).
+   - `--brand-*-soft`    tinted background (pillar cards, chips); text on it = *-strong.
+   Pillars: advocacy = cyan, education = purple, fundraising = gold.
+   Primary button = cyan fill + ink text (5.5:1; white on cyan is only 2.6:1).
    ========================================================================== */
 :root {
   --brand-cyan: #1cabe2;
@@ -83,96 +94,122 @@
   --brand-green: #4cb847;
   --brand-blue: #2f7ed8;
   --brand-gold: #f5b301;
-  --brand-ink: #1f2937;
-  --brand-paper: #ffffff;
-  --brand-night: #0b1220;
+  --brand-sun: #ffc94a;
+  --brand-coral: #f2784b;
+  --brand-ink: #1f2a37;
+  --brand-paper: #fffbf5;
+  --brand-night: #17181c;
 
-  --brand-cyan-strong: #00749e;
-  --brand-purple-strong: #7a3db3;
-  --brand-green-strong: #2e7d2a;
-  --brand-blue-strong: #1f66b8;
-  --brand-gold-strong: #8a5a00;
+  --brand-cyan-strong: #086f99;
+  --brand-purple-strong: #6a34a2;
+  --brand-green-strong: #22713a;
+  --brand-blue-strong: #1f5fae;
+  --brand-gold-strong: #7d5100;
+  --brand-coral-strong: #b13f12;
 
-  --brand-cyan-soft: color-mix(in oklab, var(--brand-cyan) 12%, var(--background));
-  --brand-purple-soft: color-mix(in oklab, var(--brand-purple) 12%, var(--background));
-  --brand-green-soft: color-mix(in oklab, var(--brand-green) 12%, var(--background));
-  --brand-blue-soft: color-mix(in oklab, var(--brand-blue) 12%, var(--background));
-  --brand-gold-soft: color-mix(in oklab, var(--brand-gold) 16%, var(--background));
+  --brand-cyan-soft: color-mix(in oklab, var(--brand-cyan) 12%, var(--card));
+  --brand-purple-soft: color-mix(in oklab, var(--brand-purple) 10%, var(--card));
+  --brand-green-soft: color-mix(in oklab, var(--brand-green) 12%, var(--card));
+  --brand-blue-soft: color-mix(in oklab, var(--brand-blue) 10%, var(--card));
+  --brand-gold-soft: color-mix(in oklab, var(--brand-sun) 22%, var(--card));
+  --brand-coral-soft: color-mix(in oklab, var(--brand-coral) 14%, var(--card));
+
+  /* Section surfaces: base (--background), tint (--surface-2), card band (--card). */
+  --surface-2: #fff3e3;
+  --on-primary: var(--brand-ink);
+  --success: #22713a;
+  --warning: #8a5300;
+  --info: #075f84;
+  --shadow-soft: 0 1px 2px rgb(120 80 30 / 0.06), 0 8px 24px -10px rgb(120 80 30 / 0.16);
+  --shadow-lift: 0 2px 4px rgb(120 80 30 / 0.06), 0 18px 36px -14px rgb(120 80 30 / 0.24);
 
   /* shadcn/ui semantic tokens */
   --background: var(--brand-paper);
   --foreground: var(--brand-ink);
-  --card: var(--brand-paper);
+  --card: #ffffff;
   --card-foreground: var(--brand-ink);
-  --popover: var(--brand-paper);
+  --popover: #ffffff;
   --popover-foreground: var(--brand-ink);
   --primary: var(--brand-cyan);
-  --primary-foreground: var(--brand-night);
-  --secondary: #f1f4f9;
+  --primary-foreground: var(--brand-ink);
+  --secondary: var(--surface-2);
   --secondary-foreground: var(--brand-ink);
-  --muted: #f3f5f9;
-  --muted-foreground: #5b6474;
+  --muted: #f7efe3;
+  --muted-foreground: #59606b;
   --accent: var(--brand-cyan-soft);
   --accent-foreground: var(--brand-ink);
-  --destructive: #c62828;
-  --border: #e5e8ee;
-  --input: #d9dee7;
-  --ring: var(--brand-cyan);
+  --destructive: #b42318;
+  --border: #ebdfce;
+  --input: #958a7b;
+  --ring: #0a7fae;
   --chart-1: var(--brand-cyan);
   --chart-2: var(--brand-purple);
   --chart-3: var(--brand-green);
   --chart-4: var(--brand-blue);
   --chart-5: var(--brand-gold);
-  --radius: 0.875rem;
-  --sidebar: #f7f9fc;
+  --radius: 1rem;
+  --sidebar: #fff8ee;
   --sidebar-foreground: var(--brand-ink);
   --sidebar-primary: var(--brand-cyan);
-  --sidebar-primary-foreground: var(--brand-night);
+  --sidebar-primary-foreground: var(--brand-ink);
   --sidebar-accent: var(--brand-cyan-soft);
   --sidebar-accent-foreground: var(--brand-ink);
   --sidebar-border: var(--border);
-  --sidebar-ring: var(--brand-cyan);
+  --sidebar-ring: var(--ring);
+  color-scheme: light;
 }
 
 .dark {
-  --brand-cyan-strong: #4cc3ee;
-  --brand-purple-strong: #b88ae6;
-  --brand-green-strong: #6fcf6a;
-  --brand-blue-strong: #6aa8f0;
-  --brand-gold-strong: #ffc933;
+  --brand-cyan-strong: #62cbf2;
+  --brand-purple-strong: #cdaef2;
+  --brand-green-strong: #5bd08a;
+  --brand-blue-strong: #8ab8f5;
+  --brand-gold-strong: #ffd36b;
+  --brand-coral-strong: #ff9b72;
 
-  --brand-cyan-soft: color-mix(in oklab, var(--brand-cyan) 16%, var(--background));
-  --brand-purple-soft: color-mix(in oklab, var(--brand-purple) 18%, var(--background));
-  --brand-green-soft: color-mix(in oklab, var(--brand-green) 16%, var(--background));
-  --brand-blue-soft: color-mix(in oklab, var(--brand-blue) 18%, var(--background));
-  --brand-gold-soft: color-mix(in oklab, var(--brand-gold) 16%, var(--background));
+  --brand-cyan-soft: color-mix(in oklab, var(--brand-cyan) 16%, var(--card));
+  --brand-purple-soft: color-mix(in oklab, var(--brand-purple) 18%, var(--card));
+  --brand-green-soft: color-mix(in oklab, var(--brand-green) 14%, var(--card));
+  --brand-blue-soft: color-mix(in oklab, var(--brand-blue) 16%, var(--card));
+  --brand-gold-soft: color-mix(in oklab, var(--brand-gold) 14%, var(--card));
+  --brand-coral-soft: color-mix(in oklab, var(--brand-coral) 14%, var(--card));
+
+  --surface-2: #1e1f24;
+  --on-primary: var(--brand-night);
+  --success: #5bd08a;
+  --warning: #ffc94a;
+  --info: #7fd6f7;
+  /* Depth in dark mode comes from borders and lighter surfaces, not shadows. */
+  --shadow-soft: 0 0 0 1px var(--border);
+  --shadow-lift: 0 0 0 1px color-mix(in oklab, var(--foreground) 22%, transparent);
 
   --background: var(--brand-night);
-  --foreground: #e6eaf2;
-  --card: #121a2b;
-  --card-foreground: #e6eaf2;
-  --popover: #121a2b;
-  --popover-foreground: #e6eaf2;
+  --foreground: #f3eee6;
+  --card: #202127;
+  --card-foreground: #f3eee6;
+  --popover: #202127;
+  --popover-foreground: #f3eee6;
   --primary: var(--brand-cyan);
   --primary-foreground: var(--brand-night);
-  --secondary: #1a2336;
-  --secondary-foreground: #e6eaf2;
-  --muted: #1a2336;
-  --muted-foreground: #9aa4b5;
+  --secondary: #2a2b33;
+  --secondary-foreground: #f3eee6;
+  --muted: #2a2b33;
+  --muted-foreground: #b5aea4;
   --accent: var(--brand-cyan-soft);
-  --accent-foreground: #e6eaf2;
-  --destructive: #ef6b6b;
-  --border: rgb(255 255 255 / 0.1);
-  --input: rgb(255 255 255 / 0.16);
-  --ring: var(--brand-cyan);
-  --sidebar: #0f1729;
-  --sidebar-foreground: #e6eaf2;
+  --accent-foreground: #f3eee6;
+  --destructive: #ff8a80;
+  --border: #3a3b44;
+  --input: #77767f;
+  --ring: #62cbf2;
+  --sidebar: #1c1d22;
+  --sidebar-foreground: #f3eee6;
   --sidebar-primary: var(--brand-cyan);
   --sidebar-primary-foreground: var(--brand-night);
   --sidebar-accent: var(--brand-cyan-soft);
-  --sidebar-accent-foreground: #e6eaf2;
+  --sidebar-accent-foreground: #f3eee6;
   --sidebar-border: var(--border);
-  --sidebar-ring: var(--brand-cyan);
+  --sidebar-ring: var(--ring);
+  color-scheme: dark;
 }
 
 @layer base {
@@ -197,11 +234,44 @@
     text-underline-offset: 0.2em;
   }
   ::selection {
-    background: color-mix(in oklab, var(--brand-cyan) 35%, transparent);
+    background: color-mix(in oklab, var(--brand-sun) 55%, transparent);
+    color: var(--brand-ink);
+  }
+  .dark ::selection {
+    background: color-mix(in oklab, var(--brand-cyan) 45%, transparent);
+    color: var(--foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+  @media (forced-colors: active) {
+    :focus-visible {
+      outline-color: Highlight;
+    }
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+}
+
+/* Theme switch cross-fade (class added for ~300 ms by the theme toggle; never on first load). */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      border-color 200ms ease,
+      fill 200ms ease !important;
   }
 }
 
@@ -279,64 +349,75 @@
 }
 
 /*
- * Scroll reveal with CSS scroll-driven animations (no JavaScript). Browsers without
- * `animation-timeline` simply show the content; elements already on screen at load are fully
- * visible. `.reveal` = one element; `.reveal-group` = every child, staggered across a row of 3.
+ * Reveal on scroll — plays ONCE per page view. `components/layout/reveal-observer.tsx` marks
+ * elements already on screen as shown, then sets `html[data-reveal]` and adds `data-in` to the
+ * rest as they scroll into view. Without JavaScript (no `data-reveal`) or with reduced motion
+ * nothing is hidden. Only opacity and transform animate.
+ * `.reveal` = one element · `.reveal-group` = each child, staggered 60 ms · `.grow-x` = bar
+ * grows to its value · `.draw-line` = vertical line draws from the top.
  */
-@keyframes reveal-up {
-  from {
-    opacity: 0;
-    transform: translateY(28px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+:root {
+  --dur-1: 150ms;
+  --dur-2: 250ms;
+  --dur-3: 520ms;
 }
 @layer components {
   @media screen and (prefers-reduced-motion: no-preference) {
-    @supports (animation-timeline: view()) {
-      .reveal,
-      .reveal-group > * {
-        animation: reveal-up linear both;
-        animation-timeline: view();
-        animation-range: entry calc(var(--reveal-i, 0) * 36px) entry
-          calc(170px + var(--reveal-i, 0) * 36px);
-      }
-      .reveal-group > :nth-child(3n + 2) {
-        --reveal-i: 1;
-      }
-      .reveal-group > :nth-child(3n) {
-        --reveal-i: 2;
-      }
-      /* Bar that grows to its value when it scrolls into view (charts). */
-      .grow-x {
-        transform-origin: left;
-        animation: grow-x linear both;
-        animation-timeline: view();
-        animation-range: entry 20% cover 40%;
-      }
-      /* Vertical line that draws itself while the list scrolls past (timeline). */
-      .draw-line {
-        transform-origin: top;
-        animation: draw-line linear both;
-        animation-timeline: view();
-        animation-range: entry 0% exit 30%;
-      }
+    html[data-reveal]
+      :is(
+        .reveal:not([data-done]),
+        .reveal-group:not([data-done]) > *,
+        .grow-x:not([data-done]),
+        .draw-line:not([data-done])
+      ) {
+      transition:
+        opacity var(--dur-3) var(--ease-out-soft),
+        transform var(--dur-3) var(--ease-out-soft);
+      transition-delay: calc(var(--reveal-i, 0) * 60ms);
+    }
+    html[data-reveal] :is(.reveal:not([data-in]), .reveal-group:not([data-in]) > *) {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    html[data-reveal] .grow-x {
+      transform-origin: left;
+      transition-duration: 800ms;
+    }
+    html[data-reveal] .grow-x:not([data-in]) {
+      transform: scaleX(0);
+    }
+    html[data-reveal] .draw-line {
+      transform-origin: top;
+      transition-duration: 1200ms;
+    }
+    html[data-reveal] .draw-line:not([data-in]) {
+      transform: scaleY(0);
+    }
+    .reveal-group > :nth-child(2) {
+      --reveal-i: 1;
+    }
+    .reveal-group > :nth-child(3) {
+      --reveal-i: 2;
+    }
+    .reveal-group > :nth-child(4) {
+      --reveal-i: 3;
+    }
+    .reveal-group > :nth-child(n + 5) {
+      --reveal-i: 4;
     }
   }
 }
-@keyframes grow-x {
-  from {
-    transform: scaleX(0);
-  }
-}
-@keyframes draw-line {
-  from {
-    transform: scaleY(0);
-  }
-  to {
-    transform: scaleY(1);
+
+/* Interactive cards lift a little; buttons press in. */
+@utility hover-lift {
+  transition:
+    transform var(--dur-2) var(--ease-out-soft),
+    box-shadow var(--dur-2) var(--ease-out-soft);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lift);
+    }
   }
 }
 

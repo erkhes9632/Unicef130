@@ -15,16 +15,19 @@ export async function MemberCard({
   member,
   index,
   size = "default",
+  anonymous = false,
 }: {
   member: MemberItem;
   index: number;
   size?: "default" | "large";
+  /** No name, photo or class: role + a role-initial avatar (SHOW_LEADER_NAMES off). */
+  anonymous?: boolean;
 }) {
   const t = await getTranslations("Members");
   const large = size === "large";
 
   return (
-    <li className="flex flex-col items-center gap-3 rounded-3xl bg-card p-5 text-center ring-1 ring-border">
+    <li className="flex flex-col items-center gap-3 rounded-3xl bg-card p-5 text-center shadow-soft ring-1 ring-border">
       <div
         className={cn(
           "flex items-center justify-center overflow-hidden rounded-full font-heading font-extrabold",
@@ -32,7 +35,9 @@ export async function MemberCard({
           avatarTones[index % avatarTones.length],
         )}
       >
-        {member.photoUrl ? (
+        {anonymous ? (
+          <span aria-hidden="true">{initials(member.role || "•")}</span>
+        ) : member.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- R2 photo shown with consent
           <img src={member.photoUrl} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
@@ -40,9 +45,16 @@ export async function MemberCard({
         )}
       </div>
       <div className="space-y-1">
-        <p className={cn("font-bold", large && "text-lg")}>{member.name}</p>
-        <p className="text-sm font-semibold text-brand-cyan-strong">{member.role}</p>
-        {member.className && !/^(багш|teacher)$/i.test(member.className) && (
+        {!anonymous && <p className={cn("font-bold", large && "text-lg")}>{member.name}</p>}
+        <p
+          className={cn(
+            "font-semibold text-brand-cyan-strong",
+            anonymous ? (large ? "text-lg" : "text-base") : "text-sm",
+          )}
+        >
+          {member.role}
+        </p>
+        {!anonymous && member.className && !/^(багш|teacher)$/i.test(member.className) && (
           <p className="text-xs text-muted-foreground">
             {t("classLabel", { className: member.className })}
           </p>

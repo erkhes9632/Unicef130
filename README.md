@@ -1,211 +1,220 @@
-# 130 UNICEF клуб — вэбсайт
+# 130 UNICEF Club
 
-130-р сургуулийн **130 UNICEF клуб**-ын вэбсайт (клуб 2025 онд байгуулагдсан): мэдээ, арга хэмжээ,
-үр дүн, гишүүд, зургийн цомог, гишүүнчлэлийн элсэлт, гишүүний хэсэг (сайн дурын цаг, гэрчилгээ),
-админ хэсэг.
+Website for the UNICEF club at School No. 130 in Ulaanbaatar. The club started in 2025, and this site is where we post news and events, show what we've achieved each year, and run membership sign-ups.
 
-**Сайт:** https://130foreverychild.site · Англи хувилбар: `/en` · Нууцлал: `/privacy`
+Live at **[130foreverychild.site](https://130foreverychild.site)** (Mongolian by default, English at `/en`).
 
-| Эрх                         | Юу хийж чадах вэ                                                           |
-| --------------------------- | -------------------------------------------------------------------------- |
-| Хэн ч                       | Нийтийн сайт (монгол + англи, цайвар/бараан горим)                         |
-| Нэвтэрсэн (өргөдөл гаргагч) | Элсэлт нээлттэй үед өргөдөл гаргах, төлөвөө `/join` дээр харах             |
-| **Гишүүн**                  | «Миний хэсэг» (`/me`): сайн дурын цаг, арга хэмжээнд бүртгүүлэх, гэрчилгээ |
-| **Админ**                   | Админ хэсэг (`/admin`) бүхэлдээ + «Миний хэсэг»                            |
+## What's on the site
 
-## Технологи
+- **Public pages:** about, impact report, news, events, gallery, FAQ and contact. Available in Mongolian and English, light and dark.
+- **Membership:** when enrollment is open, students sign in and apply. Admins review applications, and accepted students become members.
+- **Member area (`/me`):** volunteer hours, event sign-ups and certificates.
+- **Admin panel (`/admin`):** content, applications, users, attendance and site settings.
 
-| Хэсэг          | Сонголт                                                                    |
-| -------------- | -------------------------------------------------------------------------- |
-| Runtime / багц | [Bun](https://bun.sh) — `bun`, `bunx` (npm/yarn ашиглахгүй)                |
-| Framework      | Next.js 16 (App Router, TypeScript, Server Actions), next-intl (mn + en)   |
-| Загвар         | Tailwind CSS v4, shadcn/ui, lucide-react                                   |
-| Хостинг        | Cloudflare Workers (`@opennextjs/cloudflare` + wrangler), өдөр бүрийн cron |
-| Өгөгдөл        | Cloudflare D1 (Drizzle ORM), зураг — Cloudflare R2                         |
-| Нэвтрэлт       | Clerk: Google эсвэл и-мэйл код (нууц үггүй); эрх `admin` / `member`        |
-| Маягт          | zod + react-hook-form; «Холбоо барих» маягтад Cloudflare Turnstile         |
+There are three kinds of accounts: applicants (anyone who has signed in), members, and admins. Admins can also use the member area.
 
-Хавтас: `src/app/[locale]` нийтийн хуудсууд · `src/app/admin` админ · `src/lib` логик ба өгөгдөл ·
-`src/db/schema.ts` хүснэгтүүд · `drizzle/migrations` SQL · `messages/` орчуулга · `scripts/`
-туслах командууд · `tests/` unit тест · `e2e/` Playwright · `worker.ts` Worker-ийн оролт.
+## Stack
 
-## Локал дээр ажиллуулах
+Next.js 16 (App Router, Server Actions) with TypeScript, Tailwind v4 and shadcn/ui. Translations use next-intl.
 
-Шаардлага: Bun ≥ 1.3. Cloudflare бүртгэл хэрэггүй (D1/R2-ийг локалд дуурайлгана).
+It runs on Cloudflare Workers through `@opennextjs/cloudflare`. Data is in D1 (through Drizzle) and images are in R2. Sign-in is handled by Clerk (Google or an email code, no passwords). The contact form is protected by Turnstile. I use Bun for everything, not npm or yarn.
+
+```
+src/app/[locale]   public pages
+src/app/admin      admin panel
+src/lib            logic and data access
+src/db/schema.ts   database tables
+drizzle/           migrations
+messages/          mn / en translations
+scripts/           helper scripts
+tests/, e2e/       unit and Playwright tests
+worker.ts          Worker entry + daily cron
+```
+
+## Running it locally
+
+You need Bun 1.3 or newer. You don't need a Cloudflare account, because D1 and R2 are emulated locally.
 
 ```bash
 bun install
-cp .dev.vars.example .dev.vars   # Clerk **Development** instance-ийн pk_test_ / sk_test_ түлхүүрийг бичнэ
+cp .dev.vars.example .dev.vars    # add your Clerk *development* keys (pk_test_ / sk_test_)
 bun run db:migrate:local
-bun run db:seed:local            # жишээ контент (зөвхөн локал)
-bun run dev                      # http://localhost:3000 → «Нэвтрэх»
-bun run admin:grant -- <таны-и-мэйл> --dev   # нэг удаа нэвтэрсний дараа өөрийгөө админ болгох
-bun run hooks:install            # commit бүрийн өмнө `bun run check` (нэг удаа)
+bun run db:seed:local             # sample content, local only
+bun run dev                       # http://localhost:3000
 ```
 
-Production-той ижил орчинд: `bun run preview` (http://localhost:8787). Локалд Turnstile туршилтын
-түлхүүр ашиглана, Google Sheets sync алгасагдана.
+Sign in once, then make yourself an admin:
 
-| Команд                                         | Үүрэг                                               |
-| ---------------------------------------------- | --------------------------------------------------- |
-| `bun run check`                                | lint + typecheck + format + knip + unit тест        |
-| `bun run build` / `bun run cf:build`           | Next.js build / Cloudflare Worker bundle            |
-| `bun run preview`                              | Локал Workers preview (:8787)                       |
-| `bun run test:e2e`                             | E2E (preview асаалттай; Clerk Development instance) |
-| `bun run db:generate`                          | `schema.ts` өөрчилсний дараа шинэ migration үүсгэх  |
-| `bun run db:migrate:local` / `db:reset:local`  | Локал D1: migration / бүрэн шинэчлэх                |
-| `bun run admin:grant -- <и-мэйл> [--dev]`      | Админ эрх олгох (`--dev` = локал Clerk instance)    |
-| `bun run admin:revoke -- <и-мэйл> [--dev]`     | Админ эрх хасах (сүүлчийн админыг хасахгүй)         |
-| `bun run report:seed`                          | Жилийн тайлангийн SQL (`private/`-аас)              |
-| `bun run brand:assets` / `bun run fonts`       | Логоноос OG зураг, favicon / фонт файлууд           |
-| `bun run db:migrate:remote` · `bun run deploy` | **Production**: migration · deploy                  |
+```bash
+bun run admin:grant -- you@example.com --dev
+```
 
-## Production
+Run `bun run hooks:install` once so that `bun run check` runs before every commit.
 
-Deploy-г **гараар** хийнэ (CI, автомат deploy байхгүй). Эхлээд `bunx wrangler whoami`-аар зөв
-Cloudflare бүртгэлд нэвтэрсэн эсэхээ шалгана.
+`bun run preview` runs the real Worker build on http://localhost:8787. Locally, Turnstile uses test keys and Google Sheets sync is skipped.
 
-| Нөөц      | Нэр                                                                |
-| --------- | ------------------------------------------------------------------ |
-| Worker    | `unicef-club-130` → https://130foreverychild.site                  |
-| D1 (APAC) | `unicef-club-130-db` (binding `DB`)                                |
-| R2        | `unicef-club-130-media` (зураг), `unicef-club-130-opennext-cache`  |
-| Cron      | өдөр бүр 03:30 (УБ) — хугацаа дууссан өргөдөл, rate-limit цэвэрлэх |
-| Clerk     | Production instance, домэйн `130foreverychild.site`                |
+### Useful commands
 
-### Deploy хийх
+| Command                                   | What it does                                 |
+| ----------------------------------------- | -------------------------------------------- |
+| `bun run check`                           | lint, typecheck, format, knip, unit tests    |
+| `bun run cf:build`                        | build the Worker bundle                      |
+| `bun run preview`                         | run the Worker locally                       |
+| `bun run test:e2e`                        | Playwright tests (needs preview running)     |
+| `bun run db:generate`                     | create a migration after editing `schema.ts` |
+| `bun run db:reset:local`                  | wipe and rebuild the local DB                |
+| `bun run admin:grant -- <email> [--dev]`  | give someone admin                           |
+| `bun run admin:revoke -- <email> [--dev]` | remove admin (won't remove the last admin)   |
+| `bun run brand:assets`                    | generate favicon and OG image from the logo  |
+| `bun run report:seed`                     | build the yearly report SQL from `private/`  |
+
+## Deploying
+
+Deploys are done by hand. There's no CI. Check you're logged in to the right Cloudflare account first (`bunx wrangler whoami`).
 
 ```bash
 git pull && bun install
 bun run check && bun run cf:build
-bunx wrangler d1 migrations list DB --remote   # шинэ migration байвал доорхыг үз
+bunx wrangler d1 migrations list DB --remote   # anything pending?
 bun run deploy
 ```
 
-### Шинэ migration
+If there's a new migration, back up first, then run `bun run db:migrate:remote` before deploying. If a migration drops a column or table, ship the code that stops using it first, and only run the migration after that.
 
-1. `src/db/schema.ts` → `bun run db:generate` → `bun run db:migrate:local` → локалд шалгана.
-2. Нөөц авна (доор) → `bun run db:migrate:remote` → `bun run deploy`.
-3. Багана/хүснэгт устгах migration-ийг шинэ код deploy хийгдэж, хуучин код түүнийг ашиглахаа
-   больсны дараа л ажиллуулна.
+Never run `db:seed:local` against production.
 
-⚠️ `bun run db:seed:local` бол жишээ контент — production дээр хэзээ ч ажиллуулахгүй.
+**Production resources**
 
-### Нөөц ба сэргээх (D1)
+- Worker: `unicef-club-130`
+- D1: `unicef-club-130-db`
+- R2: `unicef-club-130-media` and `unicef-club-130-opennext-cache`
+- Cron: runs daily at 03:30 Ulaanbaatar time to clean up expired applications and rate limits
+
+### Backups
 
 ```bash
-bunx wrangler d1 export DB --remote --output private/backup-$(date +%F).sql   # бүрэн нөөц
-bunx wrangler d1 time-travel info DB                                          # сэргээх цэг (30 хоног)
-bunx wrangler d1 time-travel restore DB --timestamp=2026-11-20T10:00:00+08:00
+bunx wrangler d1 export DB --remote --output private/backup-$(date +%F).sql
+bunx wrangler d1 time-travel info DB
+bunx wrangler d1 time-travel restore DB --timestamp=<ISO time>
 ```
 
-`private/` git-д ордоггүй (гишүүдийн нэр агуулдаг). `restore` нь бүх санг тэр мөч рүү буцаана —
-өмнө нь `export` хийнэ.
+A restore rolls back the whole database, so export first. `private/` is gitignored because it contains member names.
 
-### Secret-ууд ба тэдгээрийг солих
+### Secrets
 
-Secret-ийг файлд, git-д, чатад хэзээ ч бичихгүй; `wrangler secret put` утгыг нуугдмал асууна.
-`put` нь Worker-ийн одоогийн хувилбарт **шууд** хүчинтэй болно.
+Secrets go in with `bunx wrangler secret put <NAME>`. They never go in files, git or chat.
 
-| Нэр                            | Хаанаас                                                  |
-| ------------------------------ | -------------------------------------------------------- |
-| `CLERK_SECRET_KEY`             | Clerk → (Production) → API keys → Secret key             |
-| `CLERK_WEBHOOK_SIGNING_SECRET` | Clerk → Webhooks → endpoint → Signing secret (`whsec_…`) |
-| `TURNSTILE_SECRET_KEY`         | Cloudflare → Turnstile → widget → Secret key             |
-| `GOOGLE_*` (заавал биш)        | Google Sheets sync — байхгүй бол чимээгүй алгасагдана    |
+- `CLERK_SECRET_KEY`
+- `CLERK_WEBHOOK_SIGNING_SECRET`
+- `TURNSTILE_SECRET_KEY`
+- `GOOGLE_*` (optional, for Sheets sync)
 
-Нууц биш тохиргоо (`SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `TURNSTILE_SITE_KEY`) нь
-`wrangler.jsonc` → `"vars"`-д; өөрчилсний дараа `bun run deploy`.
+Public config (`SITE_URL`, the Clerk publishable key, the Turnstile site key) lives in `wrangler.jsonc` under `vars`.
 
-**Солих (rotate)** — алдагдсан гэж сэжиглэвэл, эсвэл хариуцагч солигдоход:
+**To rotate a secret:**
 
-1. Шинэ утга үүсгэнэ: Clerk → API keys → шинэ secret key / Webhooks → endpoint → «Rotate secret» /
-   Turnstile → widget → «Rotate secret key».
-2. `bunx wrangler secret put <НЭР>` → шинэ утгыг оруулна.
-3. Сайтыг шалгаад (нэвтрэх, «Холбоо барих» маягт, Clerk → Webhooks → Attempts 200) хуучин утгыг
-   Clerk / Turnstile дээр устгана.
+1. Create a new value in Clerk or Turnstile.
+2. Run `secret put` with the new value.
+3. Check that sign-in, the contact form and the webhooks still work.
+4. Delete the old value.
 
-### Лог
+Rotate every secret when the person responsible for the site changes.
 
-`bunx wrangler tail` (бодит цаг, `--status error` = зөвхөн алдаа) эсвэл Cloudflare Dashboard →
-Workers & Pages → unicef-club-130 → Observability. Лог нь JSON мөр, хувийн мэдээлэлгүй (ID л).
+### Logs
 
-## Админ болох / шинэ админ нэмэх
+`bunx wrangler tail --status error`, or Cloudflare dashboard → Workers → unicef-club-130 → Observability. Logs only contain IDs, never personal info.
 
-**Анхны админ** (эсвэл бүх админ эрхээ алдсан үед):
+## Admin access
 
-1. Сайтад нэг удаа өөрийн Google эсвэл и-мэйлээр нэвтэрнэ (бүртгэл үүснэ).
-2. Өөрийн терминалд (Clerk **Production** Secret key-г нуугдмал асууна, хаана ч хадгалахгүй):
-   ```bash
-   bun run admin:grant -- <таны-и-мэйл>
-   ```
-   Скрипт аль instance дээр ажиллаж байгааг бичээд, өөрчлөлтийг Clerk-ээс буцааж уншиж шалгана.
-   Идэвхгүй (ban) болсон бүртгэлийг мөн идэвхжүүлнэ.
-3. Сайтыг шинэчилнэ: header-т **«Админ»** товч гарна (гар утсанд — цэс → «Админ хэсэг»).
-   Нэвтрэх бүрт админ шууд `/admin` руу орно.
+**First admin:**
 
-**Дараагийн админууд:** тэр хүн сайтад нэг удаа нэвтэрнэ → **Админ → Хэрэглэгчид** → «Админ болгох».
+1. Sign in on the site once.
+2. Run `bun run admin:grant -- <your-email>`. It asks for the production Clerk secret and doesn't store it.
+3. Refresh the page. An **Admin** button appears in the header (on mobile, it's in the menu).
 
-**«Админ» товч гарахгүй / «Танд админ эрх байхгүй» гэж гарвал:**
+After that, new admins are added from **Admin → Users → Make admin**. The person has to sign in once first.
 
-- Хуудас таны нэвтэрсэн и-мэйлийг харуулна — зөв бүртгэлээр нэвтэрсэн эсэхээ шалгана.
-- Сайт эрхийг Clerk-ээс дахин уншдаг тул эрх олгосны дараа ихэвчлэн шууд ажиллана; үгүй бол тэр
-  хуудсан дээрх «Гараад дахин нэвтрэх» товч.
-- Clerk dashboard → Users → тухайн хүн → **Public metadata** `{"role":"admin"}` байгаа эсэх;
-  Sessions → Customize session token `{"role":"{{user.public_metadata.role}}"}` хэвээр эсэх.
+**Admin button not showing?**
 
-Хамгаалалт: админ өөрийгөө хасах, идэвхгүй болгох, устгах боломжгүй; сүүлчийн админыг хасахгүй.
-Clerk dashboard болон Cloudflare бүртгэлд хамгийн багадаа 2 хүн (удирдагч + хариуцсан багш) хандах
-эрхтэй, 2 шатлалт баталгаажуулалттай байна.
+- Make sure you're signed in with the right email (the error page shows which account you're using).
+- Try "Sign out and sign in again".
+- In Clerk, check that the user's public metadata contains `{"role":"admin"}`.
+- Also check that the session token template still contains `{"role":"{{user.public_metadata.role}}"}`.
 
-## Админ хэсэг товчоор
+Admins can't demote, ban or delete themselves, and the last admin can't be removed. At least two people (the club lead and the supervising teacher) should have access to Cloudflare and Clerk, with 2FA turned on.
 
-- **Элсэлт** — нэр, хичээлийн жил, нээгдэх/хаагдах цаг (УБ), ангиуд, нэмэлт асуулт, багтаамж
-  (дүүрвэл хүлээлгийн жагсаалт эсвэл зогсоох). Нээлттэй үед сайтын дээд талд тууз гарна.
-- **Өргөдлүүд** — төлөв (Шинэ → Хянаж байна → Ярилцлага → Тэнцсэн / Тэнцээгүй / Хүлээлгийн
-  жагсаалт), өргөдөл гаргагчид харагдах мессеж, дотоод тэмдэглэл, CSV. **Тэнцсэн** болгоход гишүүн
-  эрх олгогдож, Гишүүд хэсэгт (нийтэд харагдахгүй) мөр үүснэ.
-- **Хэрэглэгчид** — хайх, эрх олгох/хасах, идэвхгүй болгох (буцаах боломжтой), бүр мөсөн устгах
-  (хувийн мэдээлэл устаж, сайн дурын цаг нэргүйгээр нийт дүнд үлдэнэ).
-- **Гишүүд** — нийтэд нэр харуулах нь зөвхөн эцэг эх/асран хамгаалагчийн зөвшөөрөлтэй.
-- **Арга хэмжээ → Сайн дурынхан** — ирц; «Ирсэн» гэхэд цаг **Сайн дурын цаг**-т орно (CSV тайланд).
-- **Мэдээ, Цомог, Түгээмэл асуулт, Бидний тухай, Сайтын тохиргоо** — бөглөөгүй хэсэг сайт дээр
-  харагдахгүй (зохиомол мэдээлэл гарахгүй). Англи талбар хоосон бол монгол текст гарна.
-- **Системийн төлөв** — D1/R2/Clerk/webhook/Turnstile; контентын JSON экспорт (хувийн мэдээлэлгүй).
-- Товчлол: ⌘K / Ctrl+K хайлт, ⌘S / Ctrl+S хадгалах.
+## Admin panel in short
 
-Жилийн тайлан (гишүүд, цаг, үйл ажиллагаа) `private/report-<он>.json`-оос: `bun run report:seed`
-→ `bunx wrangler d1 execute DB --remote --file private/seed-report-<он>.sql`. Давтан ажиллуулахад
-давхардахгүй, админы засварыг дарахгүй.
+- **Enrollment:** open and close dates, which grades can apply, extra questions and a capacity limit. While enrollment is open, a banner shows on the site.
+- **Applications:** move each one through New → Reviewing → Interview → Accepted / Rejected / Waitlist, and export to CSV. Accepting an application makes the person a member.
+- **Users:** search, change roles, deactivate (can be undone) or delete for good. Deleting removes personal data, but the volunteer hours stay in the totals anonymously.
+- **Events:** mark attendance. Marking someone as present adds their volunteer hours.
+- **Content:** news, gallery, FAQ, about page and site settings. Sections left empty are simply hidden. If an English field is empty, the Mongolian text is shown instead.
+- **System status:** health of D1, R2, Clerk, webhooks and Turnstile, plus a content export.
 
-## Хувийн мэдээлэл
+Shortcuts: `Ctrl/⌘ + K` to search, `Ctrl/⌘ + S` to save.
 
-Хэрэглэгчдийн ихэнх нь **насанд хүрээгүй** сурагчид (дэлгэрэнгүй: `/privacy`).
+The yearly report is loaded from `private/report-<year>.json`. Run `bun run report:seed`, then execute the generated SQL on the remote DB. It's safe to run more than once and won't overwrite admin edits.
 
-- Маягт зөвхөн шаардлагатай мэдээллийг авна; Google-ээс зөвхөн нэр, и-мэйл, зураг.
-- Өргөдөл, утас, зурвасыг зөвхөн админ харна. Гишүүний нэр нийтэд зөвхөн зөвшөөрөлтэй; хувь хүний
-  цаг хэзээ ч нийтэд гарахгүй. Үйлдлийн түүх, логт нэрийн оронд ID бичигдэнэ.
-- Тэнцээгүй өргөдөл элсэлт хаагдсанаас N хоногийн (анхдагч 90) дараа автоматаар устна.
-- CSV, нөөц файлыг хуваалцахгүй; `private/`, `.dev.vars`-ийг git-д оруулахгүй.
+## Privacy
 
-## Дараагийн жилийн удирдлагад хүлээлгэн өгөх
+Most of our users are students under 18, so we keep things minimal. More details are on `/privacy`.
 
-1. Шинэ удирдагч сайтад нэвтэрнэ → Админ → Хэрэглэгчид → **Админ болгох**.
-2. Гарч буй хүмүүсийн бүртгэлийг **идэвхгүй** болгоно (устгахгүй — түүх үлдэнэ).
-3. Cloudflare (Manage Account → Members), Clerk (Workspace members), код хадгалагдаж буй газар
-   (GitHub)-т шинэ хариуцагчийг нэмж, гарч буй хүнийг хасна. Хамгийн багадаа 2 хүн.
-4. Хариуцагч солигдсон бол secret-уудыг солино (дээрх «Secret-ууд ба тэдгээрийг солих»).
-5. Домэйн `130foreverychild.site`-ийн сунгалтын огноо, төлбөр, хариуцагчийг тэмдэглэнэ.
-6. Шинэ хичээлийн жилийн элсэлтийг үүсгэж, жилийн тайлангаа оруулна.
-7. Энэ README болон `DEPLOY_CHECKLIST.md`-ийг хамт уншиж, туршилтаар мэдээ нэмж үзнэ.
+- We only collect what forms actually need. From Google we only take name, email and photo.
+- Only admins can see applications, phone numbers and messages.
+- Member names are shown publicly only with parental consent. Individual volunteer hours are never public.
+- Rejected applications are deleted automatically 90 days after enrollment closes (this can be changed).
+- Don't share CSV exports or backups, and never commit `private/` or `.dev.vars`.
 
-## Хөгжүүлэгчдэд
+## Handing over to next year's team
 
-- Код, тайлбар, commit message — англиар (Conventional Commits). Сайтын текст `messages/*.json`-д.
-- Эрх: хуудас `getAdminAccess()` / `requireAdmin()` / `requireMember()`, Server Action
-  `assertAdmin()` / `assertMember()` / `assertSignedIn()` (`src/lib/auth/session.ts`). Middleware
-  зөвхөн нэвтэрсэн эсэхийг шалгана; эрхийг D1 (+ Clerk-ээс засвар) шийднэ.
-- Clerk зөвхөн `/sign-in`, `/sign-out`, `/join`, `/me`, `/admin`-д ачаалагдана; нийтийн header
-  server дээр зурагдана.
-- Лог: `logger` (`src/lib/logger.ts`), `console.*` хориотой. Хувийн мэдээлэл биш ID бичнэ.
-- Нэвтрэлт/эрхийн өөрчлөлтийн дараа `bun run preview` + `bun run test:e2e`.
+1. The new lead signs in, and a current admin makes them an admin.
+2. Deactivate the outgoing team's accounts. Don't delete them, so the history stays.
+3. Update who has access to Cloudflare, Clerk and GitHub. Keep at least two people on each.
+4. Rotate the secrets.
+5. Write down when the domain renews and who pays for it.
+6. Create the new school year's enrollment and add last year's report.
+7. Read this file and `DEPLOY_CHECKLIST.md`, and try publishing a test news post.
+
+## Notes for developers
+
+- Code, comments and commit messages are in English (Conventional Commits). All UI text goes in `messages/*.json`.
+- Permissions are checked on the server. For pages, use `requireAdmin()` and `requireMember()`. For server actions, use `assertAdmin()` and `assertMember()`. Both live in `src/lib/auth/session.ts`. Middleware only checks whether someone is signed in.
+- Clerk only loads on the sign-in, join, me and admin routes. The public header is rendered on the server.
+- Use `logger` instead of `console`, and log IDs, not personal info.
+- After touching auth, run `bun run preview` and `bun run test:e2e`.
+
+## Design system
+
+The look is warm and friendly: an off-white and cream light theme, a warm charcoal dark theme, UNICEF cyan for primary actions, with sun yellow and coral as accents. Each pillar has its own colour: Advocacy is cyan, Education is purple, Fundraising is gold.
+
+- **Tokens only.** Colours, shadows and surfaces are CSS variables in `src/app/globals.css`, with one value for light and one for dark. Components use token classes such as `bg-card`, `text-muted-foreground`, `bg-surface-2`, `text-brand-cyan-strong` and `shadow-soft`, never raw hex or palette shades. `tests/design.test.ts` fails on raw colours. White and black are allowed only in the documented places, such as text on SDG tiles and logo tiles.
+- **Contrast.** Every text and background pair passes WCAG AA in both themes. Primary buttons are cyan with dark ink text, because white on cyan is too faint. Links and focus rings use the darker `#086F99` / `#0A7FAE` in light mode.
+- **Shared components:**
+  - `BrandLockup` (variants `header`, `footer`, `sidebar`, `compact`), `Section` (`surface="base" | "tint" | "card"`), `Eyebrow`, `SectionHeading`;
+  - `StatTile`, `PartnerChip`, `InfoNote`, `EmptyState`, `UntranslatedBadge`;
+  - `CoverImage` (shows a pillar-tinted card with a date stamp until a photo is uploaded), `HeroCollage`;
+  - `Button` (44 px tall; variants include `warm`), `ErrorSummary` for forms, `StickyActions` for long admin forms.
+- **Motion.** Sections fade in once per page view (`.reveal`, `.reveal-group`, `.grow-x`, `.draw-line`, driven by `components/layout/reveal-observer.tsx`). Cards lift slightly on hover (`hover-lift`), and numbers count up once. Nothing is hidden without JavaScript, and all motion is off when the device asks for reduced motion.
+- **Languages.** Every string lives in both `messages/mn.json` and `messages/en.json` (a test checks that they match). On English pages, news or events without an English version are shown in Mongolian with an "Available in Mongolian" badge.
+- **Header.** The desktop menu appears from 1024 px wide; below that there's a drawer. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
+
+## Showing student names (`SHOW_LEADER_NAMES`)
+
+Students' names stay hidden until the club has written consent from parents or guardians. Two switches in `src/config/site.ts` control this:
+
+```ts
+export const SHOW_LEADER_NAMES = false; // leadership cards: role + initial avatar only
+export const SHOW_MEMBER_NAMES = false; // /members: aggregate numbers only
+```
+
+Set one to `true` and deploy to show names. Even then, a name is shown only if an admin has marked that person as public (Admin → Members → "Нэрийг нийтэд харуулах").
+
+## Swapping the logo
+
+The logo slot is the `BrandLockup` component. No code change is needed to swap logos:
+
+1. Go to Admin → Site settings → Logo and upload the school and UNICEF logos (PNG, JPG or WebP; files with white backgrounds are fine, because the logos sit on a light tile).
+2. Or put `public/logos/school-130.png` and `public/logos/unicef.png` in the repo, run `bun run brand:assets` (this also regenerates the social image and icons) and deploy.
+
+Each logo fits into a fixed square box, so wide or tall logos never overlap the club name. With no logo at all, a "130" badge is shown instead.

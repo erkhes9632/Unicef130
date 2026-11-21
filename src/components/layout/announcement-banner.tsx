@@ -25,7 +25,7 @@ export async function AnnouncementBanner() {
   if (!manual && !auto) return null;
 
   const base =
-    "flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-center text-sm font-medium";
+    "flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-center text-sm font-semibold";
   if (manual) {
     const href = announcement.href;
     const external = safeExternalUrl(href);
@@ -37,7 +37,7 @@ export async function AnnouncementBanner() {
       </>
     );
     return (
-      <aside aria-label={t("label")} className="bg-brand-gold text-brand-night print:hidden">
+      <aside aria-label={t("label")} className="bg-brand-gold text-brand-ink print:hidden">
         {external ? (
           <a
             href={external}
@@ -60,10 +60,13 @@ export async function AnnouncementBanner() {
   if (state.phase !== "open") return null;
   const tc = await getTranslations("Countdown");
   return (
-    <aside aria-label={t("label")} className="bg-brand-cyan text-brand-night print:hidden">
+    <aside aria-label={t("label")} className="bg-brand-cyan text-brand-ink print:hidden">
       <p className={base}>
         <Megaphone className="size-4 shrink-0" aria-hidden="true" />
-        <span>{t("recruitmentOpen", { date: formatDate(locale, state.closesAt, "long") })}</span>
+        <span className="sm:hidden">{t("recruitmentOpenShort")}</span>
+        <span className="hidden sm:inline">
+          {t("recruitmentOpen", { date: formatDate(locale, state.closesAt, "long") })}
+        </span>
         <span className="hidden sm:inline">
           {t("timeLeft")}{" "}
           <Countdown
@@ -77,7 +80,10 @@ export async function AnnouncementBanner() {
             }}
           />
         </span>
-        <Link href="/join" className="inline-flex items-center gap-1 font-bold underline">
+        <Link
+          href="/join"
+          className="-my-2 inline-flex items-center gap-1 py-2.5 font-bold underline underline-offset-4"
+        >
           {t("cta")} <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>
       </p>

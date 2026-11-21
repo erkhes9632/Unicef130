@@ -1,11 +1,20 @@
-import { BarChart3 } from "lucide-react";
+import {
+  BarChart3,
+  CalendarHeart,
+  Clock,
+  Coins,
+  HeartHandshake,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { CountUp } from "@/components/common/count-up";
 import { coverIconFor, coverIcons } from "@/components/common/cover-image";
+import { InfoNote } from "@/components/common/info-note";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
+import { StatTile } from "@/components/common/stat-tile";
 import { ImpactTimeline, type TimelineItem } from "@/components/impact/impact-timeline";
 import { SdgExplorer, type ExplorerGoal } from "@/components/impact/sdg-explorer";
 import { resolveLocale } from "@/i18n/locale";
@@ -17,6 +26,7 @@ import { getHomeStats, getSiteSettings } from "@/lib/data/settings";
 import { formatDate, formatDateRange, formatMnt, formatNumber } from "@/lib/dates/format";
 import { SDGS } from "@/lib/sdg";
 import { pageMetadata } from "@/lib/seo";
+import { statKind } from "@/lib/stat-icon";
 import { clubDirections } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -69,12 +79,12 @@ function Bars({
 }) {
   const max = Math.max(1, ...rows.map(value));
   return (
-    <figure className="reveal rounded-3xl bg-card p-5 ring-1 ring-border sm:p-6">
+    <figure className="reveal rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border sm:p-6">
       <figcaption className="mb-4 font-bold">{title}</figcaption>
       <dl className="space-y-3">
         {rows.map((r) => (
           <div key={r.direction}>
-            <dt className="mb-1 flex justify-between gap-2 text-sm">
+            <dt className="mb-1 flex flex-wrap justify-between gap-x-2 text-sm">
               <span className="font-semibold">{directionLabel(r.direction)}</span>
               <span className="font-heading font-extrabold">{label(r)}</span>
             </dt>
@@ -90,6 +100,15 @@ function Bars({
     </figure>
   );
 }
+
+const STAT_ICONS = {
+  money: Coins,
+  hours: Clock,
+  members: Users,
+  reach: HeartHandshake,
+  events: CalendarHeart,
+  other: Sparkles,
+} as const;
 
 export default async function ImpactPage({ params, searchParams }: PageProps<"/[locale]/impact">) {
   const locale = await resolveLocale(params);
@@ -194,8 +213,8 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
                   href={{ pathname: "/impact", query: y === years[0] ? {} : { year: y } }}
                   aria-current={y === year ? "page" : undefined}
                   className={cn(
-                    "inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-border hover:bg-muted",
-                    y === year && "bg-brand-green text-brand-night ring-brand-green",
+                    "inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-border hover:bg-muted",
+                    y === year && "bg-brand-green text-brand-ink ring-brand-green",
                   )}
                 >
                   {displayYear(y)}
@@ -209,27 +228,94 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
       {headline.length > 0 && (
         <Section className="pt-8 sm:pt-10">
           <h2 className="sr-only">{t("totalsTitle")}</h2>
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {headline.map((s, i) => (
-              <div
-                key={`${s.label}-${i}`}
-                className="flex min-w-0 flex-col rounded-3xl bg-card p-4 text-center ring-1 ring-border sm:p-5"
-              >
-                <dt className="text-sm text-muted-foreground">{s.label}</dt>
-                <dd className="order-first font-heading text-[clamp(1.25rem,6vw,1.875rem)] font-extrabold whitespace-nowrap text-brand-cyan-strong sm:text-4xl">
-                  <CountUp value={s.value} />
-                </dd>
-              </div>
-            ))}
-          </dl>
+          {/* Odd counts: the first tile spans two columns so rows end evenly (7 → 2 + 1×5). */}
+          <ul
+            className={cn(
+              "grid gap-3 sm:grid-cols-2",
+              headline.length % 4 === 3 || headline.length === 4
+                ? "lg:grid-cols-4"
+                : "lg:grid-cols-3",
+            )}
+          >
+            {headline.map((s, i) => {
+              const wide =
+                i === 0 &&
+                (headline.length % 4 === 3 ||
+                  headline.length % 3 === 2 ||
+                  headline.length % 2 === 1);
+              return (
+                <li
+                  key={`${s.label}-${i}`}
+                  className={cn(
+                    "rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border sm:p-5",
+                    wide && "sm:col-span-2",
+                    i === 0 && "bg-brand-cyan-soft",
+                  )}
+                >
+                  <StatTile
+                    icon={STAT_ICONS[statKind(s.label, s.value)]}
+                    value={s.value}
+                    label={s.label}
+                    tone={(["cyan", "purple", "green", "gold"] as const)[i % 4]}
+                  />
+                </li>
+              );
+            })}
+          </ul>
         </Section>
       )}
 
       {impact && rows.length > 0 && (
-        <Section className="bg-muted/30">
+        <Section surface="tint">
           <SectionHeading title={t("directionsTitle")} description={t("directionsDescription")} />
-          <div className="reveal -mx-4 overflow-x-auto px-4">
-            <table className="w-full min-w-[40rem] overflow-hidden rounded-2xl bg-card text-sm ring-1 ring-border">
+          {/* Phones/tablets: one card per direction (no sideways scrolling). */}
+          <ul className="reveal-group grid gap-3 sm:grid-cols-2 md:hidden">
+            {[...rows, ...(impact.total ? [impact.total] : [])].map((r) => {
+              const isTotal = r.direction === "total";
+              const Icon = isTotal ? null : coverIcons[coverIconFor(r.direction)];
+              const cells = [
+                [t("activities"), String(r.activities)],
+                [t("inPerson"), r.inPersonLabel],
+                [t("online"), formatNumber(r.online)],
+                [t("reachTotal"), formatNumber(r.total)],
+                [t("donation"), r.donationAmount > 0 ? formatMnt(r.donationAmount) : "—"],
+              ] as const;
+              return (
+                <li
+                  key={r.direction}
+                  className={cn(
+                    "rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border",
+                    isTotal && "bg-muted",
+                  )}
+                >
+                  <h3 className="mb-3 flex items-center gap-2 font-bold">
+                    {Icon && (
+                      <span
+                        className={cn(
+                          "flex size-8 items-center justify-center rounded-xl",
+                          directionColor[r.direction]?.soft,
+                          directionColor[r.direction]?.text,
+                        )}
+                      >
+                        <Icon className="size-4" aria-hidden="true" />
+                      </span>
+                    )}
+                    {directionLabel(r.direction)}
+                  </h3>
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                    {cells.map(([label, value]) => (
+                      <div key={label} className="flex min-w-0 flex-col">
+                        <dt className="text-xs text-muted-foreground">{label}</dt>
+                        <dd className="font-heading font-extrabold tabular-nums">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="reveal hidden md:block">
+            <table className="w-full overflow-hidden rounded-2xl bg-card text-sm shadow-soft ring-1 ring-border">
               <caption className="sr-only">{t("directionsTitle")}</caption>
               <thead className="bg-muted/60 text-left text-xs text-muted-foreground uppercase">
                 <tr>
@@ -258,7 +344,10 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
                   const isTotal = r.direction === "total";
                   const Icon = isTotal ? null : coverIcons[coverIconFor(r.direction)];
                   return (
-                    <tr key={r.direction} className={cn(isTotal && "bg-muted/40 font-bold")}>
+                    <tr
+                      key={r.direction}
+                      className={cn("even:bg-muted/30", isTotal && "bg-muted font-bold")}
+                    >
                       <th scope="row" className="p-3 text-left sm:p-4">
                         <span className="inline-flex items-center gap-2">
                           {Icon && (
@@ -304,12 +393,12 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
           {impact.total &&
             impact.total.activities !== activities.length &&
             activities.length > 0 && (
-              <p className="mt-3 text-sm text-muted-foreground">
+              <InfoNote className="mt-3">
                 {t("activitiesFootnote", {
                   reported: impact.total.activities,
                   listed: activities.length,
                 })}
-              </p>
+              </InfoNote>
             )}
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <Bars
@@ -331,7 +420,7 @@ export default async function ImpactPage({ params, searchParams }: PageProps<"/[
       )}
 
       {sdgs.length > 0 && (
-        <Section className="bg-muted/30">
+        <Section surface="tint">
           <SectionHeading
             title={t("sdgTitle")}
             description={`${t("sdgReached", { count: sdgs.length })}. ${t("sdgPick")}.`}

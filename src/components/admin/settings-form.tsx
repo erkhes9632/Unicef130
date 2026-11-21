@@ -20,6 +20,7 @@ import {
   FormSection,
   keepValuesOnSubmit,
   NativeSelect,
+  StickyActions,
   SubmitButton,
 } from "./form";
 import { ImageField } from "./image-field";
@@ -605,7 +606,9 @@ export function SettingsForm({
         </div>
       </FormSection>
 
-      <SubmitButton />
+      <StickyActions>
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

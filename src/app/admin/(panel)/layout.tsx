@@ -31,14 +31,10 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
 
   return (
     <div className="flex flex-1">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-background lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground lg:flex">
         <div className="border-b p-4">
           <Link href="/admin">
-            <BrandLockup
-              size={28}
-              wrapText
-              className="[&_span]:text-[11px] [&>span:last-child>span:first-child]:text-sm"
-            />
+            <BrandLockup variant="sidebar" />
           </Link>
         </div>
         <nav aria-label="Админ цэс" className="flex-1 overflow-y-auto p-3">

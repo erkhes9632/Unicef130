@@ -62,7 +62,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
             href={f.value ? `/admin/news?status=${f.value}` : "/admin/news"}
             className={cn(
               "rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-border",
-              (status ?? "") === f.value && "bg-brand-cyan text-brand-night ring-brand-cyan",
+              (status ?? "") === f.value && "bg-brand-cyan text-brand-ink ring-brand-cyan",
             )}
           >
             {f.label}

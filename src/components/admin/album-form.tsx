@@ -12,6 +12,7 @@ import {
   FormSection,
   keepValuesOnSubmit,
   NativeSelect,
+  StickyActions,
   SubmitButton,
 } from "./form";
 import { SlugField } from "./slug-field";
@@ -119,7 +120,9 @@ export function AlbumForm({
           <Checkbox id="published" name="published" defaultChecked={initial?.published ?? false} />
           <Label htmlFor="published">Сайт дээр нийтлэх</Label>
         </div>
-        <SubmitButton />
+        <StickyActions>
+          <SubmitButton />
+        </StickyActions>
       </FormSection>
     </form>
   );

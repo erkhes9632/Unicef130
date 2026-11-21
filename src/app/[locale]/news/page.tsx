@@ -45,8 +45,8 @@ export default async function NewsPage({ params, searchParams }: PageProps<"/[lo
 
   const chip = (active: boolean) =>
     cn(
-      "inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-border transition-colors hover:bg-muted",
-      active && "bg-brand-cyan text-brand-night ring-brand-cyan hover:bg-brand-cyan",
+      "inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-semibold whitespace-nowrap ring-1 ring-border transition-colors hover:bg-muted",
+      active && "bg-brand-cyan text-brand-ink ring-brand-cyan hover:bg-brand-cyan",
     );
 
   return (
@@ -55,8 +55,12 @@ export default async function NewsPage({ params, searchParams }: PageProps<"/[lo
       <Section className="pt-8 sm:pt-10">
         <h2 className="sr-only">{t("metaTitle")}</h2>
         {!noNewsAtAll && (
-          <nav aria-label={t("filterLabel")} className="-mx-4 mb-8 overflow-x-auto px-4">
-            <ul className="flex w-max gap-2">
+          <nav
+            aria-label={t("filterLabel")}
+            // Scrolls sideways on phones; the edges fade so it reads as "more this way".
+            className="-mx-4 mb-8 [scrollbar-width:none] overflow-x-auto [mask-image:linear-gradient(90deg,transparent,black_1rem,black_calc(100%-1.5rem),transparent)] px-4 py-1 sm:mx-0 sm:[mask-image:none] sm:px-0"
+          >
+            <ul className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
               <li>
                 <Link
                   href="/news"

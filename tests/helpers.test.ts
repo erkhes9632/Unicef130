@@ -169,3 +169,16 @@ test("an event's hours count towards its own school year, else by date", () => {
     "2026-2027",
   );
 });
+
+describe("statKind (icon for a headline number)", () => {
+  test("by currency and words, in both languages", async () => {
+    const { statKind } = await import("@/lib/stat-icon");
+    expect(statKind("Хандиваар цуглуулсан", "855,000₮")).toBe("money");
+    expect(statKind("Сайн дурын цаг", "734")).toBe("hours");
+    expect(statKind("Volunteer hours", "734")).toBe("hours");
+    expect(statKind("Нийт элссэн гишүүн", "115")).toBe("members");
+    expect(statKind("Биечлэн хүрсэн хүн", "2,489")).toBe("reach");
+    expect(statKind("Events held", "12")).toBe("events");
+    expect(statKind("Something", "3")).toBe("other");
+  });
+});

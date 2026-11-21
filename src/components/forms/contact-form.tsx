@@ -26,6 +26,7 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
   const { register, handleSubmit, formState, setError, reset } = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues,
+    mode: "onTouched",
   });
   const errors = formState.errors;
 
@@ -84,29 +85,14 @@ export function ContactForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
           {(a) => <Input {...a} autoComplete="name" {...register("name")} />}
         </FormField>
         <FormField id="contact-email" label={t("email")} error={errors.email?.message}>
-          {(a) => (
-            <Input
-              {...a}
-              type="email"
-              autoComplete="email"
-              placeholder={t("emailPlaceholder")}
-              {...register("email")}
-            />
-          )}
+          {(a) => <Input {...a} type="email" autoComplete="email" {...register("email")} />}
         </FormField>
       </div>
       <FormField id="contact-subject" label={t("subject")} optional error={errors.subject?.message}>
         {(a) => <Input {...a} {...register("subject")} />}
       </FormField>
       <FormField id="contact-message" label={t("message")} error={errors.message?.message}>
-        {(a) => (
-          <Textarea
-            {...a}
-            rows={5}
-            placeholder={t("messagePlaceholder")}
-            {...register("message")}
-          />
-        )}
+        {(a) => <Textarea {...a} rows={5} {...register("message")} />}
       </FormField>
       <Turnstile
         key={widgetKey}

@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarX2, List } from "lucide-react";
+import { ArrowRight, CalendarDays, CalendarX2, List } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/common/empty-state";
@@ -7,6 +7,7 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
 import { EventCard } from "@/components/events/event-card";
 import { MonthCalendar } from "@/components/events/month-calendar";
+import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { getEventsInMonth, listEvents } from "@/lib/data/events";
@@ -29,9 +30,9 @@ export async function generateMetadata({
 
 const tabClass = (active: boolean) =>
   cn(
-    "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors",
+    "inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors",
     active
-      ? "bg-background shadow-sm ring-1 ring-border"
+      ? "bg-card text-foreground shadow-soft ring-1 ring-border"
       : "text-muted-foreground hover:text-foreground",
   );
 
@@ -47,6 +48,11 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
     view === "list" ? listEvents(locale, scope) : Promise.resolve([]),
     view === "calendar" ? getEventsInMonth(locale, year, month) : Promise.resolve([]),
   ]);
+  // Nothing coming up: say so briefly and show what the club has done instead of an empty page.
+  const pastFallback =
+    view === "list" && scope === "upcoming" && items.length === 0
+      ? await listEvents(locale, "past")
+      : [];
 
   return (
     <>
@@ -113,6 +119,34 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
             {items.map((e) => (
               <EventCard key={e.id} item={e} />
             ))}
+          </div>
+        ) : scope === "upcoming" && pastFallback.length > 0 ? (
+          <div className="space-y-10">
+            <EmptyState
+              icon={CalendarX2}
+              title={t("emptyUpcoming")}
+              description={t("emptyUpcomingHint")}
+              className="py-8"
+            >
+              <Button asChild>
+                <Link href="/join">{t("emptyUpcomingCta")}</Link>
+              </Button>
+            </EmptyState>
+            <div>
+              <h2 className="mb-5 text-2xl font-extrabold">{t("pastTitle")}</h2>
+              <div className="reveal-group grid gap-4 lg:grid-cols-2">
+                {pastFallback.slice(0, 6).map((e) => (
+                  <EventCard key={e.id} item={e} />
+                ))}
+              </div>
+              {pastFallback.length > 6 && (
+                <Button asChild variant="outline" className="mt-6">
+                  <Link href={{ pathname: "/events", query: { tab: "past" } }}>
+                    {t("allPast")} <ArrowRight />
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <JoinEmptyState

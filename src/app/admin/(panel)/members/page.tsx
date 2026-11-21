@@ -55,7 +55,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps<"/adm
               key={t || "all"}
               href={t ? `/admin/members?team=${encodeURIComponent(t)}` : "/admin/members"}
               aria-current={team === t ? "page" : undefined}
-              className={`rounded-full px-3 py-1 ring-1 ring-border hover:bg-muted ${team === t ? "bg-brand-cyan text-brand-night ring-brand-cyan" : ""}`}
+              className={`rounded-full px-3 py-1 ring-1 ring-border hover:bg-muted ${team === t ? "bg-brand-cyan text-brand-ink ring-brand-cyan" : ""}`}
             >
               {t || "Бүх баг"}
             </Link>

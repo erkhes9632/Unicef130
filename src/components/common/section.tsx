@@ -1,8 +1,23 @@
 import { cn } from "@/lib/utils";
 
-export function Section({ className, children, ...props }: React.ComponentProps<"section">) {
+const surfaces = {
+  base: "",
+  tint: "bg-surface-2",
+  card: "border-y bg-card",
+} as const;
+
+/**
+ * Page section with the standard vertical rhythm. `surface` alternates the background so
+ * consecutive sections don't run together: base (page), tint (cream / charcoal band), card.
+ */
+export function Section({
+  className,
+  children,
+  surface = "base",
+  ...props
+}: React.ComponentProps<"section"> & { surface?: keyof typeof surfaces }) {
   return (
-    <section className={cn("py-14 sm:py-20", className)} {...props}>
+    <section className={cn("py-[clamp(3rem,8vw,6rem)]", surfaces[surface], className)} {...props}>
       <div className="container-page">{children}</div>
     </section>
   );
@@ -14,6 +29,7 @@ const eyebrowColors = {
   green: "text-brand-green-strong bg-brand-green-soft",
   blue: "text-brand-blue-strong bg-brand-blue-soft",
   gold: "text-brand-gold-strong bg-brand-gold-soft",
+  coral: "text-brand-coral-strong bg-brand-coral-soft",
 } as const;
 
 export type BrandColor = keyof typeof eyebrowColors;
@@ -30,7 +46,7 @@ export function Eyebrow({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-wide uppercase",
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-[0.08em] uppercase",
         eyebrowColors[color],
         className,
       )}
@@ -70,7 +86,9 @@ export function SectionHeading({
     >
       <div className={cn("max-w-2xl space-y-3", align === "center" && "mx-auto")}>
         {eyebrow && <Eyebrow color={eyebrowColor}>{eyebrow}</Eyebrow>}
-        <Heading className="text-3xl font-extrabold sm:text-4xl">{title}</Heading>
+        <Heading className="text-[clamp(1.6rem,1.2rem+1.6vw,2.4rem)] leading-[1.15] font-extrabold">
+          {title}
+        </Heading>
         {description && <p className="text-base text-muted-foreground sm:text-lg">{description}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}

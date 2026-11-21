@@ -1,10 +1,10 @@
-import { and, count, desc, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, lt, lte, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import { normalizeSdgs } from "@/lib/sdg";
 import { newsCategories, type NewsCategory, type RichTextDoc } from "@/lib/types";
-import { pick } from "./localize";
+import { pick, untranslated } from "./localize";
 
 export type NewsItem = {
   id: string;
@@ -23,6 +23,8 @@ export type NewsItem = {
   metaTitle: string;
   metaDescription: string;
   albumId: string | null;
+  /** English page, no English title yet: the Mongolian text is shown with a badge. */
+  untranslated: boolean;
 };
 
 const NEWS_PAGE_SIZE = 6;
@@ -34,6 +36,7 @@ function toItem(locale: Locale, r: Row): NewsItem {
     id: r.id,
     slug: r.slug,
     title: pick(locale, r.title, r.titleEn),
+    untranslated: untranslated(locale, r.titleEn),
     excerpt: pick(locale, r.excerpt, r.excerptEn),
     content: pick(locale, r.content, r.contentEn),
     coverUrl: r.coverUrl,
@@ -127,6 +130,30 @@ export async function getRelatedNews(locale: Locale, item: NewsItem, limit = 3) 
     .orderBy(desc(news.publishedAt))
     .limit(limit - same.length);
   return [...same, ...rest].map((r) => toItem(locale, r));
+}
+
+/** The previous (older) and next (newer) published post, for the article footer. */
+export async function getAdjacentNews(locale: Locale, item: NewsItem) {
+  const db = await getDb();
+  const at = new Date(item.publishedAt);
+  const [older, newer] = await Promise.all([
+    db
+      .select()
+      .from(news)
+      .where(and(visible(), lt(news.publishedAt, at), ne(news.id, item.id)))
+      .orderBy(desc(news.publishedAt))
+      .limit(1),
+    db
+      .select()
+      .from(news)
+      .where(and(visible(), gt(news.publishedAt, at), ne(news.id, item.id)))
+      .orderBy(asc(news.publishedAt))
+      .limit(1),
+  ]);
+  return {
+    older: older[0] ? toItem(locale, older[0]) : null,
+    newer: newer[0] ? toItem(locale, newer[0]) : null,
+  };
 }
 
 /**

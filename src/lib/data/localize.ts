@@ -37,3 +37,8 @@ export function pick<T>(locale: Locale, mn: T, en: T | null | undefined): T {
   if (locale === "en" && en !== null && en !== undefined && en !== "") return en;
   return mn;
 }
+
+/** True on English pages when a record has no English text yet (shown in Mongolian + a badge). */
+export function untranslated(locale: Locale, en: string | null | undefined) {
+  return locale === "en" && !en?.trim();
+}

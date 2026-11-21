@@ -71,3 +71,31 @@ export function translateError(t: ReturnType<typeof useTranslations<"Forms">>, k
     ? t(`errors.${key as (typeof knownErrors)[number]}`)
     : t("errors.required");
 }
+
+/**
+ * Shown above a form after a submit with errors: what to fix, each linking to its field. The
+ * field-level messages stay; this is the overview screen readers announce first.
+ */
+export function ErrorSummary({
+  title,
+  items,
+}: {
+  title: string;
+  items: { id: string; label: string; message: string }[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div role="alert" className="rounded-2xl bg-destructive/10 p-4 text-sm text-destructive">
+      <p className="font-semibold">{title}</p>
+      <ul className="mt-1.5 list-disc space-y-1 pl-5">
+        {items.map((i) => (
+          <li key={i.id}>
+            <a href={`#${i.id}`} className="underline underline-offset-2">
+              {i.label}: {i.message}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

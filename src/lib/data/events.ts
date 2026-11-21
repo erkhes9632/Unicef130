@@ -5,7 +5,7 @@ import type { Locale } from "@/i18n/routing";
 import { placeHolding, signupOpen } from "@/lib/members/logic";
 import { normalizeSdgs } from "@/lib/sdg";
 import { clubDirections, type ClubDirection, type RichTextDoc } from "@/lib/types";
-import { pick } from "./localize";
+import { pick, untranslated } from "./localize";
 
 /** Report numbers for an activity (all optional; unknown values are null/empty). */
 export type ActivityFacts = {
@@ -19,6 +19,8 @@ export type ActivityFacts = {
 
 export type EventItem = {
   id: string;
+  /** English page, no English title yet: the Mongolian text is shown with a badge. */
+  untranslated: boolean;
   slug: string;
   title: string;
   summary: string;
@@ -41,6 +43,7 @@ function toItem(locale: Locale, e: Row): EventItem {
     id: e.id,
     slug: e.slug,
     title: pick(locale, e.title, e.titleEn),
+    untranslated: untranslated(locale, e.titleEn),
     summary: pick(locale, e.summary, e.summaryEn),
     content: pick(locale, e.content, e.contentEn),
     coverUrl: e.coverUrl,

@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
-import { FormAlert, keepValuesOnSubmit, SubmitButton } from "./form";
+import { FormAlert, keepValuesOnSubmit, StickyActions, SubmitButton } from "./form";
 
 export type ImpactFormRow = {
   direction: "activity" | "education" | "charity" | "total";
@@ -93,7 +93,9 @@ export function ImpactYearForm({
           </fieldset>
         ))}
       </div>
-      <SubmitButton />
+      <StickyActions>
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

@@ -5,6 +5,7 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import { HtmlLangSync } from "@/components/layout/html-lang-sync";
 import { PageTransition } from "@/components/layout/page-transition";
+import { RevealObserver } from "@/components/layout/reveal-observer";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { clientNamespaces } from "@/i18n/client-namespaces";
@@ -75,6 +76,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         <PageTransition>{children}</PageTransition>
       </main>
       <SiteFooter />
+      <RevealObserver />
     </NextIntlClientProvider>
   );
 }

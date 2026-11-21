@@ -11,13 +11,7 @@ export function ThemeProvider({
   nonce?: string;
 }) {
   return (
-    <NextThemesProvider
-      nonce={nonce}
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <NextThemesProvider nonce={nonce} attribute="class" defaultTheme="system" enableSystem>
       {children}
     </NextThemesProvider>
   );

@@ -88,7 +88,7 @@ export async function MonthCalendar({
                         <span
                           className={cn(
                             "flex size-6 items-center justify-center rounded-full text-xs font-semibold",
-                            isToday && "bg-brand-cyan text-brand-night",
+                            isToday && "bg-brand-cyan text-brand-ink",
                           )}
                           aria-label={isToday ? t("today") : undefined}
                         >

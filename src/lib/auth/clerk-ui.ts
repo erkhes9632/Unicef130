@@ -18,9 +18,9 @@ export const clerkAppearance = {
     colorBorder: "var(--border)",
     colorRing: "var(--ring)",
     colorDanger: "var(--destructive)",
-    colorModalBackdrop: "rgb(11 18 32 / 0.6)",
+    colorModalBackdrop: "rgb(23 24 28 / 0.6)",
     fontFamily: "var(--font-body), ui-sans-serif, system-ui, sans-serif",
-    borderRadius: "0.875rem",
+    borderRadius: "1rem",
   },
   elements: {
     headerTitle: "font-heading",

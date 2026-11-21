@@ -1,16 +1,26 @@
-import { ArrowRight, BarChart3, GraduationCap, HandHeart, Megaphone } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  CalendarHeart,
+  Clock,
+  Coins,
+  GraduationCap,
+  HandHeart,
+  HeartHandshake,
+  Megaphone,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { LogoImage, Monogram } from "@/components/brand/logo-image";
 import { SocialLinks } from "@/components/brand/social-links";
 import { CountUp } from "@/components/common/count-up";
-import {
-  ColorRibbon,
-  DecorativeShapes,
-  HeroHighlight,
-} from "@/components/common/decorative-shapes";
+import { ColorRibbon, HeroHighlight } from "@/components/common/decorative-shapes";
+import { PartnerChip } from "@/components/common/partner-chip";
 import { Eyebrow, Section, SectionHeading } from "@/components/common/section";
+import { StatTile } from "@/components/common/stat-tile";
 import { DateBadge } from "@/components/events/date-badge";
 import { EventCard } from "@/components/events/event-card";
+import { HeroCollage } from "@/components/home/hero-collage";
 import { NewsCard } from "@/components/news/news-card";
 import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
@@ -24,35 +34,42 @@ import { getLatestNews } from "@/lib/data/news";
 import { getHomeStats, getSiteSettings, safeExternalUrl, safeImageUrl } from "@/lib/data/settings";
 import { formatMnt, formatNumber } from "@/lib/dates/format";
 import { pageMetadata } from "@/lib/seo";
+import { statKind } from "@/lib/stat-icon";
 import { cn } from "@/lib/utils";
 
 const pillars = [
   {
     key: "activity",
     icon: Megaphone,
-    tone: "bg-brand-cyan-soft text-brand-cyan-strong",
+    tone: "bg-card text-brand-cyan-strong",
     bar: "bg-brand-cyan",
+    card: "bg-brand-cyan-soft",
   },
   {
     key: "education",
     icon: GraduationCap,
-    tone: "bg-brand-purple-soft text-brand-purple-strong",
+    tone: "bg-card text-brand-purple-strong",
     bar: "bg-brand-purple",
+    card: "bg-brand-purple-soft",
   },
   {
     key: "charity",
     icon: HandHeart,
-    tone: "bg-brand-gold-soft text-brand-gold-strong",
+    tone: "bg-card text-brand-gold-strong",
     bar: "bg-brand-gold",
+    card: "bg-brand-gold-soft",
   },
 ] as const;
 
-const statTones = [
-  "text-brand-cyan-strong",
-  "text-brand-purple-strong",
-  "text-brand-green-strong",
-  "text-brand-blue-strong",
-];
+const STAT_ICONS = {
+  money: Coins,
+  hours: Clock,
+  members: Users,
+  reach: HeartHandshake,
+  events: CalendarHeart,
+  other: Sparkles,
+} as const;
+const STAT_TONES = ["cyan", "purple", "green", "gold"] as const;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]">) {
   const locale = await resolveLocale(params);
@@ -87,21 +104,31 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const clubName = pick(locale, settings.club.name, settings.club.nameEn) || t("Common.clubName");
   const founded = settings.club.foundedYear;
   const nextEvent = events[0];
+  // Hero collage: newest real images first (admin hero image, gallery, news, events).
+  const collage = [
+    ...(branding.heroImage
+      ? [{ src: branding.heroImage.src, alt: branding.heroImage.alt || clubName }]
+      : []),
+    ...gallery.map((img) => ({ src: img.thumbUrl, alt: img.alt })),
+    ...news.flatMap((n) => (n.coverUrl ? [{ src: n.coverUrl, alt: n.title }] : [])),
+    ...events.flatMap((e) => (e.coverUrl ? [{ src: e.coverUrl, alt: e.title }] : [])),
+  ]
+    // Only uploaded photos (R2 or an https URL), never bundled placeholder art.
+    .filter((p) => p.src.startsWith("/media/") || p.src.startsWith("https://"))
+    .slice(0, 3);
   // One tall tile + a 2×2 block only works with exactly five photos; otherwise an even grid.
   const bigFirst = gallery.length === 5;
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden">
-        <DecorativeShapes variant="hero" />
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-dot-grid" />
-        <div className="container-page grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-[1.15fr_1fr] lg:py-24 xl:gap-16">
+      {/* Hero: headline + the collage (real photos as they are uploaded, pillar tiles until then) */}
+      <section className="relative isolate overflow-hidden bg-linear-to-b from-surface-2 to-background">
+        <div className="container-page grid items-center gap-12 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:py-20 xl:gap-16">
           <div className="space-y-6">
             <Eyebrow className="animate-rise-in">
               {founded ? t("Home.heroEyebrow", { year: founded }) : t("Home.heroEyebrowNoYear")}
             </Eyebrow>
-            <h1 className="text-[clamp(2.4rem,9vw,3rem)] leading-[1.08] font-extrabold sm:text-6xl lg:text-[4.1rem]">
+            <h1 className="text-[clamp(2.4rem,1.6rem+4vw,4.1rem)] leading-[1.08] font-extrabold">
               {t.rich("Home.heroTitle", {
                 hl: (chunks) => <HeroHighlight>{chunks}</HeroHighlight>,
               })}
@@ -110,7 +137,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               {t("Home.heroBody")}
             </p>
             <div className="flex animate-rise-in flex-col gap-3 [animation-delay:120ms] sm:flex-row">
-              <Button asChild size="lg" className="shadow-lg shadow-brand-cyan/25">
+              <Button asChild size="lg">
                 <Link href="/join">
                   {t("Common.joinCta")} <ArrowRight />
                 </Link>
@@ -119,70 +146,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 <Link href="/about">{t("Home.heroSecondary")}</Link>
               </Button>
             </div>
-          </div>
-
-          {/* Hero photo (admin upload) or the logo card "130-р сургууль × UNICEF" */}
-          <div className="relative mx-auto w-full max-w-sm animate-rise-in [animation-delay:200ms] sm:max-w-md xl:max-w-lg">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 -z-10 rotate-[5deg] rounded-[2.5rem] bg-linear-to-br from-brand-cyan via-brand-purple to-brand-gold opacity-85"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 -z-20 -rotate-[4deg] rounded-[2.5rem] bg-brand-green/25"
-            />
-            {branding.heroImage ? (
-              // eslint-disable-next-line @next/next/no-img-element -- R2 image, pre-sized on upload
-              <img
-                src={branding.heroImage.src}
-                alt={branding.heroImage.alt || clubName}
-                fetchPriority="high"
-                className="aspect-[4/3] w-full rounded-[2.5rem] object-cover shadow-xl ring-1 ring-border"
-              />
-            ) : (
-              <div className="rounded-[2.5rem] bg-card p-7 shadow-xl ring-1 ring-border sm:p-10 lg:py-14">
-                <div className="flex items-center justify-center gap-4 sm:gap-6">
-                  {branding.schoolLogo || branding.unicefLogo ? (
-                    <>
-                      <LogoImage
-                        src={branding.schoolLogo}
-                        alt={t("Common.schoolLogoAlt")}
-                        size={96}
-                        monogram="130"
-                      />
-                      {branding.unicefLogo && (
-                        <>
-                          <span
-                            aria-hidden="true"
-                            className="text-3xl font-extrabold text-muted-foreground"
-                          >
-                            ×
-                          </span>
-                          <LogoImage
-                            src={branding.unicefLogo}
-                            alt={t("Common.unicefLogoAlt")}
-                            size={96}
-                            monogram="U"
-                          />
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <Monogram text="130" size={112} />
-                  )}
-                </div>
-                <p className="mt-6 text-center font-heading text-xl font-extrabold">{clubName}</p>
-                <p className="text-center text-sm text-muted-foreground">{t("Common.brandPair")}</p>
-                <ColorRibbon className="mt-6 justify-center" />
-              </div>
-            )}
-            {/* The next real event floats over the card corner (from sm up). */}
             {nextEvent && (
               <Link
                 href={`/events/${nextEvent.slug}`}
-                className="group absolute -bottom-10 left-4 hidden max-w-72 animate-rise-in items-center gap-3 rounded-2xl bg-background/95 p-3 pr-4 shadow-xl ring-1 ring-border backdrop-blur [animation-delay:450ms] hover:ring-brand-cyan sm:flex lg:-left-6"
+                className="group inline-flex max-w-full hover-lift items-center gap-3 rounded-2xl bg-card p-2.5 pr-4 shadow-soft ring-1 ring-border"
               >
-                <DateBadge date={nextEvent.startsAt} className="w-14" />
+                <DateBadge date={nextEvent.startsAt} className="w-14 shrink-0" />
                 <span className="min-w-0">
                   <span className="block text-xs font-semibold text-brand-cyan-strong">
                     {t("Home.nextEvent")}
@@ -194,45 +163,41 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               </Link>
             )}
           </div>
+          <div className="animate-rise-in [animation-delay:200ms]">
+            <HeroCollage
+              photos={collage}
+              pillarLabels={Object.fromEntries(
+                pillars.map((p) => [p.key, t(`News.categories.${p.key}`)]),
+              )}
+            />
+          </div>
         </div>
       </section>
 
       {/* Stats (admin → Сайтын тохиргоо; hidden when none are set) */}
       {stats.length > 0 && (
-        <section aria-labelledby="stats-title" className="border-y bg-muted/40">
-          <div className="container-page py-10">
+        <section aria-labelledby="stats-title" className="border-y bg-card">
+          <div className="container-page py-8 sm:py-10">
             <h2 id="stats-title" className="sr-only">
               {t("Home.statsTitle")}
             </h2>
-            {/* 2 columns on phones (an odd last item spans both), one row on desktop. */}
-            <dl
+            <div
               className={cn(
-                "grid grid-cols-2 gap-x-4 gap-y-8",
-                stats.length === 3 && "sm:grid-cols-3",
-                stats.length === 4 && "md:grid-cols-4",
-                stats.length === 5 && "sm:grid-cols-3 lg:grid-cols-5",
+                "grid gap-x-6 gap-y-7 sm:grid-cols-2",
+                stats.length >= 4 && "lg:grid-cols-4",
+                stats.length === 3 && "lg:grid-cols-3",
               )}
             >
               {stats.map((s, i) => (
-                <div
+                <StatTile
                   key={`${s.label}-${i}`}
-                  className={cn(
-                    "flex min-w-0 flex-col text-center",
-                    stats.length % 2 === 1 && i === stats.length - 1 && "col-span-2 sm:col-span-1",
-                  )}
-                >
-                  <dt className="text-sm text-muted-foreground">{s.label}</dt>
-                  <dd
-                    className={cn(
-                      "order-first font-heading text-[clamp(1.6rem,7vw,2.25rem)] font-extrabold whitespace-nowrap tabular-nums sm:text-4xl xl:text-5xl",
-                      statTones[i % statTones.length],
-                    )}
-                  >
-                    <CountUp value={s.value} />
-                  </dd>
-                </div>
+                  icon={STAT_ICONS[statKind(s.label, s.value)]}
+                  value={s.value}
+                  label={s.label}
+                  tone={STAT_TONES[i % STAT_TONES.length]}
+                />
               ))}
-            </dl>
+            </div>
           </div>
         </section>
       )}
@@ -245,10 +210,13 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           title={t("Home.whatTitle")}
         />
         <ul className="reveal-group grid gap-4 md:grid-cols-3">
-          {pillars.map(({ key, icon: Icon, tone, bar }, i) => (
+          {pillars.map(({ key, icon: Icon, tone, bar, card }, i) => (
             <li
               key={key}
-              className="group relative isolate overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-border transition-[box-shadow,translate] duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-7"
+              className={cn(
+                "group relative isolate hover-lift overflow-hidden rounded-3xl p-6 ring-1 ring-border sm:p-7",
+                card,
+              )}
             >
               <span
                 aria-hidden="true"
@@ -261,11 +229,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               <span
                 aria-hidden="true"
                 data-n={`0${i + 1}`}
-                className="absolute -right-2 -bottom-6 -z-10 font-heading text-[7rem] leading-none font-extrabold text-muted/80 before:content-[attr(data-n)] dark:text-muted"
+                className="absolute -right-2 -bottom-6 -z-10 font-heading text-[7rem] leading-none font-extrabold text-card/70 before:content-[attr(data-n)] dark:text-foreground/5"
               />
               <span
                 className={cn(
-                  "mb-5 flex size-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:-rotate-6",
+                  "mb-5 flex size-14 items-center justify-center rounded-2xl shadow-soft transition-transform duration-300 motion-safe:group-hover:-rotate-6",
                   tone,
                 )}
               >
@@ -296,10 +264,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             <div
               aria-hidden="true"
               className="absolute -top-20 -right-16 -z-10 size-72 rounded-full border-[2.5rem] border-brand-green/10"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-24 left-1/3 -z-10 size-56 rounded-full bg-brand-cyan/10 blur-2xl"
             />
             <div className="space-y-3">
               <Eyebrow color="green">{t("Home.impactEyebrow")}</Eyebrow>
@@ -339,8 +303,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
       {/* Latest news (hidden when there is none) */}
       {news.length > 0 && (
-        <Section className="bg-muted/30 pt-0 sm:pt-0">
-          <div className="pt-14 sm:pt-20">
+        <Section surface="tint">
+          <div>
             <SectionHeading
               title={t("Home.newsTitle")}
               description={t("Home.newsDescription")}
@@ -385,7 +349,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
       {/* Gallery preview */}
       {gallery.length > 0 && (
-        <Section className="bg-muted/30">
+        <Section surface="tint">
           <SectionHeading
             title={t("Home.galleryTitle")}
             description={t("Home.galleryDescription")}
@@ -439,7 +403,14 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               {socials.length > 0 && <SocialLinks socials={socials} variant="buttons" />}
             </div>
             {partners.length > 0 && (
-              <div className="space-y-6">
+              <div
+                className={cn(
+                  "grid gap-8",
+                  partners.some((p) => p.beneficiary) &&
+                    partners.some((p) => !p.beneficiary) &&
+                    "md:grid-cols-2",
+                )}
+              >
                 {[
                   {
                     key: "partners",
@@ -454,42 +425,16 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 ]
                   .filter((g) => g.items.length > 0)
                   .map((g) => (
-                    <div key={g.key}>
-                      <h3 className="mb-4 text-sm font-bold tracking-wide text-muted-foreground uppercase">
+                    <div key={g.key} className="text-center md:text-left">
+                      <h3 className="mb-4 text-xs font-bold tracking-[0.08em] text-muted-foreground uppercase">
                         {g.title}
                       </h3>
-                      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {g.items.map((p, i) => {
-                          const inner = p.logo ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- R2 logo
-                            <img
-                              src={p.logo}
-                              alt={p.name}
-                              loading="lazy"
-                              className="max-h-12 w-auto max-w-full object-contain"
-                            />
-                          ) : (
-                            <span className="text-center text-sm font-semibold">{p.name}</span>
-                          );
-                          const box =
-                            "flex h-20 items-center justify-center rounded-2xl bg-card p-3 ring-1 ring-border";
-                          return (
-                            <li key={`${p.name}-${i}`}>
-                              {p.url ? (
-                                <a
-                                  href={p.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={cn(box, "transition-shadow hover:shadow-md")}
-                                >
-                                  {inner}
-                                </a>
-                              ) : (
-                                <div className={box}>{inner}</div>
-                              )}
-                            </li>
-                          );
-                        })}
+                      <ul className="flex flex-wrap justify-center gap-3 md:justify-start">
+                        {g.items.map((p, i) => (
+                          <li key={`${p.name}-${i}`} className="max-w-full">
+                            <PartnerChip name={p.name} logoUrl={p.logo} url={p.url} />
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   ))}
@@ -499,32 +444,27 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         </Section>
       )}
 
-      {/* CTA */}
+      {/* CTA — warm tinted band with two soft shapes. */}
       <section className="container-page pb-16 sm:pb-24">
-        <div className="reveal relative isolate overflow-hidden rounded-[2rem] bg-brand-night px-6 py-12 text-center text-white ring-white/10 sm:px-12 sm:py-20 dark:ring-1">
+        <div className="reveal relative isolate overflow-hidden rounded-[2rem] bg-brand-gold-soft px-6 py-12 text-center ring-1 ring-border sm:px-12 sm:py-20">
           <ColorRibbon className="absolute top-6 left-1/2 -translate-x-1/2" />
           <div
             aria-hidden="true"
-            className="absolute -top-16 -left-10 -z-10 size-64 rounded-full bg-brand-cyan/40 blur-3xl"
+            className="absolute -top-20 -left-16 -z-10 size-64 rounded-full bg-brand-sun/35"
           />
           <div
             aria-hidden="true"
-            className="absolute -right-10 -bottom-16 -z-10 size-64 rounded-full bg-brand-purple/40 blur-3xl"
+            className="absolute -right-12 -bottom-24 -z-10 size-72 rounded-full bg-brand-coral/20"
           />
-          <h2 className="mx-auto max-w-2xl text-3xl font-extrabold sm:text-4xl">
+          <h2 className="mx-auto max-w-2xl text-[clamp(1.75rem,1.3rem+2vw,2.6rem)] leading-tight font-extrabold">
             {t("Home.ctaTitle")}
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-white/80">{t("Home.ctaBody")}</p>
+          <p className="mx-auto mt-4 max-w-xl text-muted-foreground">{t("Home.ctaBody")}</p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link href="/join">{t("Common.joinCta")}</Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white dark:bg-transparent"
-            >
+            <Button asChild size="lg" variant="outline">
               <Link href="/support">{t("Home.ctaSupport")}</Link>
             </Button>
           </div>

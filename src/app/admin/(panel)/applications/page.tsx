@@ -248,7 +248,7 @@ export default async function AdminApplicationsPage({
                 aria-current={filters.status === t.value ? "page" : undefined}
                 className={cn(
                   "inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold ring-1 ring-border hover:bg-muted",
-                  filters.status === t.value && "bg-brand-cyan text-brand-night ring-brand-cyan",
+                  filters.status === t.value && "bg-brand-cyan text-brand-ink ring-brand-cyan",
                 )}
               >
                 {t.label} <span className="text-xs opacity-70">{t.n}</span>

@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -6,6 +6,7 @@ import { ViewTransition } from "react";
 import { CoverImage, categoryTone, coverIconFor } from "@/components/common/cover-image";
 import { RichText } from "@/components/common/rich-text";
 import { Section, SectionHeading } from "@/components/common/section";
+import { UntranslatedBadge } from "@/components/common/untranslated-badge";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { ActivityFacts } from "@/components/impact/activity-facts";
 import { SdgBadges } from "@/components/impact/sdg-badges";
@@ -18,7 +19,7 @@ import { Link } from "@/i18n/navigation";
 import { getClubNames } from "@/lib/branding";
 import { getEventById } from "@/lib/data/events";
 import { getAlbumById } from "@/lib/data/gallery";
-import { getNewsBySlug, getRelatedNews } from "@/lib/data/news";
+import { getAdjacentNews, getNewsBySlug, getRelatedNews } from "@/lib/data/news";
 import { findSlugRedirect } from "@/lib/data/redirects";
 import { formatDate } from "@/lib/dates/format";
 import { newsCoverTransition } from "@/lib/motion/transitions";
@@ -57,9 +58,10 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
 
   const t = await getTranslations("News");
   const ta = await getTranslations("Activity");
-  const [related, event] = await Promise.all([
+  const [related, event, adjacent] = await Promise.all([
     getRelatedNews(locale, item, 3),
     item.eventId ? getEventById(locale, item.eventId) : Promise.resolve(null),
+    getAdjacentNews(locale, item),
   ]);
   const siteUrl = await getSiteUrl();
   const url = `${siteUrl}${localizedPath(locale, `/news/${item.slug}`)}`;
@@ -84,7 +86,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structured)} />
       <article>
         <header className="container-page max-w-4xl pt-8 sm:pt-12">
-          <Button asChild variant="ghost" size="sm" className="mb-6 -ml-3">
+          <Button asChild variant="ghost" className="mb-6 -ml-3">
             <Link href="/news">
               <ArrowLeft /> {t("backToList")}
             </Link>
@@ -100,16 +102,24 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
               </time>
             </span>
           </div>
-          <h1 className="text-3xl leading-tight font-extrabold sm:text-5xl">{item.title}</h1>
+          {item.untranslated && <UntranslatedBadge className="mb-3" />}
+          <h1
+            lang={item.untranslated ? "mn" : undefined}
+            className="text-[clamp(2rem,1.4rem+2.6vw,3.2rem)] leading-[1.12] font-extrabold"
+          >
+            {item.title}
+          </h1>
           <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{item.excerpt}</p>
         </header>
 
         <div className="container-page mt-8 max-w-5xl">
           {/* Same view-transition name as the news card: the cover morphs card → article. */}
           <ViewTransition name={newsCoverTransition(item.id)} share="morph" default="none">
-            <div className="aspect-[16/9] overflow-hidden rounded-[2rem]">
+            <div className="@container aspect-[16/9] overflow-hidden rounded-[2rem]">
               <CoverImage
                 src={item.coverUrl}
+                date={item.publishedAt}
+                locale={locale}
                 alt={item.title}
                 tone={categoryTone[item.category]}
                 icon={coverIconFor(item.category)}
@@ -121,7 +131,12 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
         </div>
 
         <div className="container-page max-w-3xl space-y-8 py-10 sm:py-14">
-          <RichText doc={withoutRepeatedLead(item.content, item.excerpt)} />
+          <div
+            lang={item.untranslated ? "mn" : undefined}
+            className="max-w-[68ch] text-[1.0625rem] leading-[1.7] sm:text-lg"
+          >
+            <RichText doc={withoutRepeatedLead(item.content, item.excerpt)} />
+          </div>
           {album && album.images.length > 0 && (
             <section aria-labelledby="post-album" className="space-y-3">
               <h2 id="post-album" className="text-xl font-extrabold">
@@ -163,11 +178,41 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
           <div className="mt-6 border-t pt-6">
             <ShareButtons url={url} title={item.title} />
           </div>
+          {(adjacent.older || adjacent.newer) && (
+            <nav aria-label={t("moreArticles")} className="grid gap-3 sm:grid-cols-2">
+              {adjacent.newer && (
+                <Link
+                  href={`/news/${adjacent.newer.slug}`}
+                  className="group flex hover-lift flex-col gap-1 rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border"
+                >
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                    <ArrowLeft className="size-3.5" aria-hidden="true" /> {t("newer")}
+                  </span>
+                  <span className="font-bold group-hover:text-brand-cyan-strong">
+                    {adjacent.newer.title}
+                  </span>
+                </Link>
+              )}
+              {adjacent.older && (
+                <Link
+                  href={`/news/${adjacent.older.slug}`}
+                  className="group flex hover-lift flex-col items-end gap-1 rounded-2xl bg-card p-4 text-right shadow-soft ring-1 ring-border sm:col-start-2"
+                >
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                    {t("older")} <ArrowRight className="size-3.5" aria-hidden="true" />
+                  </span>
+                  <span className="font-bold group-hover:text-brand-cyan-strong">
+                    {adjacent.older.title}
+                  </span>
+                </Link>
+              )}
+            </nav>
+          )}
         </div>
       </article>
 
       {related.length > 0 && (
-        <Section className="bg-muted/30">
+        <Section surface="tint">
           <SectionHeading title={t("related")} />
           <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((r) => (

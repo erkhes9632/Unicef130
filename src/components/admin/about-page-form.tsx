@@ -6,7 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
 import type { AboutContent, ValueItem } from "@/lib/settings/types";
-import { AdminField, FormAlert, FormSection, keepValuesOnSubmit, SubmitButton } from "./form";
+import {
+  AdminField,
+  FormAlert,
+  FormSection,
+  keepValuesOnSubmit,
+  StickyActions,
+  SubmitButton,
+} from "./form";
 import { ListEditor } from "./list-editor";
 
 type Row = ValueItem & { _id: string };
@@ -203,7 +210,9 @@ export function AboutPageForm({
         Хандив чиглэлээр) автоматаар бүрдэнэ.
       </p>
 
-      <SubmitButton />
+      <StickyActions>
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

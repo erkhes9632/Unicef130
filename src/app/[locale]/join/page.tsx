@@ -67,7 +67,7 @@ async function StatusCard({ app, locale }: { app: MyApplication; locale: Locale 
   return (
     <section
       aria-labelledby="my-status"
-      className="space-y-5 rounded-[2rem] bg-card p-6 ring-1 ring-border sm:p-8"
+      className="flex flex-col items-start space-y-5 rounded-[2rem] bg-card p-6 shadow-soft ring-1 ring-border sm:p-8"
     >
       <div className="flex items-start gap-4">
         <span className={cn("flex size-14 shrink-0 items-center justify-center rounded-2xl", tone)}>
@@ -85,10 +85,15 @@ async function StatusCard({ app, locale }: { app: MyApplication; locale: Locale 
         </div>
       </div>
       {app.decisionMessage && (
-        <blockquote className="rounded-2xl bg-muted/60 p-4 text-sm whitespace-pre-line">
+        <blockquote className="w-full rounded-2xl bg-surface-2 p-4 text-sm whitespace-pre-line ring-1 ring-border">
           <p className="mb-1 font-semibold">{t("messageFromClub")}</p>
           {app.decisionMessage}
         </blockquote>
+      )}
+      {status !== "accepted" && (
+        <Button asChild variant="outline">
+          <Link href="/events">{t("seeEvents")}</Link>
+        </Button>
       )}
       {steps.length > 0 && (
         <ol className="space-y-3">
@@ -106,20 +111,33 @@ async function StatusCard({ app, locale }: { app: MyApplication; locale: Locale 
   );
 }
 
+const noticeTones = {
+  cyan: "bg-brand-cyan-soft text-brand-cyan-strong",
+  green: "bg-brand-green-soft text-brand-green-strong",
+  purple: "bg-brand-purple-soft text-brand-purple-strong",
+  coral: "bg-brand-coral-soft text-brand-coral-strong",
+  muted: "bg-muted text-muted-foreground",
+} as const;
+
+/** One state of /join: icon, one sentence, one primary action. */
 function Notice({
   icon: Icon,
   title,
   body,
+  tone = "purple",
   children,
 }: {
   icon: typeof Check;
   title: string;
   body: string;
+  tone?: keyof typeof noticeTones;
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-5 rounded-[2rem] bg-card p-6 text-center ring-1 ring-border sm:p-10">
-      <span className="flex size-16 items-center justify-center rounded-3xl bg-brand-purple-soft text-brand-purple-strong">
+    <div className="flex flex-col items-center gap-5 rounded-[2rem] bg-card p-6 text-center shadow-soft ring-1 ring-border sm:p-10">
+      <span
+        className={cn("flex size-16 items-center justify-center rounded-3xl", noticeTones[tone])}
+      >
         <Icon className="size-8" aria-hidden="true" />
       </span>
       <div className="max-w-md">
@@ -192,7 +210,7 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
           ))}
         </ul>
       </div>
-      <div className="rounded-3xl bg-muted/60 p-6">
+      <div className="rounded-3xl bg-surface-2 p-6 ring-1 ring-border">
         <h2 className="mb-2 flex items-center gap-2 font-bold">
           <ShieldCheck className="size-5 text-brand-green-strong" aria-hidden="true" />
           {t("privacyTitle")}
@@ -208,6 +226,7 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
     state.phase === "closed" && state.next ? (
       <Notice
         icon={CalendarClock}
+        tone="purple"
         title={state.next.name}
         body={t("opensOn", {
           date: `${formatDate(locale, state.next.opensAt, "long")} ${formatDate(locale, state.next.opensAt, "time")}`,
@@ -220,6 +239,7 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
     ) : (
       <Notice
         icon={Lock}
+        tone="muted"
         title={open ? t("fullTitle") : t("closedTitle")}
         body={open ? t("fullHint") : t("closedHint")}
       >
@@ -232,7 +252,7 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
   let main: React.ReactNode;
   if (!me) {
     main = canApplyNow ? (
-      <Notice icon={LogIn} title={t("signInFirstTitle")} body={t("signInFirstBody")}>
+      <Notice icon={LogIn} tone="cyan" title={t("signInFirstTitle")} body={t("signInFirstBody")}>
         <Button asChild size="lg">
           <Link href={signInHref}>
             <LogIn /> {t("signInToApply")}
@@ -246,6 +266,7 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
     main = (
       <Notice
         icon={CheckCircle2}
+        tone="green"
         title={me.role === "admin" ? t("adminTitle") : t("memberTitle")}
         body={me.role === "admin" ? t("adminBody") : t("memberBody")}
       >
@@ -259,11 +280,17 @@ export default async function JoinPage({ params }: PageProps<"/[locale]/join">) 
   } else if (view === "status" && current) {
     main = <StatusCard app={current} locale={locale} />;
   } else if (view === "blocked") {
-    main = <Notice icon={Ban} title={t("blockedTitle")} body={t("blockedBody")} />;
+    main = (
+      <Notice icon={Ban} tone="coral" title={t("blockedTitle")} body={t("blockedBody")}>
+        <Button asChild variant="outline">
+          <Link href="/contact">{t("contactUs")}</Link>
+        </Button>
+      </Notice>
+    );
   } else if (view === "form" && open) {
     const name = me.name.trim();
     main = (
-      <div className="rounded-[2rem] bg-card p-5 ring-1 ring-border sm:p-8">
+      <div className="rounded-[2rem] bg-card p-5 shadow-soft ring-1 ring-border sm:p-8">
         <JoinForm
           helpOptions={settings.helpOptions.map((o) => ({
             key: o.key,

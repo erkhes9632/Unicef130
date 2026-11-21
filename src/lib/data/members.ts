@@ -64,6 +64,8 @@ export async function listMembers(
     members: rows.filter((m) => m.group === "member").map((m) => toItem(locale, m)),
     /** Active members whose names are not public (no consent yet). */
     hiddenCount: hidden,
+    /** All active members and leaders (public or not) — an aggregate, no names. */
+    activeCount: rows.length + hidden,
   };
 }
 

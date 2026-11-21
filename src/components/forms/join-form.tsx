@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildJoinSchema, type JoinFormValues } from "@/lib/validation/forms";
-import { FormField, translateError } from "./form-field";
+import { ErrorSummary, FormField, translateError } from "./form-field";
 
 type JoinFormQuestion = {
   id: string;
@@ -65,7 +65,12 @@ export function JoinForm({
     answers: Object.fromEntries(questions.map((q) => [q.id, q.type === "checkbox" ? false : ""])),
     consent: false as unknown as true,
   };
-  const form = useForm<JoinFormValues>({ resolver: zodResolver(schema), defaultValues });
+  // Errors appear when a field is left (blur), then update as the person types.
+  const form = useForm<JoinFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues,
+    mode: "onTouched",
+  });
   const { register, control, handleSubmit, formState, setError } = form;
   const errors = formState.errors;
 
@@ -105,9 +110,28 @@ export function JoinForm({
 
   const answerError = (id: string) =>
     (errors.answers as Record<string, { message?: string }> | undefined)?.[id]?.message;
+  const summary =
+    formState.submitCount > 0
+      ? [
+          { id: "join-fullName", label: t("fullName"), error: errors.fullName?.message },
+          { id: "join-className", label: t("className"), error: errors.className?.message },
+          { id: "join-phone", label: t("phone"), error: errors.phone?.message },
+          { id: "join-reason", label: t("reason"), error: errors.reason?.message },
+          { id: "join-helpWith", label: t("helpWith"), error: errors.helpWith?.message },
+          ...questions.map((q) => ({
+            id: `join-q-${q.id}`,
+            label: q.label,
+            error: answerError(q.id),
+          })),
+          { id: "join-consent", label: t("consentShort"), error: errors.consent?.message },
+        ].flatMap((i) =>
+          i.error ? [{ id: i.id, label: i.label, message: translateError(t, i.error) }] : [],
+        )
+      : [];
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
+      <ErrorSummary title={t("errorSummary")} items={summary} />
       {waitlist && (
         <p role="status" className="rounded-2xl bg-brand-gold-soft p-4 text-sm font-medium">
           {t("waitlistNotice")}
@@ -176,6 +200,8 @@ export function JoinForm({
       </FormField>
 
       <fieldset
+        id="join-helpWith"
+        tabIndex={-1}
         className="space-y-3"
         aria-describedby={errors.helpWith ? "join-helpWith-error" : undefined}
       >
@@ -285,6 +311,7 @@ export function JoinForm({
           <div className="space-y-2">
             <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-muted/60 p-4 text-sm">
               <Checkbox
+                id="join-consent"
                 className="mt-0.5"
                 checked={field.value === true}
                 onCheckedChange={(v) => field.onChange(v === true)}

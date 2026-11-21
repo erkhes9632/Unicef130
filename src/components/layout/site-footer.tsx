@@ -9,6 +9,10 @@ import { getClubNames } from "@/lib/branding";
 import { pick } from "@/lib/data/localize";
 import { getSiteSettings, publicContact } from "@/lib/data/settings";
 import { ubParts } from "@/lib/dates/ub-time";
+import { cn } from "@/lib/utils";
+
+const LINK =
+  "inline-flex min-h-11 items-center text-muted-foreground hover:text-foreground sm:min-h-9";
 
 export async function SiteFooter() {
   const t = await getTranslations();
@@ -33,40 +37,74 @@ export async function SiteFooter() {
   ].filter((l) => !!l);
 
   return (
-    <footer className="relative mt-auto overflow-hidden border-t bg-muted/40 print:hidden">
+    <footer className="relative mt-auto overflow-hidden border-t bg-surface-2 print:hidden">
       {/* Colorful brand stripe */}
-      <div aria-hidden="true" className="flex h-1.5">
+      <div aria-hidden="true" className="flex h-[3px]">
         <span className="flex-1 bg-brand-cyan" />
         <span className="flex-1 bg-brand-purple" />
+        <span className="flex-1 bg-brand-sun" />
+        <span className="flex-1 bg-brand-coral" />
         <span className="flex-1 bg-brand-green" />
-        <span className="flex-1 bg-brand-blue" />
-        <span className="flex-1 bg-brand-gold" />
       </div>
 
-      <div className="container-page grid gap-10 py-12 md:grid-cols-2 lg:grid-cols-4">
-        <div className="space-y-4 lg:col-span-1">
-          <BrandLockup size={44} wrapText />
+      <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
+        <div className="space-y-4">
+          <BrandLockup variant="footer" />
           <p className="max-w-xs text-sm text-muted-foreground">{about}</p>
+          {socials.length > 0 && (
+            <div>
+              <h2 className="sr-only">{t("Footer.follow")}</h2>
+              <SocialLinks socials={socials} variant="icons" />
+            </div>
+          )}
         </div>
 
         <nav aria-label={t("Footer.explore")}>
-          <h2 className="mb-3 text-sm font-bold">{t("Footer.explore")}</h2>
-          <ul className="grid grid-cols-2 gap-2 text-sm">
-            {mainNav.map((item) => (
-              <li key={item.key}>
-                <Link href={item.href} className="text-muted-foreground hover:text-foreground">
-                  {t(`Nav.${item.key}`)}
-                </Link>
-              </li>
-            ))}
+          <h2 className="mb-2 text-sm font-bold">{t("Footer.explore")}</h2>
+          <ul className="grid grid-cols-2 gap-x-4 text-sm">
+            {mainNav
+              .filter((item) => !["support", "faq", "contact"].includes(item.key))
+              .map((item) => (
+                <li key={item.key}>
+                  <Link href={item.href} className={LINK}>
+                    {t(`Nav.${item.key}`)}
+                  </Link>
+                </li>
+              ))}
           </ul>
         </nav>
 
-        {contactLines.length > 0 && (
-          <div>
-            <h2 className="mb-3 text-sm font-bold">{t("Footer.contact")}</h2>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
-              {contactLines.map(({ key, icon: Icon, text, href }) => (
+        <nav aria-label={t("Footer.getInvolved")}>
+          <h2 className="mb-2 text-sm font-bold">{t("Footer.getInvolved")}</h2>
+          <ul className="text-sm">
+            <li>
+              <Link href="/join" className={cn(LINK, "font-semibold text-brand-cyan-strong")}>
+                {t("Nav.join")} →
+              </Link>
+            </li>
+            <li>
+              <Link href="/support" className={cn(LINK, "font-semibold text-brand-purple-strong")}>
+                {t("Nav.support")} →
+              </Link>
+            </li>
+            <li>
+              <Link href="/faq" className={LINK}>
+                {t("Nav.faq")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className={LINK}>
+                {t("Nav.contact")}
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
+        <div>
+          <h2 className="mb-2 text-sm font-bold">{t("Footer.contact")}</h2>
+          <ul className="space-y-2.5 text-sm text-muted-foreground">
+            {contactLines.length > 0 ? (
+              contactLines.map(({ key, icon: Icon, text, href }) => (
                 <li key={key} className="flex gap-2">
                   <Icon className={icon} aria-hidden="true" />
                   {href ? (
@@ -77,33 +115,20 @@ export async function SiteFooter() {
                     <span>{text}</span>
                   )}
                 </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div>
-          <h2 className="mb-3 text-sm font-bold">{t("Footer.getInvolved")}</h2>
-          <div className="flex flex-col items-start gap-3 text-sm">
-            <Link href="/join" className="font-semibold text-brand-cyan-strong hover:underline">
-              {t("Nav.join")} →
-            </Link>
-            <Link
-              href="/support"
-              className="font-semibold text-brand-purple-strong hover:underline"
-            >
-              {t("Nav.support")} →
-            </Link>
-            <Link href="/faq" className="hover:underline">
-              {t("Nav.faq")}
-            </Link>
-          </div>
-          {socials.length > 0 && (
-            <div className="mt-5">
-              <h2 className="mb-2 text-sm font-bold">{t("Footer.follow")}</h2>
-              <SocialLinks socials={socials} variant="icons" />
-            </div>
-          )}
+              ))
+            ) : (
+              // No contact details set in the admin yet: only what is certain (no invented data).
+              <li className="flex gap-2">
+                <MapPin className={icon} aria-hidden="true" />
+                <span>{t("Footer.schoolPlace")}</span>
+              </li>
+            )}
+            <li>
+              <Link href="/contact" className={cn(LINK, "font-semibold text-brand-cyan-strong")}>
+                {t("Footer.writeToUs")} →
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
 

@@ -22,7 +22,7 @@ const directionTone: Record<string, { dot: string; chip: string; active: string 
   activity: {
     dot: "bg-brand-cyan",
     chip: "bg-brand-cyan-soft text-brand-cyan-strong",
-    active: "bg-brand-cyan text-brand-night ring-brand-cyan",
+    active: "bg-brand-cyan text-brand-ink ring-brand-cyan",
   },
   education: {
     dot: "bg-brand-purple",
@@ -32,7 +32,7 @@ const directionTone: Record<string, { dot: string; chip: string; active: string 
   charity: {
     dot: "bg-brand-gold",
     chip: "bg-brand-gold-soft text-brand-gold-strong",
-    active: "bg-brand-gold text-brand-night ring-brand-gold",
+    active: "bg-brand-gold text-brand-ink ring-brand-gold",
   },
 };
 
@@ -75,7 +75,7 @@ export function ImpactTimeline({
                 aria-pressed={active}
                 onClick={() => setFilter(f.key)}
                 className={cn(
-                  "inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold ring-1 transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                  "inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold ring-1 transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                   !active && "ring-border hover:bg-muted",
                   active &&
                     (f.key
@@ -171,7 +171,7 @@ export function ImpactTimeline({
                                 style={{ backgroundColor: s.color }}
                                 className={cn(
                                   "inline-flex h-6 items-center rounded-md px-2 text-xs font-extrabold transition-transform hover:scale-105",
-                                  s.light ? "text-white" : "text-brand-night",
+                                  s.light ? "text-white" : "text-brand-ink",
                                 )}
                               >
                                 SDG {s.n}

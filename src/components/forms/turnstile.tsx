@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
 import { logger } from "@/lib/logger";
 
@@ -52,6 +53,7 @@ export function Turnstile({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
+  const { resolvedTheme } = useTheme();
   const onTokenRef = useRef(onToken);
   const onErrorRef = useRef(onError);
 
@@ -68,7 +70,9 @@ export function Turnstile({
         widgetId.current = window.turnstile.render(container.current, {
           sitekey: siteKey,
           action,
-          theme: document.documentElement.classList.contains("dark") ? "dark" : "light",
+          // Follows the site theme (not only the OS); re-rendered when the visitor switches.
+          theme: resolvedTheme === "dark" ? "dark" : resolvedTheme === "light" ? "light" : "auto",
+          size: "flexible",
           callback: (t: string) => onTokenRef.current(t),
           "expired-callback": () => onTokenRef.current(""),
           "error-callback": () => {
@@ -86,7 +90,7 @@ export function Turnstile({
       if (widgetId.current && window.turnstile) window.turnstile.remove(widgetId.current);
       widgetId.current = null;
     };
-  }, [siteKey, action]);
+  }, [siteKey, action, resolvedTheme]);
 
   return <div ref={container} className="min-h-[65px]" />;
 }
