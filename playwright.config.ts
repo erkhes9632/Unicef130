@@ -6,6 +6,7 @@ import { defineConfig } from "@playwright/test";
  * Clerk DEVELOPMENT instance from .dev.vars. Clerk testing tokens skip bot protection; test
  * accounts use `+clerk_test` addresses (no e-mail is sent, the code is 424242).
  * Run: `bun run preview` in one terminal, then `bun run test:e2e`.
+ * The "cold" project starts its own Worker (port 8790) with an empty page cache.
  */
 if (existsSync(".dev.vars")) {
   for (const line of readFileSync(".dev.vars", "utf8").split(/\r?\n/)) {
@@ -33,7 +34,8 @@ export default defineConfig({
     locale: "mn-MN",
   },
   projects: [
+    { name: "cold", testMatch: /cold-cache\.e2e\.ts$/ },
     { name: "setup", testMatch: /global\.setup\.ts$/ },
-    { name: "e2e", dependencies: ["setup"] },
+    { name: "e2e", dependencies: ["setup"], testIgnore: /cold-cache\.e2e\.ts$/ },
   ],
 });

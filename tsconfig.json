@@ -26,7 +26,9 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "open-next-worker": ["./.open-next/worker.js"]
+      "open-next-worker": ["./.open-next/worker.js"],
+      "open-next-server": ["./.open-next/server-functions/default/handler.mjs"],
+      "open-next-init": ["./.open-next/cloudflare/init.js"]
     }
   },
   "include": [

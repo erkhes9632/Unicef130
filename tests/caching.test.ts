@@ -5,6 +5,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
+import { edgeCacheable, toEdgeCopy } from "@/lib/edge-cache";
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((f) => {
@@ -55,5 +56,65 @@ describe("cacheable public pages", () => {
     expect(readFileSync("src/components/layout/root-document.tsx", "utf8")).not.toMatch(
       /headers\(\)|cookies\(\)/,
     );
+  });
+});
+
+/**
+ * /join and /sign-in: the cached HTML is the same for every signed-out visitor (Clerk runs in the
+ * browser). Everything that depends on the session is decided per request: the proxy (rewrite to
+ * /join/guest only without a session), the dynamic /join, and no data-centre copy at all.
+ */
+describe("session-dependent pages are never shared", () => {
+  test("the data-centre copy skips account areas and keeps public pages", () => {
+    const get = (path: string, headers: Record<string, string> = {}) =>
+      edgeCacheable(new Request(`https://example.org${path}`, { headers }));
+    for (const path of [
+      "/join",
+      "/en/join",
+      "/mn/join",
+      "/mn/sign-in",
+      "/mn/me",
+      "/sign-in",
+      "/en/sign-in",
+      "/sign-in/factor-one",
+      "/me",
+      "/en/me/certificate",
+      "/admin",
+      "/auth/continue",
+      "/api/admin/stats",
+      "/search",
+    ])
+      expect([path, get(path)]).toEqual([path, false]);
+    expect(get("/en/about")).toBe(true);
+    expect(get("/en/about", { rsc: "1" })).toBe(false);
+    expect(get("/about?__clerk_handshake=x")).toBe(false);
+  });
+
+  test("responses with cookies, errors or no ISR state are never copied", () => {
+    const html = { "content-type": "text/html; charset=utf-8", "x-opennext-cache": "HIT" };
+    expect(toEdgeCopy(new Response("ok", { headers: html }), 60)).not.toBeNull();
+    expect(
+      toEdgeCopy(new Response("ok", { headers: { ...html, "set-cookie": "a=b" } }), 60),
+    ).toBeNull();
+    expect(toEdgeCopy(new Response("x", { status: 500, headers: html }), 60)).toBeNull();
+    expect(
+      toEdgeCopy(new Response("ok", { headers: { "content-type": "text/html" } }), 60),
+    ).toBeNull();
+  });
+
+  test("/join: the signed-in page is per request, the cached one is the signed-out view", () => {
+    expect(readFileSync("src/app/[locale]/join/page.tsx", "utf8")).toContain("signedIn");
+    expect(readFileSync("src/app/[locale]/join/guest/page.tsx", "utf8")).toContain(
+      "signedIn={false}",
+    );
+    const proxy = readFileSync("src/proxy.ts", "utf8");
+    expect(proxy).toMatch(/if \(join && !\(await auth\(\)\)\.userId\)/);
+    for (const m of [
+      '"/join"',
+      '"/(en|mn)/join"',
+      '"/sign-in/:path*"',
+      '"/(en|mn)/sign-in/:path*"',
+    ])
+      expect(proxy).toContain(m);
   });
 });

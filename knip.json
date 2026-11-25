@@ -8,7 +8,13 @@
     "tests/**/*.test.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "e2e/**/*.ts", "tests/**/*.ts", "*.ts"],
-  "ignoreDependencies": ["@tailwindcss/turbopack", "tailwindcss", "tw-animate-css", "shadcn"],
+  "ignoreDependencies": [
+    "@tailwindcss/turbopack",
+    "tailwindcss",
+    "tw-animate-css",
+    "shadcn",
+    "cloudflare"
+  ],
   "ignoreExportsUsedInFile": true,
   "rules": {
     "types": "warn"

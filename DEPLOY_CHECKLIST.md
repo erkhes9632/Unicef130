@@ -42,7 +42,9 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
    `-md.webp` upload гарах ёстой → `--remote --confirm-production` (DB өөрчлөгдөхгүй, idempotent).
    **Deploy-оос өмнө** хийнэ: шинэ код `srcset`-д 960 px файлыг заадаг.
 4. ☐ `bun run deploy` (Durable Object `DOQueueHandler`-ийн migration автоматаар; дараа нь
-   `cache:warm` бүх хуудсыг кэшлэнэ). Warm-up-д 5xx үлдвэл `bun run cache:warm` дахин.
+   `cache:warm` бүх хуудсыг кэшлэнэ). Warm-up 5xx-ийг нэг удаа дахин оролдоно; үлдсэн хуудсуудыг
+   жагсааж хэвлэнэ (exit 0) — тэр үед `bunx wrangler tail --status error` харж, `bun run cache:warm`
+   дахин.
 5. ☐ Шалгах: `bunx wrangler tail --format json` → нийтийн хуудсуудын `cpuTime` 1–5 ms,
    `outcome: ok`; нүүр, `/en`, мэдээ, `/join`, `/sign-in`, `/admin` (админаар), `/admin/stats`.
 

@@ -12,6 +12,8 @@ import d1NextTagCache from "@opennextjs/cloudflare/overrides/tag-cache/d1-next-t
  * - The tag cache (table `revalidations` in the main D1) marks pages stale after admin edits
  *   (`revalidateTag(..., "max")`): visitors get the cached page while a Durable Object queue
  *   re-renders it in the background, with retries.
+ * - Route modules load when the isolate starts (`onStart`, see worker.ts), so a cold request
+ *   does not pay for them.
  * https://opennext.js.org/cloudflare/caching
  */
 export default defineCloudflareConfig({
@@ -23,4 +25,5 @@ export default defineCloudflareConfig({
   tagCache: d1NextTagCache,
   queue: doQueue,
   enableCacheInterception: true,
+  routePreloadingBehavior: "onStart",
 });

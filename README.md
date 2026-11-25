@@ -234,9 +234,20 @@ more than that, so visitors should only ever get cached pages.
   (`revalidateTag(..., "max")`: visitors get the cached page while a Durable Object re-renders it,
   with retries). The data-centre copy lives two minutes.
 - **After a deploy** the cache is empty: `bun run deploy` runs `bun run cache:warm`, which visits
-  every page from the sitemap (and retries any that fail).
+  every page from the sitemap one at a time, reads each response to the end, and retries a 5xx
+  once. Pages that still fail are listed, but the script exits 0 (`--strict` makes it exit 1).
+- **Cold start:** `worker.ts` loads the Next.js server, every route module and the proxy when the
+  isolate starts (startup has its own CPU limit; about 90 ms locally). Loaded lazily, the first
+  request of an isolate paid for it, and if that request was stopped (Error 1102, or a visitor
+  leaving), the half-finished, isolate-wide work broke the other requests of that isolate with
+  empty 500s ("This promise was created by a request that has since ended"). For the same
+  reason every app response is finished with `waitUntil` even when the visitor leaves
+  (`src/lib/finish-request.ts`). `e2e/cold-cache.e2e.ts` checks the first request after a cache
+  purge for every public page.
 - **Account areas** (`/admin`, `/me`, signed-in `/join`, `/search`) are rendered per request. The
-  proxy runs only there; `/join` for signed-out visitors and `/sign-in` are cached too.
+  proxy runs only there and decides per request; `/join` for signed-out visitors (the same view
+  for everyone) and the `/sign-in` shell (Clerk runs in the browser) are cached. The data-centre
+  copy never stores account areas or responses with cookies (`tests/caching.test.ts`).
 - To measure: `bunx wrangler tail` shows `cpuTime` per request; locally, start
   `bunx wrangler dev --inspector-port 9230` and profile with Chrome DevTools.
 

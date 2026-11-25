@@ -6,7 +6,7 @@
 export const EDGE_TTL = 120;
 
 const NOT_A_PUBLIC_PAGE =
-  /^\/(?:en\/)?(?:me|join|sign-in|sign-out|search)(?:\/|$)|^\/(?:admin|api|auth|media|brand|_next|cdn-cgi)(?:\/|$)/;
+  /^\/(?:(?:en|mn)\/)?(?:me|join|sign-in|sign-out|search)(?:\/|$)|^\/(?:admin|api|auth|media|brand|_next|cdn-cgi)(?:\/|$)/;
 const ORIGINAL_CACHE_CONTROL = "x-origin-cache-control";
 
 export function edgeCacheable(request: Request) {
