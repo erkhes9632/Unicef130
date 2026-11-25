@@ -20,22 +20,14 @@ describe("Content-Security-Policy", () => {
     expect(prod["script-src"]).not.toContain("'unsafe-eval'");
   });
 
-  test("only Turnstile, Google Maps and Web Analytics are allowed as third parties", () => {
+  test("public pages: only Web Analytics as a third party, no frames", () => {
     expect(prod["script-src"]).toEqual([
       "'self'",
       "'unsafe-inline'",
-      "https://challenges.cloudflare.com",
       "https://static.cloudflareinsights.com",
     ]);
-    expect(prod["frame-src"]).toEqual([
-      "https://challenges.cloudflare.com",
-      "https://www.google.com",
-    ]);
-    expect(prod["connect-src"]).toEqual([
-      "'self'",
-      "https://challenges.cloudflare.com",
-      "https://cloudflareinsights.com",
-    ]);
+    expect(prod["frame-src"]).toEqual(["'none'"]);
+    expect(prod["connect-src"]).toEqual(["'self'", "https://cloudflareinsights.com"]);
     expect(prod["default-src"]).toEqual(["'self'"]);
     expect(prod["object-src"]).toEqual(["'none'"]);
     expect(prod["base-uri"]).toEqual(["'self'"]);
@@ -57,6 +49,9 @@ describe("Content-Security-Policy", () => {
     expect(clerk["connect-src"]).toContain("https://clerk.example.mn");
     expect(clerk["connect-src"]).toContain("https://*.protect.clerk.com:*");
     expect(clerk["frame-src"]).toContain("https://*.protect.clerk.com");
+    // Clerk's sign-up bot protection runs Cloudflare's challenge (account areas only).
+    expect(clerk["script-src"]).toContain("https://challenges.cloudflare.com");
+    expect(clerk["frame-src"]).toContain("https://challenges.cloudflare.com");
     expect(clerk["worker-src"]).toEqual(["'self'", "blob:"]);
     expect(prod["script-src"].join(" ")).not.toContain("clerk");
   });

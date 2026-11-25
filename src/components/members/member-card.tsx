@@ -20,7 +20,7 @@ export async function MemberCard({
   member: MemberItem;
   index: number;
   size?: "default" | "large";
-  /** No name, photo or class: role + a role-initial avatar (SHOW_LEADER_NAMES off). */
+  /** No name, photo or class: role + a role-initial avatar (no consent to publish the name). */
   anonymous?: boolean;
 }) {
   const t = await getTranslations("Members");

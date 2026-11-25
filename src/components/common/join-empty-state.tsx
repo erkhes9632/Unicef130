@@ -1,8 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { BrandLockup } from "@/components/brand/brand-lockup";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { EmptyState } from "./empty-state";
+import { JoinCtaButton } from "./join-cta-button";
 
 /** The one friendly empty state used by list pages (news, events, gallery, members): club mark. */
 export async function JoinEmptyState({
@@ -19,9 +18,7 @@ export async function JoinEmptyState({
       title={title}
       description={description ?? t("emptyDescription")}
     >
-      <Button asChild className="mt-2">
-        <Link href="/join">{t("joinCta")}</Link>
-      </Button>
+      <JoinCtaButton label={t("joinCta")} className="mt-2" />
     </EmptyState>
   );
 }

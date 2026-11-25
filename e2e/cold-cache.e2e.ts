@@ -21,7 +21,7 @@ const BASE = `http://localhost:${PORT}`;
 const STATE = ".wrangler/state/v3";
 const PUBLIC_PAGES_TAG = "_N_T_/[locale]/layout";
 /** Cached pages that the sitemap does not list. */
-const EXTRA = ["/sign-in", "/en/sign-in", "/join", "/en/join", "/contact", "/en/contact"];
+const EXTRA = ["/sign-in", "/en/sign-in", "/join", "/en/join"];
 
 let dir = "";
 let worker: ChildProcess | undefined;

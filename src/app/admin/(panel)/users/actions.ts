@@ -7,10 +7,12 @@ import { members } from "@/db/schema";
 import { actionError, type ActionState } from "@/lib/admin/action-state";
 import { logActivity, shortId } from "@/lib/admin/activity";
 import { roleLabel, toRole } from "@/lib/auth/roles";
-import { assertAdmin, refreshUserFromClerk } from "@/lib/auth/session";
+import { AuthError, assertAdmin, refreshUserFromClerk } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 import { memberDisplayName } from "@/lib/recruitment/logic";
 import { countActiveAdmins, deleteClerkUser, setBanned, setRole } from "@/lib/users/clerk-admin";
 import { removeUserData } from "@/lib/users/delete";
+import { parseProfile, saveProfile, type ProfileFormState } from "@/lib/users/profile-ops";
 import {
   checkUserAction,
   roleAfter,
@@ -196,5 +198,32 @@ export async function refreshUser(userId: string): Promise<ActionState> {
       : { ok: false, message: "Олдсонгүй." };
   } catch (err) {
     return actionError(err);
+  }
+}
+
+/** Админ → Хэрэглэгчид → «Нэр засах»: the same rules and audit entry as the person's own edit. */
+export async function updateUserProfile(
+  userId: string,
+  _prev: ProfileFormState,
+  data: FormData,
+): Promise<ProfileFormState> {
+  try {
+    const admin = await assertAdmin();
+    const db = await getDb();
+    const target = await findUser(db, userId);
+    if (!target) return { ok: false, error: "notFound" };
+    const parsed = await parseProfile(db, target.role, {
+      lastName: data.get("lastName") ?? "",
+      firstName: data.get("firstName") ?? "",
+      className: data.get("className") ?? "",
+    });
+    if (!parsed.ok) return { ok: false, error: "validation", fieldErrors: parsed.fieldErrors };
+    const result = await saveProfile(db, admin, userId, parsed.profile);
+    if (result.ok) revalidatePath("/admin/users");
+    return result;
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: err.code };
+    logger.error("users", "profile save failed", err);
+    return { ok: false, error: "server" };
   }
 }

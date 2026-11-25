@@ -4,6 +4,7 @@ import {
   Ban,
   Link2,
   Loader2,
+  PencilLine,
   RefreshCw,
   ShieldCheck,
   Trash2,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ProfileForm, type ProfileFormLabels } from "@/components/me/profile-form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import type { ActionState } from "@/lib/admin/action-state";
 import type { AppRole } from "@/lib/auth/roles";
+import type { ProfileFormState } from "@/lib/users/profile-ops";
 
 type Run = () => Promise<ActionState>;
 
@@ -217,5 +220,50 @@ export function UserRowActions({
         {pending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
       </Button>
     </div>
+  );
+}
+
+/** «Нэр засах»: an admin corrects someone's name and class (same rules as their own /me card). */
+export function EditProfileDialog({
+  action,
+  initial,
+  email,
+  classes,
+  classRequired,
+  labels,
+}: {
+  action: (prev: ProfileFormState, data: FormData) => Promise<ProfileFormState>;
+  initial: { lastName: string; firstName: string; className: string };
+  email: string;
+  classes: string[];
+  classRequired: boolean;
+  labels: ProfileFormLabels;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <PencilLine aria-hidden="true" /> Нэр засах
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Нэр, анги засах</DialogTitle>
+          <DialogDescription>
+            Нэр зөвхөн админуудад харагдана. Хүн өөрөө «Миний мэдээлэл» хэсгээс мөн засаж болно.
+          </DialogDescription>
+        </DialogHeader>
+        <ProfileForm
+          action={action}
+          initial={initial}
+          email={email}
+          classes={classes}
+          classRequired={classRequired}
+          labels={labels}
+          onSaved={() => setOpen(false)}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }

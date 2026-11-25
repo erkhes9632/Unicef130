@@ -396,6 +396,10 @@ export function buildImport(r: Report, m: Manifest) {
         online: t.online,
         total: t.total,
         donation_amount: t.raised,
+        // The official membership figures live on the yearly total row.
+        members_joined: t.pillar === "total" ? r.membership.totalJoined : 0,
+        members_active: t.pillar === "total" ? r.membership.active : 0,
+        volunteer_hours: t.pillar === "total" ? r.membership.hours : 0,
         notes: t.pillar === "total" ? (notes.total ?? "") : (notes[t.pillar] ?? ""),
         created_at: ts,
         updated_at: ts,

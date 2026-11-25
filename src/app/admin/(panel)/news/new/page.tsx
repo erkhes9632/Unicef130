@@ -11,7 +11,10 @@ export default async function NewNewsPage() {
   await requireAdmin();
   return (
     <>
-      <AdminPageHeader title="Шинэ мэдээ" />
+      <AdminPageHeader
+        title="Шинэ мэдээ"
+        description="Мэдээ бичээд «Ноорог» хэлбэрээр хадгалж болно; «Нийтлэх» сонговол сайтад гарна."
+      />
       <NewsForm action={saveNews.bind(null, null)} albums={await listAlbumOptions()} />
     </>
   );

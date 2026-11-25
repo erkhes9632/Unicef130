@@ -2,6 +2,7 @@
 
 import { ArrowRight, CalendarDays, CalendarX2, List } from "lucide-react";
 import { useSyncExternalStore } from "react";
+import { useHeaderSession } from "@/components/auth/use-header-session";
 import { EmptyState } from "@/components/common/empty-state";
 import { Button } from "@/components/ui/button";
 import { useUrlQuery } from "@/hooks/use-url-query";
@@ -45,6 +46,24 @@ const tabClass = (active: boolean) =>
  * the tab (?tab=past) and the month (?month=YYYY-MM) are applied here, and "upcoming vs past" is
  * decided with the visitor's clock, so it is right even while the cached page is an hour old.
  */
+/**
+ * The calendar's first month: this month if it has events, else the month of the next event,
+ * else the month of the latest one (an empty month is a dead end).
+ */
+export function defaultMonth(events: EventMeta[], upcoming: EventMeta[], now: number) {
+  const current = ubParts(now);
+  const has = (y: number, m: number) =>
+    events.some((e) => {
+      const p = ubParts(e.startsAt);
+      return p.year === y && p.month === m;
+    });
+  if (has(current.year, current.month)) return { year: current.year, month: current.month };
+  const pick = upcoming[0] ?? [...events].sort((a, b) => b.startsAt.localeCompare(a.startsAt))[0];
+  if (!pick) return { year: current.year, month: current.month };
+  const p = ubParts(pick.startsAt);
+  return { year: p.year, month: p.month };
+}
+
 export function EventsBrowser({
   locale,
   events,
@@ -63,6 +82,9 @@ export function EventsBrowser({
   labels: Labels;
 }) {
   const { query, setQuery } = useUrlQuery();
+  // "Become a member" only for visitors and applicants (display hint; cached page).
+  const { role } = useHeaderSession();
+  const canJoin = role !== "member" && role !== "admin";
   const view = query.get("view") === "calendar" ? "calendar" : "list";
   const scope = query.get("tab") === "past" ? "past" : "upcoming";
   const now = useSyncExternalStore(noSubscribe, clientNow, () => renderedAt);
@@ -88,7 +110,9 @@ export function EventsBrowser({
 
   let body: React.ReactNode;
   if (view === "calendar") {
-    const { year, month } = parseMonth(query.get("month") ?? undefined, now);
+    const { year, month } = query.get("month")
+      ? parseMonth(query.get("month") ?? undefined, now)
+      : defaultMonth(events, upcoming, now);
     const inMonth = events
       .filter((e) => {
         const p = ubParts(e.startsAt);
@@ -101,7 +125,7 @@ export function EventsBrowser({
           locale={locale}
           year={year}
           month={month}
-          events={inMonth}
+          events={inMonth.map((e) => ({ ...e, past: !isUpcoming(e, now) }))}
           labels={labels.calendar}
           onShift={(delta) => {
             const m = shiftMonth(year, month, delta);
@@ -129,9 +153,11 @@ export function EventsBrowser({
           description={labels.emptyUpcomingHint}
           className="py-8"
         >
-          <Button asChild>
-            <Link href="/join">{labels.emptyUpcomingCta}</Link>
-          </Button>
+          {canJoin && (
+            <Button asChild>
+              <Link href="/join">{labels.emptyUpcomingCta}</Link>
+            </Button>
+          )}
         </EmptyState>
         <div>
           <h2 className="mb-5 text-2xl font-extrabold">{labels.pastTitle}</h2>

@@ -12,11 +12,24 @@ export function statsCsv(s: StatsResponse) {
   const c = s.club;
   rows.push(
     ["Шинээр бүртгүүлсэн хэрэглэгч", c.users.inPeriod, c.users.prevPeriod],
-    ["Идэвхтэй гишүүн (одоо)", c.members.active, c.members.prevActive],
+    ...(c.members.report
+      ? [
+          [
+            `Тайлангийн идэвхтэй гишүүн (${c.members.report.schoolYear})`,
+            c.members.report.active,
+            "",
+          ],
+          [
+            `Тайлангийн элссэн гишүүн (${c.members.report.schoolYear})`,
+            c.members.report.joined,
+            "",
+          ],
+        ]
+      : []),
+    ["Сайтад бүртгэлтэй гишүүн (одоо)", c.members.site, ""],
     ["Өргөдөл", c.applications.inPeriod, c.applications.prevPeriod],
-    ["Сайн дурын цаг", c.hours.inPeriod, c.hours.prevPeriod],
+    ["Сайтад бүртгэсэн сайн дурын цаг", c.hours.inPeriod, c.hours.prevPeriod],
     ["Арга хэмжээнд бүртгүүлсэн", c.signups.inPeriod, c.signups.prevPeriod],
-    ["Зурвас", c.messages.inPeriod, ""],
   );
   if (t) {
     rows.push([], ["Огноо", "Зочид", "Үзсэн хуудас"]);
@@ -30,7 +43,9 @@ export function statsCsv(s: StatsResponse) {
   }
   rows.push([], ["Өргөдлийн төлөв", "Тоо"]);
   for (const [k, v] of Object.entries(c.applications.byStatus)) rows.push([k, v]);
-  rows.push([], ["Сар", "Сайн дурын цаг", "Зурвас"]);
-  c.hours.byMonth.forEach((m, i) => rows.push([m.key, m.value, c.messages.byMonth[i]?.value ?? 0]));
+  rows.push([], ["Хичээлийн жил", "Тайлангийн цаг", "Сайтад бүртгэсэн цаг"]);
+  for (const y of c.hours.byYear) rows.push([y.schoolYear, y.report, y.logged]);
+  rows.push([], ["Сар", "Сайтад бүртгэсэн цаг"]);
+  for (const m of c.hours.byMonth) rows.push([m.key, m.value]);
   return toCsv(rows);
 }

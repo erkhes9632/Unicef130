@@ -9,8 +9,13 @@ import { revalidatePublic } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { deleteMediaUrls, isOwnMediaUrl } from "@/lib/media/server";
-import { SETTINGS_KEYS, socialPlatforms, type SiteSettings } from "@/lib/settings/types";
-import { aboutInputSchema, settingsInputSchema } from "@/lib/validation/admin";
+import {
+  SETTINGS_KEYS,
+  socialPlatforms,
+  supportWays,
+  type SiteSettings,
+} from "@/lib/settings/types";
+import { aboutInputSchema, settingsInputSchema, supportInputSchema } from "@/lib/validation/admin";
 
 /** JSON list from a hidden input: empty → [], malformed → left invalid so zod rejects it. */
 function jsonList(data: FormData, key: string): unknown {
@@ -80,12 +85,7 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
         address: fd.str(data, "contact.address"),
         addressEn: fd.str(data, "contact.addressEn"),
         email: fd.str(data, "contact.email"),
-        phone: fd.str(data, "contact.phone"),
-        officeHours: fd.str(data, "contact.officeHours"),
-        officeHoursEn: fd.str(data, "contact.officeHoursEn"),
-        mapEmbedUrl: fd.str(data, "contact.mapEmbedUrl"),
-        mapLat: fd.str(data, "contact.mapLat"),
-        mapLng: fd.str(data, "contact.mapLng"),
+        instagram: fd.str(data, "contact.instagram"),
       },
       socials: socialPlatforms
         .map((platform) => ({ platform, url: fd.str(data, `socials.${platform}`) }))
@@ -150,6 +150,34 @@ export async function saveAboutPage(_prev: ActionState, data: FormData): Promise
     await logActivity(user, "settings.update", {
       type: "settings",
       summary: "«Бидний тухай» хуудсыг шинэчлэв",
+    });
+    revalidatePublic();
+    return { ok: true, message: "Хадгалагдлаа." };
+  } catch (err) {
+    return actionError(err);
+  }
+}
+
+export async function saveSupportPage(_prev: ActionState, data: FormData): Promise<ActionState> {
+  try {
+    const user = await assertAdmin();
+    const pair = (k: string) => ({
+      title: fd.str(data, `${k}.title`),
+      titleEn: fd.str(data, `${k}.titleEn`),
+      body: fd.str(data, `${k}.body`),
+      bodyEn: fd.str(data, `${k}.bodyEn`),
+    });
+    const parsed = supportInputSchema.safeParse({
+      intro: fd.str(data, "intro"),
+      introEn: fd.str(data, "introEn"),
+      ways: Object.fromEntries(supportWays.map((w) => [w, pair(`ways.${w}`)])),
+      donate: pair("donate"),
+    });
+    if (!parsed.success) return validationError(parsed.error);
+    await upsert([{ key: SETTINGS_KEYS.support, value: parsed.data }]);
+    await logActivity(user, "settings.update", {
+      type: "settings",
+      summary: "«Дэмжих» хуудсыг шинэчлэв",
     });
     revalidatePublic();
     return { ok: true, message: "Хадгалагдлаа." };

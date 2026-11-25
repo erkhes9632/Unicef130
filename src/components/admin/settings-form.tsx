@@ -28,7 +28,6 @@ import { ListEditor } from "./list-editor";
 
 const socialLabels: Record<SocialPlatform, string> = {
   facebook: "Facebook",
-  instagram: "Instagram",
   tiktok: "TikTok",
   youtube: "YouTube",
   telegram: "Telegram",
@@ -245,7 +244,10 @@ export function SettingsForm({
         />
       </FormSection>
 
-      <FormSection title="Холбоо барих мэдээлэл">
+      <FormSection
+        title="Холбоо барих"
+        description="Хөл хэсэгт (бүх хуудсанд) болон «Биднийг дэмжих» хуудсанд харагдана. Хоосон үлдээсэн мөр сайт дээр харагдахгүй."
+      >
         <Pair
           id="contact.address"
           label="Хаяг"
@@ -262,54 +264,19 @@ export function SettingsForm({
               name="contact.email"
               type="email"
               defaultValue={initial.contact.email}
+              placeholder="130foreverychild@gmail.com"
             />
           </AdminField>
-          <AdminField label="Утас" htmlFor="contact.phone">
+          <AdminField
+            label="Instagram"
+            htmlFor="contact.instagram"
+            hint="@нэр эсвэл профайлын хаяг (https://www.instagram.com/…/)."
+          >
             <Input
-              id="contact.phone"
-              name="contact.phone"
-              defaultValue={initial.contact.phone}
-              maxLength={40}
-            />
-          </AdminField>
-        </div>
-        <Pair
-          id="contact.officeHours"
-          label="Цагийн хуваарь"
-          labelEn="Office hours (English)"
-          value={initial.contact.officeHours}
-          valueEn={initial.contact.officeHoursEn}
-          max={120}
-        />
-        <AdminField
-          label="Google Maps embed хаяг"
-          htmlFor="contact.mapEmbedUrl"
-          hint='Google Maps → Share → Embed a map → HTML доторх src="..." хэсгийг хуулж оруулна. Эсвэл доор өргөрөг/уртраг оруулна.'
-        >
-          <Input
-            id="contact.mapEmbedUrl"
-            name="contact.mapEmbedUrl"
-            defaultValue={initial.contact.mapEmbedUrl}
-            placeholder="https://www.google.com/maps/embed?pb=..."
-          />
-        </AdminField>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <AdminField label="Өргөрөг (latitude)" htmlFor="contact.mapLat">
-            <Input
-              id="contact.mapLat"
-              name="contact.mapLat"
-              inputMode="decimal"
-              defaultValue={initial.contact.mapLat}
-              placeholder="47.9184"
-            />
-          </AdminField>
-          <AdminField label="Уртраг (longitude)" htmlFor="contact.mapLng">
-            <Input
-              id="contact.mapLng"
-              name="contact.mapLng"
-              inputMode="decimal"
-              defaultValue={initial.contact.mapLng}
-              placeholder="106.9177"
+              id="contact.instagram"
+              name="contact.instagram"
+              defaultValue={initial.contact.instagram ? `@${initial.contact.instagram}` : ""}
+              placeholder="@130_foreverychild"
             />
           </AdminField>
         </div>

@@ -1,6 +1,5 @@
 import "server-only";
 import { clerkPublishableKey } from "@/lib/auth/clerk";
-import { resolveTurnstileConfig } from "@/lib/integrations/turnstile";
 
 const DAY = 86_400_000;
 
@@ -9,34 +8,19 @@ const DAY = 86_400_000;
  * one per real problem, each with what to do. Empty = the site is fine. Technical details stay in
  * the README and the CLI.
  */
-export async function siteStatus(
-  db: D1Database,
-  env: Parameters<typeof resolveTurnstileConfig>[0],
-  now: number,
-) {
+export async function siteStatus(db: D1Database, now: number) {
   const problems: string[] = [];
   if (!clerkPublishableKey() || !process.env.CLERK_SECRET_KEY)
     problems.push("Нэвтрэх хэсэг ажиллахгүй байна — сайтыг хариуцсан хөгжүүлэгчид хэлээрэй.");
-  if (resolveTurnstileConfig(env).status === "unavailable")
-    problems.push(
-      "«Холбоо барих» маягт ажиллахгүй байна — сайтыг хариуцсан хөгжүүлэгчид хэлээрэй.",
-    );
   try {
-    const [admins, oldMessages, oldApplications] = await db.batch<{ n: number }>([
+    const [admins, oldApplications] = await db.batch<{ n: number }>([
       db.prepare(`SELECT count(*) n FROM users WHERE role = 'admin' AND banned = 0`),
-      db
-        .prepare(`SELECT count(*) n FROM contact_messages WHERE read_at IS NULL AND created_at < ?`)
-        .bind(now - 7 * DAY),
       db
         .prepare(`SELECT count(*) n FROM applications WHERE status = 'new' AND created_at < ?`)
         .bind(now - 14 * DAY),
     ]);
     const n = (r: typeof admins) => Number(r?.results[0]?.n ?? 0);
     if (n(admins) < 2) problems.push("Ганц админтай байна — хариуцсан багшийг админ болгоорой.");
-    if (n(oldMessages) > 0)
-      problems.push(
-        `7 хоногоос дээш хугацаанд уншаагүй ${n(oldMessages)} зурвас байна — «Зурвасууд» хэсгийг шалгаарай.`,
-      );
     if (n(oldApplications) > 0)
       problems.push(
         `2 долоо хоногоос дээш хүлээгдэж буй ${n(oldApplications)} өргөдөл байна — «Өргөдлүүд» хэсэгт шийдвэрлээрэй.`,

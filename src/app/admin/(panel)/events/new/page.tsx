@@ -10,7 +10,10 @@ export default async function NewEventPage() {
   await requireAdmin();
   return (
     <>
-      <AdminPageHeader title="Шинэ арга хэмжээ" />
+      <AdminPageHeader
+        title="Шинэ арга хэмжээ"
+        description="Арга хэмжээг нэмээд «Нийтлэх»-ийг чагтлавал сайтын «Арга хэмжээ» хэсэг ба хуанлид гарна."
+      />
       <EventForm action={saveEvent.bind(null, null)} />
     </>
   );

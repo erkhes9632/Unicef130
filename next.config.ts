@@ -39,8 +39,14 @@ const nextConfig: NextConfig = {
     return [
       { source: "/mn", destination: "/", permanent: true },
       { source: "/mn/:path*", destination: "/:path*", permanent: true },
-      // "Системийн төлөв" became the statistics page.
-      { source: "/admin/system", destination: "/admin/stats", permanent: true },
+      // "Системийн төлөв" and "Статистик" are part of the dashboard now.
+      { source: "/admin/system", destination: "/admin", permanent: true },
+      { source: "/admin/stats", destination: "/admin", permanent: true },
+      // Messages from the old contact form are no longer shown (the table is kept for now).
+      { source: "/admin/messages", destination: "/admin", permanent: true },
+      // No contact page any more: e-mail and Instagram are in the footer (id="contact").
+      { source: "/contact", destination: "/#contact", permanent: true },
+      { source: "/en/contact", destination: "/en#contact", permanent: true },
       // Year pages used to be ?year= (the pages are cached now, so it is a path segment).
       ...["", "/en"].flatMap((prefix) =>
         ["impact", "members"].map((page) => ({

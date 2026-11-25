@@ -9,8 +9,7 @@ const { diffFields, shortId } = await import("@/lib/admin/audit-diff");
 const { fd, actionError, validationError } = await import("@/lib/admin/action-state");
 const { AuthError } = await import("@/lib/auth/session");
 const { displayClassName, pick } = await import("@/lib/data/localize");
-const { paragraphs, safeExternalUrl, safeImageUrl, safeMapUrl } =
-  await import("@/lib/data/settings");
+const { paragraphs, safeExternalUrl, safeImageUrl } = await import("@/lib/data/settings");
 const { jsonLd, localizedPath } = await import("@/lib/seo");
 const { eventSchoolYear } = await import("@/lib/members/hours");
 const { z } = await import("zod");
@@ -129,17 +128,6 @@ describe("safe URLs from admin input", () => {
     expect(safeImageUrl("/media/../secret")).toBeNull();
     expect(safeImageUrl("data:image/png;base64,AAAA")).toBeNull();
     expect(safeImageUrl("")).toBeNull();
-  });
-  test("map embed: coordinates or a Google Maps embed URL only", () => {
-    const base = { mapLat: "", mapLng: "", mapEmbedUrl: "" };
-    const c = (x: Partial<typeof base>) =>
-      ({ ...base, ...x }) as unknown as Parameters<typeof safeMapUrl>[0];
-    expect(safeMapUrl(c({ mapLat: "47.9", mapLng: "106.9" }))).toContain("q=47.9,106.9");
-    expect(safeMapUrl(c({ mapLat: "95", mapLng: "106.9" }))).toBeNull();
-    expect(safeMapUrl(c({ mapEmbedUrl: "https://www.google.com/maps/embed?pb=1" }))).toBe(
-      "https://www.google.com/maps/embed?pb=1",
-    );
-    expect(safeMapUrl(c({ mapEmbedUrl: "https://evil.example/maps/embed" }))).toBeNull();
   });
   test("paragraphs split on blank lines and drop empties", () => {
     expect(paragraphs("a\nb\n\n  \n\nc ")).toEqual(["a\nb", "c"]);

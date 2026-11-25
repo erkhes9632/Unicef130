@@ -10,9 +10,9 @@ import { z } from "zod";
  * Fields with an `...En` twin are optional; an empty English value falls back to Mongolian.
  */
 
+/** Other social accounts (Instagram is a contact channel: `ContactInfo.instagram`). */
 export const socialPlatforms = [
   "facebook",
-  "instagram",
   "tiktok",
   "youtube",
   "telegram",
@@ -44,18 +44,16 @@ export type Branding = {
   heroImageAltEn: string;
 };
 
+/**
+ * How people reach the club (footer on every page + /support). There is no contact form: an
+ * e-mail address and an Instagram account. An empty value hides that item.
+ */
 export type ContactInfo = {
   address: string;
   addressEn: string;
   email: string;
-  phone: string;
-  officeHours: string;
-  officeHoursEn: string;
-  /** Google Maps embed URL (https://www.google.com/maps/embed?pb=...) */
-  mapEmbedUrl: string;
-  /** Alternative to the embed URL: decimal coordinates. */
-  mapLat: string;
-  mapLng: string;
+  /** Instagram handle without "@" (a pasted profile URL is accepted and reduced to it). */
+  instagram: string;
 };
 
 export const statKinds = ["custom", "members", "events"] as const;
@@ -114,6 +112,21 @@ export type MembershipSettings = {
   activeMemberHours: number | null;
 };
 
+export const supportWays = ["volunteer", "donateItems", "partner", "share"] as const;
+export type SupportWay = (typeof supportWays)[number];
+type TextPair = { title: string; titleEn: string; body: string; bodyEn: string };
+
+/**
+ * «Биднийг хэрхэн дэмжих вэ?» (/support) text, edited in admin. The defaults are the club's
+ * first draft: the club should confirm them (PROGRESS). Contact channels come from `contact`.
+ */
+export type SupportContent = {
+  intro: string;
+  introEn: string;
+  ways: Record<SupportWay, TextPair>;
+  donate: TextPair;
+};
+
 /** Manual site-wide banner (the recruitment banner appears on its own while a period is open). */
 export type Announcement = { enabled: boolean; text: string; textEn: string; href: string };
 
@@ -129,6 +142,7 @@ export type SiteSettings = {
   donation: Donation;
   helpOptions: HelpOptionItem[];
   about: AboutContent;
+  support: SupportContent;
 };
 
 /** Settings row keys in D1. */
@@ -142,6 +156,7 @@ export const SETTINGS_KEYS = {
   donation: "donation",
   helpOptions: "helpOptions",
   about: "page.about",
+  support: "page.support",
   membership: "membership",
   announcement: "announcement",
 } as const satisfies Record<keyof SiteSettings, string>;
@@ -198,6 +213,43 @@ export const defaultAbout: AboutContent = {
   ],
 };
 
+export const defaultSupport: SupportContent = {
+  intro: "Таны жижиг тусламж ч гэсэн хүүхдийн амьдралд том өөрчлөлт авчирна.",
+  introEn: "Even a small act of help can make a big difference in a child's life.",
+  ways: {
+    volunteer: {
+      title: "Сайн дурын ажилтан болох",
+      titleEn: "Volunteer",
+      body: "Арга хэмжээнд туслах, зохион байгуулалтад оролцох.",
+      bodyEn: "Help at events and with organising them.",
+    },
+    donateItems: {
+      title: "Эд зүйлсээр хандивлах",
+      titleEn: "Donate items",
+      body: "Дулаан хувцас, ном, бичгийн хэрэгсэл, тоглоом — цэвэр, бүтэн байхад л болно.",
+      bodyEn: "Warm clothes, books, school supplies, toys — clean and in good condition.",
+    },
+    partner: {
+      title: "Хамтран ажиллах",
+      titleEn: "Partner with us",
+      body: "Байгууллага, бизнесүүд хамтарсан аян, төсөл санаачилж болно.",
+      bodyEn: "Organisations and businesses can start joint campaigns and projects.",
+    },
+    share: {
+      title: "Мэдээлэл түгээх",
+      titleEn: "Spread the word",
+      body: "Манай аянуудыг найз нөхөд, гэр бүлдээ хуваалцаарай.",
+      bodyEn: "Share our campaigns with your friends and family.",
+    },
+  },
+  donate: {
+    title: "Мөнгөн хандив",
+    titleEn: "Financial donations",
+    body: "Мөнгөн хандивыг зөвхөн сургуулийн албан ёсны журмын дагуу хүлээн авна.",
+    bodyEn: "Financial donations are accepted only according to official school procedures.",
+  },
+};
+
 export const defaultSettings: SiteSettings = {
   announcement: { enabled: false, text: "", textEn: "", href: "" },
   membership: { rejectedRetentionDays: 90, activeMemberHours: null },
@@ -216,16 +268,12 @@ export const defaultSettings: SiteSettings = {
     heroImageAlt: "",
     heroImageAltEn: "",
   },
+  // The club's own channels (given by the club, 2026-11-25); editable in admin.
   contact: {
-    address: "",
-    addressEn: "",
-    email: "",
-    phone: "",
-    officeHours: "",
-    officeHoursEn: "",
-    mapEmbedUrl: "",
-    mapLat: "",
-    mapLng: "",
+    address: "130-р сургууль, Хан-Уул дүүрэг, 15-р хороо, Улаанбаатар",
+    addressEn: "School No. 130, 15th khoroo, Khan-Uul District, Ulaanbaatar",
+    email: "130foreverychild@gmail.com",
+    instagram: "130_foreverychild",
   },
   socials: [],
   stats: [],
@@ -233,11 +281,23 @@ export const defaultSettings: SiteSettings = {
   donation: { url: "", text: "", textEn: "" },
   helpOptions: defaultHelpOptions,
   about: defaultAbout,
+  support: defaultSupport,
 };
 
 // ---------------------------------------------------------------------------
 // Lenient parsing of stored values (bad or legacy data never breaks the site)
 // ---------------------------------------------------------------------------
+
+/** "@name", "name" or "https://www.instagram.com/name/" → "name" ("" when it isn't one). */
+export function instagramHandle(value: string): string {
+  const v = value.trim();
+  const fromUrl =
+    /^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([A-Za-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(v);
+  const handle = (fromUrl?.[1] ?? v).replace(/^@/, "");
+  return /^[A-Za-z0-9._]{1,30}$/.test(handle) ? handle : "";
+}
+
+export const instagramUrl = (handle: string) => `https://www.instagram.com/${handle}/`;
 
 const str = (max = 5000) =>
   z
@@ -287,12 +347,7 @@ const storedSchemas = {
     address: str(300),
     addressEn: str(300),
     email: str(254),
-    phone: str(40),
-    officeHours: str(120),
-    officeHoursEn: str(120),
-    mapEmbedUrl: str(2000),
-    mapLat: str(20),
-    mapLng: str(20),
+    instagram: str(200).transform(instagramHandle),
   }),
   socials: list(
     z.object({ platform: z.enum(socialPlatforms), url: z.string().trim().min(1).max(500) }),
@@ -348,6 +403,29 @@ const storedSchemas = {
       8,
     ),
   }),
+  support: z.object({
+    intro: str(300),
+    introEn: str(300),
+    ways: z
+      .object({
+        volunteer: z
+          .object({ title: str(80), titleEn: str(80), body: str(400), bodyEn: str(400) })
+          .catch(defaultSupport.ways.volunteer),
+        donateItems: z
+          .object({ title: str(80), titleEn: str(80), body: str(400), bodyEn: str(400) })
+          .catch(defaultSupport.ways.donateItems),
+        partner: z
+          .object({ title: str(80), titleEn: str(80), body: str(400), bodyEn: str(400) })
+          .catch(defaultSupport.ways.partner),
+        share: z
+          .object({ title: str(80), titleEn: str(80), body: str(400), bodyEn: str(400) })
+          .catch(defaultSupport.ways.share),
+      })
+      .catch(defaultSupport.ways),
+    donate: z
+      .object({ title: str(80), titleEn: str(80), body: str(400), bodyEn: str(400) })
+      .catch(defaultSupport.donate),
+  }),
 };
 
 /**
@@ -372,6 +450,7 @@ export function parseSettings(rows: Map<string, unknown>): SiteSettings {
     donation: read("donation"),
     helpOptions: read("helpOptions"),
     about: read("about"),
+    support: read("support"),
   };
   // Legacy rows (before the settings redesign): `donationUrl` string.
   const legacyDonation = rows.get("donationUrl");

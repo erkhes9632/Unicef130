@@ -4,12 +4,13 @@ import { cache } from "react";
 import { getDb } from "@/db";
 import { events, members, settings } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
-import { getLatestImpact } from "@/lib/data/impact";
+import { getLatestImpact, getReportMembership } from "@/lib/data/impact";
 import { formatNumber } from "@/lib/dates/format";
 import { logger } from "@/lib/logger";
 import {
   MAX_FEATURED_STATS,
   defaultSettings,
+  instagramUrl,
   parseSettings,
   type ContactInfo,
   type SiteSettings,
@@ -18,15 +19,11 @@ import { pick } from "./localize";
 
 /** Obvious sample values that must never reach the public site. */
 function isPlaceholder(value: string) {
-  return /@example\.(com|org|mn)$/i.test(value) || /0000\s?0000/.test(value);
+  return /@example\.(com|org|mn)$/i.test(value);
 }
 
 function sanitizeContact(c: ContactInfo): ContactInfo {
-  return {
-    ...c,
-    email: isPlaceholder(c.email) ? "" : c.email,
-    phone: isPlaceholder(c.phone) ? "" : c.phone,
-  };
+  return { ...c, email: isPlaceholder(c.email) ? "" : c.email };
 }
 
 /**
@@ -52,44 +49,17 @@ export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
 type PublicContact = {
   address: string;
   email: string;
-  phone: string;
-  officeHours: string;
-  mapUrl: string | null;
+  instagram: { handle: string; url: string } | null;
 };
 
-/** Only Google Maps embeds are allowed in the iframe. */
-export function safeMapUrl(contact: ContactInfo): string | null {
-  const lat = Number.parseFloat(contact.mapLat);
-  const lng = Number.parseFloat(contact.mapLng);
-  if (
-    contact.mapLat &&
-    contact.mapLng &&
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    Math.abs(lat) <= 90 &&
-    Math.abs(lng) <= 180
-  ) {
-    return `https://www.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
-  }
-  try {
-    const u = new URL(contact.mapEmbedUrl);
-    return u.protocol === "https:" &&
-      u.hostname === "www.google.com" &&
-      u.pathname.startsWith("/maps/embed")
-      ? u.toString()
-      : null;
-  } catch {
-    return null;
-  }
-}
-
+/** The club's contact channels for one locale; empty values are left out by the callers. */
 export function publicContact(locale: Locale, contact: ContactInfo): PublicContact {
   return {
     address: pick(locale, contact.address, contact.addressEn),
     email: contact.email,
-    phone: contact.phone,
-    officeHours: pick(locale, contact.officeHours, contact.officeHoursEn),
-    mapUrl: safeMapUrl(contact),
+    instagram: contact.instagram
+      ? { handle: `@${contact.instagram}`, url: instagramUrl(contact.instagram) }
+      : null,
   };
 }
 
@@ -132,8 +102,16 @@ export async function getHomeStats(
   try {
     const db = await getDb();
     if (needs.has("members")) {
-      const [m] = await db.select({ n: count() }).from(members).where(eq(members.active, true));
-      counts.members = m?.n ?? 0;
+      // Official report figure first; website accounts are not report members.
+      const official = await getReportMembership();
+      if (official?.active) counts.members = official.active;
+      else {
+        const [m] = await db
+          .select({ n: count() })
+          .from(members)
+          .where(and(eq(members.active, true), eq(members.group, "member")));
+        counts.members = m?.n ?? 0;
+      }
     }
     if (needs.has("events")) counts.events = await getActivityCount();
   } catch (err) {

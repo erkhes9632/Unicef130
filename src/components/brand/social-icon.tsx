@@ -1,12 +1,12 @@
 import { Globe } from "lucide-react";
 import type { SocialPlatform } from "@/lib/settings/types";
-import { socialIconPaths } from "./social-icon-paths";
+import { socialIconPaths, type IconPlatform } from "./social-icon-paths";
 
 export function SocialIcon({
   platform,
   className,
 }: {
-  platform: SocialPlatform;
+  platform: SocialPlatform | IconPlatform;
   className?: string;
 }) {
   if (platform === "website") return <Globe aria-hidden="true" className={className} />;

@@ -3,8 +3,7 @@
 import { and, asc, count, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
-import { eventSignups, events, members } from "@/db/schema";
-import { logActivity, shortId } from "@/lib/admin/activity";
+import { eventSignups, events } from "@/db/schema";
 import { AuthError, assertMember, assertSignedIn } from "@/lib/auth/session";
 import { logger } from "@/lib/logger";
 import {
@@ -15,8 +14,8 @@ import {
 } from "@/lib/members/logic";
 import { deleteClerkUser } from "@/lib/users/clerk-admin";
 import { removeUserData } from "@/lib/users/delete";
+import { parseProfile, saveProfile, type ProfileFormState } from "@/lib/users/profile-ops";
 import { checkUserAction } from "@/lib/users/rules";
-import { classNameRegex } from "@/lib/validation/forms";
 
 export type MeResult = {
   ok: boolean;
@@ -41,30 +40,34 @@ function fail(err: unknown): MeResult {
 const revalidateMe = () => {
   revalidatePath("/me");
   revalidatePath("/en/me");
+  revalidatePath("/me/profile");
+  revalidatePath("/en/me/profile");
 };
 
-/** Members may change only their class (it changes every school year); the rest is admin's. */
-export async function updateMyClass(className: string): Promise<MeResult> {
+/**
+ * "Миний мэдээлэл": any signed-in person edits their own last name, first name and class (never
+ * anyone else's: the target is always the session's own id).
+ */
+export async function saveMyProfile(
+  _prev: ProfileFormState,
+  data: FormData,
+): Promise<ProfileFormState> {
   try {
-    const me = await assertMember();
-    const value = className.trim().toLocaleUpperCase("mn");
-    if (!classNameRegex.test(value) || value.length > 10) return { ok: false, error: "invalid" };
+    const me = await assertSignedIn();
     const db = await getDb();
-    const res = await db
-      .update(members)
-      .set({ className: value, updatedAt: new Date() })
-      .where(eq(members.userId, me.id))
-      .returning({ id: members.id });
-    if (!res.length) return { ok: false, error: "notFound" };
-    await logActivity(me, "member.self_update", {
-      type: "member",
-      id: res[0]!.id,
-      summary: `Гишүүн #${shortId(res[0]!.id)} ангиа шинэчлэв`,
+    const parsed = await parseProfile(db, me.role, {
+      lastName: data.get("lastName") ?? "",
+      firstName: data.get("firstName") ?? "",
+      className: data.get("className") ?? "",
     });
-    revalidateMe();
-    return { ok: true };
+    if (!parsed.ok) return { ok: false, error: "validation", fieldErrors: parsed.fieldErrors };
+    const result = await saveProfile(db, me, me.id, parsed.profile);
+    if (result.ok) revalidateMe();
+    return result;
   } catch (err) {
-    return fail(err);
+    if (err instanceof AuthError) return { ok: false, error: err.code };
+    logger.error("me", "profile save failed", err);
+    return { ok: false, error: "server" };
   }
 }
 

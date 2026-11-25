@@ -54,9 +54,12 @@ export function GalleryGrid({ images, title }: { images: GalleryImage[]; title: 
       </ul>
 
       <Dialog open={current !== null} onOpenChange={(open) => !open && setIndex(null)}>
+        {/* Full screen above everything (the sticky header included); Radix locks page scroll
+            and returns focus to the photo that opened it. */}
         <DialogContent
           showCloseButton={false}
-          className="max-w-[min(96vw,1200px)] border-0 bg-black/95 p-0 text-white sm:max-w-[min(96vw,1200px)]"
+          overlayClassName="z-[60] bg-black/95"
+          className="z-[60] flex h-dvh max-h-dvh w-screen max-w-none items-center justify-center rounded-none border-0 bg-transparent p-0 text-white ring-0 sm:max-w-none"
           onKeyDown={(e) => {
             if (e.key === "ArrowRight") go(1);
             if (e.key === "ArrowLeft") go(-1);
@@ -75,7 +78,7 @@ export function GalleryGrid({ images, title }: { images: GalleryImage[]; title: 
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">{current?.alt}</DialogDescription>
           {current && (
-            <figure className="relative flex flex-col">
+            <figure className="relative flex w-full max-w-[min(96vw,1200px)] flex-col">
               {/* eslint-disable-next-line @next/next/no-img-element -- full-size R2 image */}
               <img
                 src={current.url}

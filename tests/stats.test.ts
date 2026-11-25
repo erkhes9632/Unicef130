@@ -43,7 +43,6 @@ describe("CSV and wording", () => {
   const empty = { key: "2026-11", value: 0 };
   const sample: StatsResponse = {
     period: periodRange("7d", NOW),
-    status: [],
     traffic: null,
     club: {
       users: {
@@ -52,16 +51,24 @@ describe("CSV and wording", () => {
         prevPeriod: 0,
         byRole: { applicant: 1, member: 1, admin: 1 },
         growth: [],
+        withoutName: 1,
       },
-      members: { active: 52, prevActive: 52, growth: [] },
+      members: {
+        report: { schoolYear: "2025-2026", joined: 115, active: 52, hours: 734 },
+        site: 1,
+      },
       applications: {
         byStatus: { new: 1, reviewing: 0, interview: 0, accepted: 0, rejected: 0, waitlist: 0 },
         inPeriod: 1,
         prevPeriod: 0,
       },
-      hours: { inPeriod: 0, prevPeriod: 0, byMonth: [empty] },
+      hours: {
+        inPeriod: 0,
+        prevPeriod: 0,
+        byMonth: [empty],
+        byYear: [{ schoolYear: "2025-2026", report: 734, logged: 0 }],
+      },
       content: { news: 11, events: 11, albums: 7, photos: 8 },
-      messages: { inPeriod: 0, byMonth: [empty] },
       signups: { inPeriod: 0, prevPeriod: 0 },
     },
   };
@@ -69,7 +76,11 @@ describe("CSV and wording", () => {
   test("CSV: aggregates with Mongolian headers, no names", () => {
     const csv = statsCsv(sample);
     expect(csv.split("\r\n")[0]).toBe("﻿Үзүүлэлт,Энэ хугацаанд,Өмнөх хугацаанд");
-    expect(csv).toContain("Идэвхтэй гишүүн (одоо),52,52");
+    // The report's figure and website accounts are two separate, labelled rows.
+    expect(csv).toContain("Тайлангийн идэвхтэй гишүүн (2025-2026),52,");
+    expect(csv).toContain("Сайтад бүртгэлтэй гишүүн (одоо),1,");
+    expect(csv).toContain("2025-2026,734,0");
+    expect(csv).not.toContain("Зурвас");
     expect(csv).not.toContain("@");
   });
 
@@ -77,12 +88,50 @@ describe("CSV and wording", () => {
     for (const f of [
       "src/components/stats/stats-dashboard.tsx",
       "src/lib/stats/status.ts",
-      "src/app/admin/(panel)/stats/page.tsx",
+      "src/app/admin/(panel)/page.tsx",
     ]) {
       const visible = readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
       expect(visible).not.toMatch(
         /\b(LCP|INP|CLS|p75|RUM|D1|migration|Unique visitors|Referrers)\b/,
       );
     }
+  });
+});
+
+describe("dashboard to-dos", () => {
+  const base = {
+    newApplications: 0,
+    recruitmentClosesAt: null,
+    faqTotal: 0,
+    faqPublished: 1,
+    usersWithoutName: 0,
+  };
+  test("nothing to do → empty list", async () => {
+    const { todoItems } = await import("@/lib/stats/todos");
+    expect(todoItems(base, NOW)).toEqual([]);
+  });
+  test("plain sentences with a link for each thing to do", async () => {
+    const { todoItems } = await import("@/lib/stats/todos");
+    const items = todoItems(
+      {
+        newApplications: 3,
+        recruitmentClosesAt: NOW + 5 * 86_400_000,
+        faqTotal: 8,
+        faqPublished: 0,
+        usersWithoutName: 1,
+      },
+      NOW,
+    );
+    expect(items.map((i) => i.text)).toEqual([
+      "3 шинэ өргөдөл хүлээж байна",
+      "Элсэлт 5 хоногийн дараа хаагдана",
+      "Түгээмэл асуулт нийтлэгдээгүй байна (8 ноорог бэлэн)",
+      "1 хэрэглэгч нэрээ оруулаагүй",
+    ]);
+    expect(items.every((i) => i.href?.startsWith("/admin"))).toBe(true);
+  });
+  test("a far closing date is not a to-do", async () => {
+    const { todoItems } = await import("@/lib/stats/todos");
+    expect(todoItems({ ...base, recruitmentClosesAt: NOW + 30 * 86_400_000 }, NOW)).toEqual([]);
   });
 });

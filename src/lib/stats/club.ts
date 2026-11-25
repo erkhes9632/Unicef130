@@ -52,81 +52,70 @@ export async function clubStats(db: D1Database, p: Period): Promise<ClubStats> {
       p.from,
       p.to,
     ),
-    /* 6 */ q(
-      `SELECT count(*) n FROM members WHERE active = 1 AND "group" = 'member' AND anonymized = 0`,
-    ),
+    /* 6 */ q(`SELECT count(*) n FROM users WHERE trim(name) = '' AND banned = 0`),
     /* 7 */ q(
-      `SELECT count(*) n FROM members WHERE active = 1 AND "group" = 'member' AND anonymized = 0 AND created_at < ?`,
-      p.prevTo,
+      `SELECT school_year y, members_joined j, members_active a, volunteer_hours h FROM impact_stats WHERE direction = 'total' ORDER BY school_year DESC`,
     ),
     /* 8 */ q(
-      `SELECT count(*) n FROM members WHERE "group" = 'member' AND anonymized = 0 AND created_at < ?`,
-      p.from,
+      `SELECT school_year y, coalesce(sum(hours), 0) n FROM volunteer_hours GROUP BY school_year`,
     ),
     /* 9 */ q(
-      `SELECT ${bucketSql("created_at", p.bucket)} k, count(*) n FROM members WHERE "group" = 'member' AND anonymized = 0 AND created_at >= ? AND created_at < ? GROUP BY k`,
-      p.from,
-      p.to,
-    ),
-    /* 10 */ q(
       `SELECT status k, count(*) n FROM applications WHERE created_at >= ? AND created_at < ? GROUP BY status`,
       p.from,
       p.to,
     ),
-    /* 11 */ q(
+    /* 10 */ q(
       `SELECT count(*) n FROM applications WHERE created_at >= ? AND created_at < ?`,
       p.prevFrom,
       p.prevTo,
     ),
-    /* 12 */ q(
+    /* 11 */ q(
       `SELECT coalesce(sum(hours), 0) n FROM volunteer_hours WHERE date >= ? AND date < ?`,
       p.from,
       p.to,
     ),
-    /* 13 */ q(
+    /* 12 */ q(
       `SELECT coalesce(sum(hours), 0) n FROM volunteer_hours WHERE date >= ? AND date < ?`,
       p.prevFrom,
       p.prevTo,
     ),
-    /* 14 */ q(
+    /* 13 */ q(
       `SELECT ${monthSql("date")} k, sum(hours) n FROM volunteer_hours WHERE date >= ? AND date < ? GROUP BY k`,
       monthFrom,
       p.to,
     ),
-    /* 15 */ q(
+    /* 14 */ q(
       `SELECT (SELECT count(*) FROM news WHERE status = 'published') news, (SELECT count(*) FROM events WHERE published = 1) events, (SELECT count(*) FROM albums WHERE published = 1) albums, (SELECT count(*) FROM images) photos`,
     ),
-    /* 16 */ q(
-      `SELECT count(*) n FROM contact_messages WHERE created_at >= ? AND created_at < ?`,
-      p.from,
-      p.to,
-    ),
-    /* 17 */ q(
-      `SELECT ${monthSql("created_at")} k, count(*) n FROM contact_messages WHERE created_at >= ? AND created_at < ? GROUP BY k`,
-      monthFrom,
-      p.to,
-    ),
-    /* 18 */ q(
+    /* 15 */ q(
       `SELECT count(*) n FROM event_signups WHERE created_at >= ? AND created_at < ?`,
       p.from,
       p.to,
     ),
-    /* 19 */ q(
+    /* 16 */ q(
       `SELECT count(*) n FROM event_signups WHERE created_at >= ? AND created_at < ?`,
       p.prevFrom,
       p.prevTo,
     ),
   ]);
+
   const rows = (i: number) => results[i]?.results ?? [];
   const n = (i: number) => Number(rows(i)[0]?.n ?? 0);
   const keys = bucketKeys(p.from, p.to, p.bucket);
   const byRole = Object.fromEntries(rows(3).map((r) => [String(r.k), Number(r.n)]));
-  const byStatus = Object.fromEntries(rows(10).map((r) => [String(r.k), Number(r.n)]));
+  const byStatus = Object.fromEntries(rows(9).map((r) => [String(r.k), Number(r.n)]));
   const monthly = (i: number): Point[] => {
     const by = new Map(rows(i).map((r) => [String(r.k), Number(r.n)]));
     return months.map((key) => ({ key, value: by.get(key) ?? 0 }));
   };
-  const content = rows(15)[0] ?? {};
+  const content = rows(14)[0] ?? {};
+  const report = rows(7).find((r) => Number(r.j) || Number(r.a) || Number(r.h));
+  const logged = new Map(rows(8).map((r) => [String(r.y), Number(r.n)]));
+  const years = [...new Set([...rows(7).map((r) => String(r.y)), ...logged.keys()])]
+    .filter((y) => y && y !== "null")
+    .sort()
+    .reverse();
+  const reportHours = new Map(rows(7).map((r) => [String(r.y), Number(r.h)]));
   return {
     users: {
       total: n(0),
@@ -138,23 +127,42 @@ export async function clubStats(db: D1Database, p: Period): Promise<ClubStats> {
         admin: byRole.admin ?? 0,
       },
       growth: growth(keys, n(4), rows(5)),
+      withoutName: n(6),
     },
-    members: { active: n(6), prevActive: n(7), growth: growth(keys, n(8), rows(9)) },
+    members: {
+      report: report
+        ? {
+            schoolYear: String(report.y),
+            joined: Number(report.j),
+            active: Number(report.a),
+            hours: Number(report.h),
+          }
+        : null,
+      site: byRole.member ?? 0,
+    },
     applications: {
       byStatus: Object.fromEntries(
         APPLICATION_STEPS.map((s) => [s, byStatus[s] ?? 0]),
       ) as ClubStats["applications"]["byStatus"],
       inPeriod: Object.values(byStatus).reduce((a, b) => a + b, 0),
-      prevPeriod: n(11),
+      prevPeriod: n(10),
     },
-    hours: { inPeriod: n(12), prevPeriod: n(13), byMonth: monthly(14) },
+    hours: {
+      inPeriod: n(11),
+      prevPeriod: n(12),
+      byMonth: monthly(13),
+      byYear: years.map((y) => ({
+        schoolYear: y,
+        report: reportHours.get(y) ?? 0,
+        logged: logged.get(y) ?? 0,
+      })),
+    },
     content: {
       news: Number(content.news ?? 0),
       events: Number(content.events ?? 0),
       albums: Number(content.albums ?? 0),
       photos: Number(content.photos ?? 0),
     },
-    messages: { inPeriod: n(16), byMonth: monthly(17) },
-    signups: { inPeriod: n(18), prevPeriod: n(19) },
+    signups: { inPeriod: n(15), prevPeriod: n(16) },
   };
 }

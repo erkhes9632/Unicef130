@@ -23,7 +23,7 @@ const hrefOf = (key: NavKeyT) =>
 /**
  * Desktop navigation (from `lg`): five entries, three of them small menus, so the header never
  * crowds — «Бидний тухай» (about, members), «Мэдээ» (news, gallery), «Оролцох» (join, support,
- * FAQ, contact). Home is the logo link.
+ * FAQ). Home is the logo link. FAQ is left out while no question is published (`showFaq`).
  */
 type Group = "aboutGroup" | "newsGroup" | "getInvolved";
 const desktopNav: ({ key: NavKeyT } | { group: Group; items: NavKeyT[] })[] = [
@@ -31,7 +31,7 @@ const desktopNav: ({ key: NavKeyT } | { group: Group; items: NavKeyT[] })[] = [
   { key: "impact" },
   { group: "newsGroup", items: ["news", "gallery"] },
   { key: "events" },
-  { group: "getInvolved", items: ["join", "support", "faq", "contact"] },
+  { group: "getInvolved", items: ["join", "support", "faq"] },
 ];
 
 /** Mobile drawer: the same structure as titled sections. */
@@ -39,8 +39,11 @@ const mobileNav: { title?: Group; items: NavKeyT[] }[] = [
   { items: ["home", "impact", "events"] },
   { title: "aboutGroup", items: ["about", "members"] },
   { title: "newsGroup", items: ["news", "gallery"] },
-  { title: "getInvolved", items: ["join", "support", "faq", "contact"] },
+  { title: "getInvolved", items: ["join", "support", "faq"] },
 ];
+
+const visible = (items: NavKeyT[], showFaq: boolean) =>
+  showFaq ? items : items.filter((k) => k !== "faq");
 
 const linkCls = (active: boolean) =>
   cn(
@@ -48,7 +51,7 @@ const linkCls = (active: boolean) =>
     active && "bg-brand-cyan-soft text-brand-cyan-strong",
   );
 
-export function NavLinks({ className }: { className?: string }) {
+export function NavLinks({ className, showFaq }: { className?: string; showFaq: boolean }) {
   const t = useTranslations("Nav");
   const pathname = usePathname();
 
@@ -70,7 +73,8 @@ export function NavLinks({ className }: { className?: string }) {
             </li>
           );
         }
-        const active = entry.items.some((k) => isActive(pathname, hrefOf(k)));
+        const items = visible(entry.items, showFaq);
+        const active = items.some((k) => isActive(pathname, hrefOf(k)));
         return (
           <li key={entry.group}>
             <DropdownMenu>
@@ -79,7 +83,7 @@ export function NavLinks({ className }: { className?: string }) {
                 <ChevronDown className="size-3.5" aria-hidden="true" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {entry.items.map((k) => {
+                {items.map((k) => {
                   const href = hrefOf(k);
                   return (
                     <DropdownMenuItem key={k} asChild>
@@ -102,7 +106,13 @@ export function NavLinks({ className }: { className?: string }) {
 }
 
 /** Grouped list used inside the mobile menu sheet. */
-export function MobileNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+export function MobileNavLinks({
+  onNavigate,
+  showFaq,
+}: {
+  onNavigate?: () => void;
+  showFaq: boolean;
+}) {
   const t = useTranslations("Nav");
   const pathname = usePathname();
 
@@ -116,7 +126,7 @@ export function MobileNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             </p>
           )}
           <ul className="flex flex-col">
-            {section.items.map((key) => {
+            {visible(section.items, showFaq).map((key) => {
               const href = hrefOf(key);
               const active = isActive(pathname, href);
               return (

@@ -3,7 +3,7 @@ import { Download } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ConfirmAction } from "@/components/admin/confirm-action";
-import { NativeSelect } from "@/components/admin/form";
+import { FilterBar } from "@/components/admin/filter-bar";
 import { HoursBoard } from "@/components/admin/hours-client";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
@@ -70,42 +70,36 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
           </Button>
         }
       />
-      <form className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Хичээлийн жил</span>
-          <NativeSelect name="year" defaultValue={year}>
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Баг</span>
-          <NativeSelect name="team" defaultValue={team}>
-            <option value="">Бүгд</option>
-            {teams.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-        <Button type="submit" variant="outline">
-          Харуулах
-        </Button>
-      </form>
-
-      <HoursBoard
-        key={`${year}-${team}`}
-        rows={rows}
-        year={year}
-        events={recentEvents}
-        today={today}
-        threshold={threshold}
-        addHours={addHours}
-      />
+      <FilterBar
+        fields={[
+          {
+            type: "select",
+            name: "year",
+            label: "Хичээлийн жил",
+            // "" = the latest year (the default when the address has none).
+            options: years.map((y, i) => ({ value: i === 0 ? "" : y, label: y })),
+          },
+          {
+            type: "select",
+            name: "team",
+            label: "Баг",
+            options: [{ value: "", label: "Бүгд" }, ...teams.map((t) => ({ value: t, label: t }))],
+          },
+        ]}
+        count={rows.length}
+        noun="гишүүн"
+        emptyText="Энэ багт гишүүн алга."
+      >
+        <HoursBoard
+          key={`${year}-${team}`}
+          rows={rows}
+          year={year}
+          events={recentEvents}
+          today={today}
+          threshold={threshold}
+          addHours={addHours}
+        />
+      </FilterBar>
 
       <section className="mt-10" aria-labelledby="entries">
         <h2 id="entries" className="mb-2 font-bold">

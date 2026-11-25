@@ -33,8 +33,10 @@ export function edgeCacheable(request: Request) {
 
 /** A copy to store, or null when the response must not be shared (not an ISR page, cookies…). */
 export function toEdgeCopy(response: Response, ttl: number): Response | null {
+  // Only fresh pages: a STALE one is being re-rendered right now and must not be kept for
+  // EDGE_TTL after the fresh version exists.
   const state = response.headers.get("x-opennext-cache");
-  if (response.status !== 200 || !state || response.headers.has("set-cookie")) return null;
+  if (response.status !== 200 || state !== "HIT" || response.headers.has("set-cookie")) return null;
   if (!(response.headers.get("content-type") ?? "").startsWith("text/html")) return null;
   const copy = new Response(response.clone().body, response);
   copy.headers.set(ORIGINAL_CACHE_CONTROL, response.headers.get("cache-control") ?? "");

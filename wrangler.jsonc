@@ -60,15 +60,13 @@
     },
   ],
   // Non-secret production settings. Locally, .dev.vars overrides these (see .dev.vars.example).
-  // Secrets (CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET, TURNSTILE_SECRET_KEY, GOOGLE_*) are
+  // Secrets (CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET, GOOGLE_*, CF_*) are
   // set with `wrangler secret put`. NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (public) is added here for
   // the Clerk production instance (see DEPLOY_CHECKLIST).
   "vars": {
     "SITE_URL": "https://130foreverychild.site",
     // Clerk production instance (public value, not a secret).
     "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuMTMwZm9yZXZlcnljaGlsZC5zaXRlJA",
-    // Public Turnstile site key (not a secret). Cloudflare's test keys are refused in production.
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAGAxVpYS2hRdPPVO",
     "GOOGLE_SHEET_TAB": "Applications",
   },
   // Custom domain: created/attached by `wrangler deploy` (DNS record managed by Cloudflare).

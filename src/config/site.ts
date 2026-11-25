@@ -21,15 +21,5 @@ export const mainNav = [
   { key: "members", href: "/members" },
   { key: "gallery", href: "/gallery" },
   { key: "support", href: "/support" },
-  { key: "contact", href: "/contact" },
   { key: "faq", href: "/faq" },
 ] as const;
-
-/**
- * Public names of students. Both stay **false** until the club has written consent from parents
- * or guardians (privacy rule: members are mostly minors). Leadership cards then show the role and
- * a role-initial avatar only; /members shows aggregate numbers only. Turning one on still shows
- * only rows an admin marked «Нэрийг нийтэд харуулах» (show_publicly). See README → Дизайн систем.
- */
-export const SHOW_LEADER_NAMES = false;
-export const SHOW_MEMBER_NAMES = false;

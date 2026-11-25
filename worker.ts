@@ -26,6 +26,7 @@ import { edgeCacheable, EDGE_TTL, fromEdgeCopy, toEdgeCopy } from "./src/lib/edg
 import { finishEvenIfCancelled } from "./src/lib/finish-request";
 import { logger } from "./src/lib/logger";
 import { serveMedia } from "./src/lib/media/serve";
+import { checkRoute, notFoundPath, type RouteCheck } from "./src/lib/not-found-route";
 import { purgeExpiredRejected, purgeStaleRateLimits } from "./src/lib/recruitment/retention";
 
 const app = handler;
@@ -62,6 +63,49 @@ try {
   globalThis.setTimeout = realSetTimeout;
 }
 
+/** Whether a detail page's slug (or an old slug that redirects) exists. Errors: let the app decide. */
+async function slugExists(db: D1Database, route: Extract<RouteCheck, { kind: "slug" }>) {
+  try {
+    const redirect =
+      route.table === "albums"
+        ? ""
+        : " UNION ALL SELECT 1 FROM slug_redirects WHERE kind = ?2 AND from_slug = ?1";
+    const stmt = db.prepare(`SELECT 1 FROM ${route.table} WHERE slug = ?1${redirect} LIMIT 1`);
+    const row = await (
+      route.table === "albums" ? stmt.bind(route.slug) : stmt.bind(route.slug, route.table)
+    ).first();
+    return row !== null;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * The shared 404 page of a locale: rendered once (ISR) and kept in the data-centre cache, so an
+ * unknown URL costs a cache lookup instead of a full render.
+ */
+async function sharedNotFound(
+  request: Request,
+  locale: "mn" | "en",
+  env: CloudflareEnv,
+  ctx: ExecutionContext,
+  cache: Cache,
+) {
+  const key = new Request(new URL(notFoundPath(locale), request.url), { method: "GET" });
+  let page = await cache.match(key);
+  if (!page) {
+    page = await finishEvenIfCancelled(ctx, app.fetch(key, env, ctx));
+    if (page.headers.get("x-opennext-cache") === "HIT" && !page.headers.has("set-cookie")) {
+      const copy = new Response(page.clone().body, page);
+      copy.headers.set("cache-control", `public, max-age=${EDGE_TTL}`);
+      ctx.waitUntil(cache.put(key, copy));
+    }
+  }
+  const headers = new Headers(page.headers);
+  headers.set("cache-control", "public, max-age=0, must-revalidate");
+  return new Response(request.method === "HEAD" ? null : page.body, { status: 404, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     // Workers' default cache (the DOM CacheStorage type in tsconfig does not know `default`).
@@ -75,10 +119,25 @@ export default {
       if (response.status === 200) ctx.waitUntil(cache.put(request, response.clone()));
       return response;
     }
-    if (!edgeCacheable(request)) return finishEvenIfCancelled(ctx, app.fetch(request, env, ctx));
+    // Unknown public URLs (bots, typos, removed pages): the shared 404 page, no new render.
+    const route: RouteCheck =
+      request.method === "GET" || request.method === "HEAD"
+        ? checkRoute(url.pathname)
+        : { kind: "app" };
+    if (route.kind === "missing") return sharedNotFound(request, route.locale, env, ctx, cache);
+    const missingSlug = async () => route.kind === "slug" && !(await slugExists(env.DB, route));
+
+    if (!edgeCacheable(request)) {
+      if (route.kind === "slug" && (await missingSlug()))
+        return sharedNotFound(request, route.locale, env, ctx, cache);
+      return finishEvenIfCancelled(ctx, app.fetch(request, env, ctx));
+    }
     const key = new Request(request.url, { method: "GET" });
     const hit = await cache.match(key);
     if (hit) return fromEdgeCopy(hit);
+    // Only checked when the page is not in the data-centre cache (existing pages usually are).
+    if (route.kind === "slug" && (await missingSlug()))
+      return sharedNotFound(request, route.locale, env, ctx, cache);
     const response = await finishEvenIfCancelled(ctx, app.fetch(request, env, ctx));
     const copy = toEdgeCopy(response, EDGE_TTL);
     if (copy) ctx.waitUntil(cache.put(key, copy));

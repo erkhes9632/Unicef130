@@ -42,7 +42,17 @@ export const users = sqliteTable(
   {
     id: text("id").primaryKey(),
     email: text("email").notNull().default(""),
+    /** Display name ("Нэр Овог" from Clerk, or the person's own edit on /me). */
     name: text("name").notNull().default(""),
+    /** Edited on /me (or by an admin) and written to Clerk too. */
+    firstName: text("first_name").notNull().default(""),
+    lastName: text("last_name").notNull().default(""),
+    className: text("class_name").notNull().default(""),
+    /**
+     * Last name/class edit made on the site. The Clerk webhook never overwrites the name with an
+     * event older than this (events can arrive late or out of order).
+     */
+    profileUpdatedAt: integer("profile_updated_at", { mode: "timestamp_ms" }),
     role: text("role", { enum: appRoles }),
     /** Banned in Clerk: cannot sign in; data kept; reversible. */
     banned: integer("banned", { mode: "boolean" }).notNull().default(false),
@@ -207,6 +217,11 @@ export const members = sqliteTable(
     active: integer("active", { mode: "boolean" }).notNull().default(true),
     /** Members are mostly minors: names are listed publicly only after consent. */
     showPublicly: integer("show_publicly", { mode: "boolean" }).notNull().default(false),
+    /** When an admin confirmed parental consent before turning `showPublicly` on, and who. */
+    consentConfirmedAt: integer("consent_confirmed_at", { mode: "timestamp_ms" }),
+    consentConfirmedBy: text("consent_confirmed_by").references((): AnySQLiteColumn => users.id, {
+      onDelete: "set null",
+    }),
     /** Volunteer hours (admin only; used for the aggregate stat, never shown per person). */
     volunteerHours: integer("volunteer_hours"),
     schoolYear: text("school_year"),
@@ -446,6 +461,11 @@ export const faqs = sqliteTable(
   (t) => [index("faqs_order_idx").on(t.sortOrder)],
 );
 
+/**
+ * Messages of the old contact form (removed 2026-11: contact is e-mail + Instagram). Nothing
+ * reads or writes this table any more; it is kept, with its data, until the owner has exported
+ * the old messages — then a later migration can drop it (PROGRESS.md).
+ */
 export const contactMessages = sqliteTable(
   "contact_messages",
   {
@@ -481,6 +501,14 @@ export const impactStats = sqliteTable(
     online: integer("online").notNull().default(0),
     total: integer("total").notNull().default(0),
     donationAmount: integer("donation_amount").notNull().default(0),
+    /**
+     * Official membership figures of the year (direction "total" only): students who joined,
+     * active members with a certificate, their volunteer hours. Public pages show these, not
+     * counts of database rows (website accounts are not report members).
+     */
+    membersJoined: integer("members_joined").notNull().default(0),
+    membersActive: integer("members_active").notNull().default(0),
+    volunteerHours: integer("volunteer_hours").notNull().default(0),
     /** Admin-only notes (e.g. differences with the listed activities). */
     notes: text("notes").notNull().default(""),
     ...timestamps,

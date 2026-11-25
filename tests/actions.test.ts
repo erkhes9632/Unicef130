@@ -79,7 +79,6 @@ mock.module("@/lib/users/sync", () => ({
   mirrorFromClerk: () => null,
 }));
 
-let turnstileOk = true;
 const dbCalls: string[] = [];
 let insertedValues: unknown = null;
 const valuesLog: unknown[] = [];
@@ -128,10 +127,6 @@ mock.module("next/navigation", () => ({
 mock.module("next/headers", () => ({
   headers: async () => new Headers({ "cf-connecting-ip": "127.0.0.1" }),
 }));
-mock.module("@/lib/integrations/turnstile", () => ({
-  verifyTurnstile: async () => (turnstileOk ? "ok" : "failed"),
-  getTurnstileSiteKey: async () => "test",
-}));
 mock.module("@/lib/applications/sheets-sync", () => ({
   syncApplicationToSheets: async () => "skipped",
   runInBackground: async (p: Promise<unknown>) => void (await p),
@@ -169,7 +164,6 @@ mock.module("@/lib/rate-limit", () => ({
     rateKeys.push(key);
     return { allowed: rateAllowed, count: 1, retryAfterSec: 0 };
   },
-  hashIp: async () => "iphash",
 }));
 mock.module("@/lib/admin/activity", () => ({
   logActivity: async () => {},
@@ -189,7 +183,7 @@ const { changeUserRole, setUserBanned, deleteUserAccount, linkAccountToMember } 
 const { deleteNews } = await import("@/app/admin/(panel)/news/actions");
 const { markAttendance } = await import("@/app/admin/(panel)/events/actions");
 const { addHours } = await import("@/app/admin/(panel)/hours/actions");
-const { submitJoinApplication, submitContactMessage } = await import("@/app/actions/forms");
+const { submitJoinApplication } = await import("@/app/actions/forms");
 const { deleteMyAccount, signUpForEvent, cancelSignup } = await import("@/app/[locale]/me/actions");
 
 beforeEach(() => {
@@ -203,7 +197,6 @@ beforeEach(() => {
   rateKeys.length = 0;
   accounts.clear();
   adminCount = 2;
-  turnstileOk = true;
   periods = [openPeriod()];
   taken = 0;
   rateAllowed = true;
@@ -623,26 +616,5 @@ describe("attendance and the hours log", () => {
     expect(insertedValues).toHaveLength(2);
     f.set("hours", "0");
     expect((await addHours({}, f)).ok).toBe(false);
-  });
-});
-
-describe("contact form", () => {
-  const msg = {
-    name: "Эцэг эх",
-    email: "Parent@Example.MN",
-    subject: "",
-    message: "Сайн байна уу, асуулт байна.",
-    turnstileToken: "t",
-  };
-  test("lowercases e-mail, requires Turnstile", async () => {
-    expect(await submitContactMessage(msg)).toEqual({ ok: true });
-    expect(insertedValues).toMatchObject({ email: "parent@example.mn" });
-    turnstileOk = false;
-    expect(await submitContactMessage(msg)).toEqual({ ok: false, error: "captcha" });
-  });
-  test("address over its limit → rate, nothing stored", async () => {
-    rateAllowed = false;
-    expect(await submitContactMessage(msg)).toEqual({ ok: false, error: "rate" });
-    expect(dbCalls).not.toContain("insert");
   });
 });

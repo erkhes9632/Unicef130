@@ -97,6 +97,10 @@ describe("session-dependent pages are never shared", () => {
       toEdgeCopy(new Response("ok", { headers: { ...html, "set-cookie": "a=b" } }), 60),
     ).toBeNull();
     expect(toEdgeCopy(new Response("x", { status: 500, headers: html }), 60)).toBeNull();
+    // A STALE page is being re-rendered: keeping it would hide the fresh one for EDGE_TTL.
+    expect(
+      toEdgeCopy(new Response("ok", { headers: { ...html, "x-opennext-cache": "STALE" } }), 60),
+    ).toBeNull();
     expect(
       toEdgeCopy(new Response("ok", { headers: { "content-type": "text/html" } }), 60),
     ).toBeNull();
@@ -116,5 +120,30 @@ describe("session-dependent pages are never shared", () => {
       '"/(en|mn)/sign-in/:path*"',
     ])
       expect(proxy).toContain(m);
+  });
+});
+
+/**
+ * Guard for the empty-500 fix (PROGRESS 2026-11-25): isolate-wide work must not start inside a
+ * request, and a request a visitor leaves must still finish.
+ */
+describe("cold start stays out of requests", () => {
+  const worker = readFileSync("worker.ts", "utf8");
+  test("the server, routes and proxy load at isolate startup", () => {
+    expect(worker).toMatch(/^await runWithCloudflareRequestContext\(/m);
+    expect(worker).toContain('import("open-next-server")');
+    expect(readFileSync("open-next.config.ts", "utf8")).toContain(
+      'routePreloadingBehavior: "onStart"',
+    );
+  });
+  test("every app response is finished even when the visitor leaves", () => {
+    const calls = worker.match(/app\.fetch\(/g) ?? [];
+    const wrapped = worker.match(/finishEvenIfCancelled\(ctx, app\.fetch\(/g) ?? [];
+    expect(wrapped.length).toBe(calls.length);
+  });
+  test("cache:warm reads every response to the end", () => {
+    const warm = readFileSync("scripts/warm-cache.ts", "utf8");
+    expect(warm).toContain("arrayBuffer()");
+    expect(warm).not.toContain("body?.cancel()");
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, CircleCheck, Download } from "lucide-react";
+import { CircleAlert, Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BarChart, StackedBar } from "@/components/charts/bar-chart";
 import { ChartCard } from "@/components/charts/chart-card";
@@ -44,7 +44,6 @@ const PAGE_NAMES: Record<string, string> = {
   "/join": "Гишүүн болох",
   "/support": "Дэмжих",
   "/faq": "Түгээмэл асуулт",
-  "/contact": "Холбоо барих",
   "/privacy": "Нууцлалын бодлого",
   "/sign-in": "Нэвтрэх",
 };
@@ -150,7 +149,10 @@ const counts = (list: Count[], name: (s: string) => string = (s) => s) =>
 const parts = (list: Count[], name: (s: string) => string = (s) => s) =>
   list.map((c, i) => ({ name: name(c.label), value: c.value, color: COLORS[i % COLORS.length]! }));
 
-/** The club's statistics page, drawn in the browser from /api/admin/stats (aggregates only). */
+/**
+ * The statistics part of the dashboard, drawn in the browser from /api/admin/stats (aggregates
+ * only). The status line and the to-do list are rendered by the server page above it.
+ */
 export function StatsDashboard() {
   const { query, setQuery } = useUrlQuery();
   const period = parsePeriod(query.get("period") ?? undefined);
@@ -248,37 +250,15 @@ export function StatsDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* 1. Status */}
-      <div role="status" aria-live="polite">
-        {loading ? (
-          <div className="h-14 rounded-2xl bg-muted motion-safe:animate-pulse" />
-        ) : failed ? (
-          <p className="flex items-center gap-2 rounded-2xl bg-brand-coral-soft p-4 font-semibold">
-            <CircleAlert className="size-5 text-brand-coral-strong" aria-hidden="true" />
-            Статистикийг ачаалж чадсангүй. Хуудсыг дахин ачаалаад үзээрэй.
-          </p>
-        ) : data!.status.length === 0 ? (
-          <p className="flex items-center gap-2 rounded-2xl bg-brand-green-soft p-4 font-semibold">
-            <CircleCheck className="size-5 text-brand-green-strong" aria-hidden="true" />
-            Сайт хэвийн ажиллаж байна
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {data!.status.map((s) => (
-              <li
-                key={s}
-                className="flex items-start gap-2 rounded-2xl bg-brand-gold-soft p-4 font-semibold"
-              >
-                <CircleAlert
-                  className="mt-0.5 size-5 shrink-0 text-brand-gold-strong"
-                  aria-hidden="true"
-                />
-                {s}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {failed && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-2xl bg-brand-coral-soft p-4 font-semibold"
+        >
+          <CircleAlert className="size-5 text-brand-coral-strong" aria-hidden="true" />
+          Статистикийг ачаалж чадсангүй. Хуудсыг дахин ачаалаад үзээрэй.
+        </p>
+      )}
 
       {/* 2. Period */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -309,7 +289,7 @@ export function StatsDashboard() {
         </h2>
         {loading ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 7 }, (_, i) => (
+            {Array.from({ length: 8 }, (_, i) => (
               <div key={i} className="h-36 rounded-2xl bg-muted motion-safe:animate-pulse" />
             ))}
           </div>
@@ -346,11 +326,18 @@ export function StatsDashboard() {
               prev={c.users.prevPeriod}
             />
             <Kpi
-              label="Гишүүд"
-              value={fmt(c.members.active)}
-              hint="Одоо идэвхтэй байгаа клубын гишүүд."
-              cur={c.members.active}
-              prev={c.members.prevActive}
+              label="Тайлангийн идэвхтэй гишүүн"
+              value={c.members.report ? fmt(c.members.report.active) : "—"}
+              hint={
+                c.members.report
+                  ? `${c.members.report.schoolYear.replace("-", "–")} оны тайлангаас (нийт элссэн ${fmt(c.members.report.joined)}). Сайтад харагдах тоо.`
+                  : "«Жилийн үр дүн» хэсэгт тайлангийн тоог оруулна."
+              }
+            />
+            <Kpi
+              label="Сайтад бүртгэлтэй гишүүн"
+              value={fmt(c.members.site)}
+              hint="Сайтад нэвтэрдэг, гишүүн эрхтэй хүмүүс (тайлангийн тооноос тусдаа)."
             />
             <Kpi
               label="Өргөдөл"
@@ -360,9 +347,13 @@ export function StatsDashboard() {
               prev={c.applications.prevPeriod}
             />
             <Kpi
-              label="Сайн дурын цаг"
+              label="Сайтад бүртгэсэн цаг"
               value={fmt(c.hours.inPeriod)}
-              hint="Админы бүртгэсэн сайн дурын ажлын цаг."
+              hint={
+                c.members.report
+                  ? `Энэ хугацаанд «Сайн дурын цаг» хэсэгт бүртгэсэн. Тайлангийн ${fmt(c.members.report.hours)} цаг тусдаа.`
+                  : "Энэ хугацаанд «Сайн дурын цаг» хэсэгт бүртгэсэн."
+              }
               cur={c.hours.inPeriod}
               prev={c.hours.prevPeriod}
             />
@@ -531,23 +522,19 @@ export function StatsDashboard() {
         </>
       )}
 
-      {/* 8. Club numbers */}
+      {/* 8. Club numbers: two rows of equal cards (no holes on wide screens) */}
       <h2 className="pt-2 font-heading text-2xl font-extrabold">Клубын тоонууд</h2>
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard
-          title="Хэрэглэгч ба гишүүдийн өсөлт"
-          caption="Сайтад бүртгэлтэй хүмүүс болон клубын гишүүдийн нийт тоо хэрхэн өссөн бэ."
+          title="Сайтын бүртгэлийн өсөлт"
+          caption="Сайтад өөрсдөө бүртгүүлсэн хүмүүсийн нийт тоо (тайлангаас оруулсан гишүүдийг тоолохгүй)."
           unit="хүн"
           loading={loading}
           table={
             c
               ? {
-                  columns: ["Огноо", "Хэрэглэгч", "Гишүүн"],
-                  rows: c.users.growth.map((u, i) => [
-                    longKey(u.key),
-                    fmt(u.value),
-                    fmt(c.members.growth[i]?.value ?? 0),
-                  ]),
+                  columns: ["Огноо", "Бүртгэлтэй хүн"],
+                  rows: c.users.growth.map((u) => [longKey(u.key), fmt(u.value)]),
                 }
               : undefined
           }
@@ -555,27 +542,29 @@ export function StatsDashboard() {
           {c && (
             <>
               <LineChart
-                label="Хэрэглэгч ба гишүүдийн өсөлт"
+                label="Сайтын бүртгэлийн өсөлт"
                 labels={c.users.growth.map((d) => shortKey(d.key))}
                 longLabels={c.users.growth.map((d) => longKey(d.key))}
                 series={[
                   {
-                    name: "Хэрэглэгч",
+                    name: "Бүртгэлтэй хүн",
                     color: "var(--chart-1)",
                     values: c.users.growth.map((d) => d.value),
-                  },
-                  {
-                    name: "Гишүүн",
-                    color: "var(--chart-3)",
-                    values: c.members.growth.map((d) => d.value),
                   },
                 ]}
                 format={fmt}
                 height={200}
               />
               <p className="text-sm text-muted-foreground">
-                Одоогийн хэрэглэгчид: элсэх хүсэлт гаргагч {fmt(c.users.byRole.applicant)}, гишүүн{" "}
+                Одоо: өргөдөл гаргагч {fmt(c.users.byRole.applicant)}, гишүүн{" "}
                 {fmt(c.users.byRole.member)}, админ {fmt(c.users.byRole.admin)}.
+                {c.members.report && (
+                  <>
+                    {" "}
+                    Эхлэл: {c.members.report.schoolYear.replace("-", "–")} тайлангаас{" "}
+                    {fmt(c.members.report.active)} идэвхтэй гишүүн (сайтын бүртгэл биш).
+                  </>
+                )}
               </p>
             </>
           )}
@@ -605,71 +594,78 @@ export function StatsDashboard() {
           )}
         </ChartCard>
         <ChartCard
-          title="Сар бүрийн сайн дурын цаг"
-          caption="Сүүлийн 12 сард админы бүртгэсэн сайн дурын ажлын цаг."
+          title="Хичээлийн жилийн сайн дурын цаг"
+          caption="Жил бүрийн цаг: тайлангийн албан ёсны тоо + сайтад бүртгэсэн цаг (эх сурвалжийг тус тусад нь)."
           unit="цаг"
           loading={loading}
-          empty={!!c && c.hours.byMonth.every((m) => m.value === 0)}
-          emptyText="Сүүлийн 12 сард бүртгэсэн цаг алга."
+          empty={!!c && c.hours.byYear.every((y) => y.report + y.logged === 0)}
+          emptyText="Цаг хараахан алга."
           table={
             c
               ? {
-                  columns: ["Сар", "Цаг"],
-                  rows: c.hours.byMonth.map((m) => [monthLabel(m.key), fmt(m.value)]),
+                  columns: ["Хичээлийн жил", "Тайлангаас", "Сайтад бүртгэсэн", "Нийт"],
+                  rows: c.hours.byYear.map((y) => [
+                    y.schoolYear.replace("-", "–"),
+                    fmt(y.report),
+                    fmt(y.logged),
+                    fmt(y.report + y.logged),
+                  ]),
                 }
               : undefined
           }
         >
           {c && (
-            <BarChart
-              items={c.hours.byMonth.map((m) => ({ label: monthLabel(m.key), value: m.value }))}
-              format={fmt}
-              label="Сар бүрийн сайн дурын цаг"
-            />
+            <>
+              <BarChart
+                items={c.hours.byYear.map((y) => ({
+                  label: y.schoolYear.replace("-", "–"),
+                  value: y.report + y.logged,
+                  parts: [
+                    { name: "Тайлангаас", value: y.report, color: "var(--chart-3)" },
+                    { name: "Сайтад бүртгэсэн", value: y.logged, color: "var(--chart-1)" },
+                  ],
+                }))}
+                format={fmt}
+                label="Хичээлийн жилийн сайн дурын цаг"
+              />
+              <p className="text-sm text-muted-foreground">
+                Сүүлийн 12 сард сайтад бүртгэсэн:{" "}
+                {fmt(c.hours.byMonth.reduce((a, m) => a + m.value, 0))} цаг
+                {c.hours.byMonth.some((m) => m.value > 0)
+                  ? ` (${c.hours.byMonth
+                      .filter((m) => m.value > 0)
+                      .map((m) => `${monthLabel(m.key)}: ${fmt(m.value)}`)
+                      .join(", ")}).`
+                  : "."}
+              </p>
+            </>
           )}
         </ChartCard>
         <ChartCard
-          title="Сайтын агуулга ба зурвас"
-          caption="Нийтлэгдсэн агуулга, сүүлийн 12 сард ирсэн зурвасууд."
+          title="Сайтын агуулга"
+          caption="Сайт дээр нийтлэгдсэн агуулга."
           loading={loading}
-          table={
-            c
-              ? {
-                  columns: ["Сар", "Зурвас"],
-                  rows: c.messages.byMonth.map((m) => [monthLabel(m.key), fmt(m.value)]),
-                }
-              : undefined
-          }
         >
           {c && (
             <div className="space-y-4">
-              <ul className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+              <ul className="grid grid-cols-2 gap-2 text-sm">
                 {[
                   ["Мэдээ", c.content.news],
                   ["Арга хэмжээ", c.content.events],
                   ["Цомог", c.content.albums],
                   ["Зураг", c.content.photos],
                 ].map(([l, v]) => (
-                  <li key={l as string} className="rounded-xl bg-muted/50 p-3">
-                    <p className="font-heading text-xl font-extrabold tabular-nums">
+                  <li key={l as string} className="rounded-xl bg-muted/50 p-4">
+                    <p className="font-heading text-2xl font-extrabold tabular-nums">
                       {fmt(v as number)}
                     </p>
                     <p className="text-muted-foreground">{l as string}</p>
                   </li>
                 ))}
               </ul>
-              <p className="text-sm">
-                Энэ хугацаанд: {fmt(c.messages.inPeriod)} зурвас, арга хэмжээнд{" "}
-                {fmt(c.signups.inPeriod)} удаа бүртгүүлсэн.
+              <p className="text-sm text-muted-foreground">
+                Энэ хугацаанд арга хэмжээнд {fmt(c.signups.inPeriod)} удаа бүртгүүлсэн.
               </p>
-              <BarChart
-                items={c.messages.byMonth.map((m) => ({
-                  label: monthLabel(m.key),
-                  value: m.value,
-                }))}
-                format={fmt}
-                label="Сар бүрийн зурвас"
-              />
             </div>
           )}
         </ChartCard>

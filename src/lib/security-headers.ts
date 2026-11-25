@@ -6,9 +6,10 @@
  * the listed hosts only.
  *
  * Allowed third parties: Clerk (account areas only: its Frontend API serves the scripts and the
- * session requests; bot protection runs Cloudflare Turnstile), Cloudflare Turnstile (contact
- * form), Google Maps (contact page iframe) and Cloudflare Web Analytics (cookie-free beacon). Images may come from the site itself (R2 via /media),
- * data/blob previews and https (rich text images, Clerk avatars from img.clerk.com).
+ * session requests; its bot protection loads Cloudflare's challenge from
+ * challenges.cloudflare.com) and Cloudflare Web Analytics (cookie-free beacon). Images may come
+ * from the site itself (R2 via /media), data/blob previews and https (rich text images, Clerk
+ * avatars from img.clerk.com).
  */
 export function buildCsp({
   dev,
@@ -32,9 +33,10 @@ export function buildCsp({
       [
         "'self'",
         "'unsafe-inline'",
-        "https://challenges.cloudflare.com",
         "https://static.cloudflareinsights.com",
         ...clerk,
+        // Clerk's bot protection (sign-up) runs Cloudflare's challenge script.
+        ...(clerkFrontendApi ? ["https://challenges.cloudflare.com"] : []),
         // React Fast Refresh needs eval in development only.
         ...(dev ? ["'unsafe-eval'"] : []),
       ],
@@ -47,16 +49,18 @@ export function buildCsp({
       "connect-src",
       [
         "'self'",
-        "https://challenges.cloudflare.com",
         "https://cloudflareinsights.com",
         ...clerk,
         ...clerkProtect,
+        ...(clerkFrontendApi ? ["https://challenges.cloudflare.com"] : []),
         ...(dev ? ["ws:"] : []),
       ],
     ],
     [
       "frame-src",
-      ["https://challenges.cloudflare.com", "https://www.google.com", ...clerkProtect.slice(0, 1)],
+      clerkFrontendApi
+        ? ["https://challenges.cloudflare.com", ...clerkProtect.slice(0, 1)]
+        : ["'none'"],
     ],
     // Clerk keeps its session timers in a blob worker.
     ["worker-src", ["'self'", "blob:"]],

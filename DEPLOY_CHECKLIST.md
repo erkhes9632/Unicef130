@@ -14,7 +14,8 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
   `{"role": "{{user.public_metadata.role}}"}`, bot sign-up protection ON, webhook
   `https://130foreverychild.site/api/webhooks/clerk` (`user.created`, `user.updated`,
   `user.deleted`).
-- ✅ Turnstile widget: hostname `130foreverychild.site`.
+- ✅ Turnstile widget: hostname `130foreverychild.site` — 2026-11-26-ны хувилбараас хойш ашиглахгүй
+  (contact form хасагдсан): доорх «Энэ хувилбарын deploy-ийн дараа»-г үзнэ үү.
 - ✅ `wrangler.jsonc` vars: `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (pk_live), `TURNSTILE_SITE_KEY`.
 - ✅ Secret-ууд: `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `TURNSTILE_SECRET_KEY`.
 - ✅ Нөөц `private/backup-before-clerk-2026-11-20.sql` → migration 0000–0008 → deploy.
@@ -34,6 +35,20 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
   (бөглөөгүй бол).
 - ☐ Google Search Console-д `https://130foreverychild.site/sitemap.xml` (заавал биш).
 
+## Contact/профайл хувилбарын deploy (2026-11-26)
+
+1. ☐ Нөөц: `bunx wrangler d1 export DB --remote --output private/backups/before-profile-$(date +%F-%H%M).sql`
+2. ☐ `bun run db:migrate:remote` — 0011: users (овог, нэр, анги, `profile_updated_at`), members
+   (зөвшөөрлийн огноо/админ), impact_stats (тайлангийн 115 / 52 / 734), хайлтын NOCASE index,
+   contact default (и-мэйл, Instagram, хаяг — хоосон бол л), FAQ 8 ноорог (нийтлэгдээгүй).
+3. ☐ `bun run deploy`.
+4. ☐ Шалгах: footer-ийн «Холбоо барих», `/support`, `/contact` → `/#contact`, `/members` (52),
+   `/admin` (хийх зүйлс, статистик), Админ → Хэрэглэгчид → «Нэр засах», `/me` → «Миний мэдээлэл».
+5. ☐ Deploy-ийн дараа устгах (Cloudflare dashboard): `bunx wrangler secret delete TURNSTILE_SECRET_KEY`;
+   Turnstile → `130foreverychild.site` widget → Delete.
+6. ☐ Админ → Түгээмэл асуулт: 8 ноорог асуултыг шалгаж нийтлэх. Админ → «Дэмжих хуудас»: текстийг
+   клубтэй баталгаажуулах.
+
 ## Энэ хувилбарын анхны deploy (кэш + статистик, 2026-11)
 
 1. ☐ Нөөц: `bunx wrangler d1 export DB --remote --output private/backups/before-cache-$(date +%F-%H%M).sql`
@@ -46,7 +61,7 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
    жагсааж хэвлэнэ (exit 0) — тэр үед `bunx wrangler tail --status error` харж, `bun run cache:warm`
    дахин.
 5. ☐ Шалгах: `bunx wrangler tail --format json` → нийтийн хуудсуудын `cpuTime` 1–5 ms,
-   `outcome: ok`; нүүр, `/en`, мэдээ, `/join`, `/sign-in`, `/admin` (админаар), `/admin/stats`.
+   `outcome: ok`; нүүр, `/en`, мэдээ, `/join`, `/sign-in`, `/admin` (админаар).
 
 ## Энгийн deploy (код өөрчлөгдсөн үед)
 

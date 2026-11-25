@@ -1,9 +1,10 @@
-import { Award, CalendarCheck, CalendarDays, Clock, MapPin, UserRound } from "lucide-react";
+import { Award, CalendarCheck, CalendarDays, Clock, MapPin, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { PageHero } from "@/components/common/page-hero";
-import { ClassForm, DeleteMyAccount, SignupButton } from "@/components/me/me-client";
+import { DeleteMyAccount, SignupButton } from "@/components/me/me-client";
+import { ProfileCard } from "@/components/me/profile-card";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { requireMember } from "@/lib/auth/session";
@@ -37,97 +38,106 @@ export default async function MePage({ params }: PageProps<"/[locale]/me">) {
     <>
       <PageHero
         eyebrow={t("eyebrow")}
-        title={page.member?.name ? t("greeting", { name: page.member.name }) : t("title")}
+        title={
+          (page.member?.name ?? me.name)
+            ? t("greeting", { name: page.member?.name ?? me.name })
+            : t("title")
+        }
         description={t("intro")}
       />
       <div className="container-page grid gap-6 py-10 sm:py-14 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-6">
-          <section
-            aria-labelledby="me-hours"
-            className="space-y-4 rounded-[2rem] bg-card p-6 ring-1 ring-border"
-          >
-            <h2 id="me-hours" className="flex items-center gap-2 text-xl font-extrabold">
-              <Clock className="size-5 text-brand-cyan-strong" aria-hidden="true" />
-              {t("hoursTitle")}
-            </h2>
-            <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
-              <p>
-                <span className="block font-heading text-4xl font-extrabold">
-                  {hours(thisYear)}
-                </span>
-                <span className="text-sm text-muted-foreground">{t("thisYear", { year })}</span>
-              </p>
-              {page.totals
-                .filter((y) => y.schoolYear !== year)
-                .map((y) => (
-                  <p key={y.schoolYear} className="text-sm">
-                    <span className="font-bold">{hours(y.hours)}</span>{" "}
-                    <span className="text-muted-foreground">{y.schoolYear}</span>
-                  </p>
-                ))}
-            </div>
-            {progress !== null && threshold && (
-              <div>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span className="font-semibold">{t("activeGoal")}</span>
-                  <span>
-                    {formatNumber(thisYear)} / {formatNumber(threshold)}
+          {/* Hours belong to a member record (admins don't need one). */}
+          {page.member && (
+            <section
+              aria-labelledby="me-hours"
+              className="space-y-4 rounded-[2rem] bg-card p-6 ring-1 ring-border"
+            >
+              <h2 id="me-hours" className="flex items-center gap-2 text-xl font-extrabold">
+                <Clock className="size-5 text-brand-cyan-strong" aria-hidden="true" />
+                {t("hoursTitle")}
+              </h2>
+              <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+                <p>
+                  <span className="block font-heading text-4xl font-extrabold">
+                    {hours(thisYear)}
                   </span>
-                </div>
-                <div
-                  role="progressbar"
-                  aria-valuenow={progress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={t("activeGoal")}
-                  className="h-3 overflow-hidden rounded-full bg-muted"
-                >
-                  <div
-                    className="h-full rounded-full bg-brand-green"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                {progress >= 100 && (
-                  <p className="mt-2 text-sm font-semibold text-brand-green-strong">
-                    {t("activeReached")}
-                  </p>
-                )}
+                  <span className="text-sm text-muted-foreground">{t("thisYear", { year })}</span>
+                </p>
+                {page.totals
+                  .filter((y) => y.schoolYear !== year)
+                  .map((y) => (
+                    <p key={y.schoolYear} className="text-sm">
+                      <span className="font-bold">{hours(y.hours)}</span>{" "}
+                      <span className="text-muted-foreground">{y.schoolYear}</span>
+                    </p>
+                  ))}
               </div>
-            )}
-            {page.totals.some((y) => y.hours > 0) && (
-              <Link
-                href="/me/certificate"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-cyan-strong underline"
-              >
-                <Award className="size-4" aria-hidden="true" /> {t("certificate")}
-              </Link>
-            )}
-            {page.history.length === 0 && !page.importedTotal ? (
-              <p className="text-sm text-muted-foreground">{t("noHours")}</p>
-            ) : (
-              <ul className="divide-y text-sm">
-                {page.history.map((h) => (
-                  <li key={h.id} className="flex justify-between gap-3 py-2">
+              {progress !== null && threshold && (
+                <div>
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span className="font-semibold">{t("activeGoal")}</span>
                     <span>
-                      {h.event ?? (h.note || t("hoursEntry"))}
-                      <span className="block text-xs text-muted-foreground">
-                        {formatDate(locale, h.date, "long")}
+                      {formatNumber(thisYear)} / {formatNumber(threshold)}
+                    </span>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={progress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={t("activeGoal")}
+                    className="h-3 overflow-hidden rounded-full bg-muted"
+                  >
+                    <div
+                      className="h-full rounded-full bg-brand-green"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  {progress >= 100 && (
+                    <p className="mt-2 text-sm font-semibold text-brand-green-strong">
+                      {t("activeReached")}
+                    </p>
+                  )}
+                </div>
+              )}
+              {page.totals.some((y) => y.hours > 0) && (
+                <Link
+                  href="/me/certificate"
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-brand-cyan-strong underline"
+                >
+                  <Award className="size-4" aria-hidden="true" /> {t("certificate")}
+                </Link>
+              )}
+              {page.history.length === 0 && !page.importedTotal ? (
+                <p className="text-sm text-muted-foreground">{t("noHours")}</p>
+              ) : (
+                <ul className="divide-y text-sm">
+                  {page.history.map((h) => (
+                    <li key={h.id} className="flex justify-between gap-3 py-2">
+                      <span>
+                        {h.event ?? (h.note || t("hoursEntry"))}
+                        <span className="block text-xs text-muted-foreground">
+                          {formatDate(locale, h.date, "long")}
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 font-semibold">{hours(h.hours)}</span>
-                  </li>
-                ))}
-                {page.importedTotal && (
-                  <li className="flex justify-between gap-3 py-2">
-                    <span>{t("importedTotal", { year: page.importedTotal.schoolYear })}</span>
-                    <span className="shrink-0 font-semibold">
-                      {hours(page.importedTotal.hours)}
-                    </span>
-                  </li>
-                )}
-              </ul>
-            )}
-          </section>
+                      <span className="shrink-0 font-semibold">{hours(h.hours)}</span>
+                    </li>
+                  ))}
+                  {page.importedTotal && (
+                    <li className="flex justify-between gap-3 py-2">
+                      <span>{t("importedTotal", { year: page.importedTotal.schoolYear })}</span>
+                      <span className="shrink-0 font-semibold">
+                        {hours(page.importedTotal.hours)}
+                      </span>
+                    </li>
+                  )}
+                </ul>
+              )}
+            </section>
+          )}
+
+          <ProfileCard userId={me.id} role={me.role} locale={locale} />
 
           <section
             aria-labelledby="me-events"
@@ -203,44 +213,40 @@ export default async function MePage({ params }: PageProps<"/[locale]/me">) {
         </div>
 
         <aside className="space-y-4">
-          <section
-            aria-labelledby="me-profile"
-            className="space-y-4 rounded-3xl bg-brand-cyan-soft p-6"
-          >
-            <h2 id="me-profile" className="flex items-center gap-2 font-bold">
-              <UserRound className="size-5 text-brand-cyan-strong" aria-hidden="true" />
-              {t("profileTitle")}
-            </h2>
-            {page.member ? (
-              <>
-                <dl className="space-y-2 text-sm">
+          {page.member ? (
+            <section
+              aria-labelledby="me-member"
+              className="space-y-4 rounded-3xl bg-brand-cyan-soft p-6"
+            >
+              <h2 id="me-member" className="flex items-center gap-2 font-bold">
+                <Users className="size-5 text-brand-cyan-strong" aria-hidden="true" />
+                {t("memberTitle")}
+              </h2>
+              <dl className="space-y-2 text-sm">
+                {page.member.team && (
                   <div>
-                    <dt className="text-muted-foreground">{t("name")}</dt>
-                    <dd className="font-semibold">{page.member.name}</dd>
+                    <dt className="text-muted-foreground">{t("team")}</dt>
+                    <dd className="font-semibold">{page.member.team}</dd>
                   </div>
-                  {page.member.team && (
-                    <div>
-                      <dt className="text-muted-foreground">{t("team")}</dt>
-                      <dd className="font-semibold">{page.member.team}</dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="text-muted-foreground">{t("memberSince")}</dt>
-                    <dd className="font-semibold">
-                      {page.member.schoolYear ?? formatDate(locale, page.member.since, "long")}
-                    </dd>
-                  </div>
-                </dl>
-                <ClassForm className={page.member.className} />
-                <p className="text-xs text-muted-foreground">{t("profileHint")}</p>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-4 py-2 text-center">
+                )}
+                <div>
+                  <dt className="text-muted-foreground">{t("memberSince")}</dt>
+                  <dd className="font-semibold">
+                    {page.member.schoolYear ?? formatDate(locale, page.member.since, "long")}
+                  </dd>
+                </div>
+              </dl>
+              <p className="text-xs text-muted-foreground">{t("teamHint")}</p>
+            </section>
+          ) : (
+            // An admin needs no member record: no warning for them.
+            me.role !== "admin" && (
+              <section className="flex flex-col items-center gap-4 rounded-3xl bg-brand-cyan-soft p-6 text-center">
                 <BrandLockup variant="stacked" height={140} />
                 <p className="text-sm text-muted-foreground">{t("noMemberRecord")}</p>
-              </div>
-            )}
-          </section>
+              </section>
+            )
+          )}
           <section aria-labelledby="me-account" className="space-y-3 rounded-3xl bg-muted/60 p-6">
             <h2 id="me-account" className="font-bold">
               {t("accountTitle")}

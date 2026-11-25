@@ -93,7 +93,6 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
               items={[
                 t("retentionRejected", { days: settings.membership.rejectedRetentionDays }),
                 t("retentionAccount"),
-                t("retentionMessages"),
               ]}
             />
           </Block>
@@ -101,6 +100,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
           <Block icon={Trash2} title={t("deleteTitle")}>
             <p>{t("deleteMember")}</p>
             <p>{t("deleteOthers")}</p>
+            <p>{t("contactChannels")}</p>
             {email && (
               <p>
                 {t.rich("deleteEmail", {
@@ -118,7 +118,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
             )}
             <div className="flex flex-wrap gap-3 pt-2">
               <Button asChild>
-                <Link href="/contact">{t("contactLink")}</Link>
+                <Link href="/support#contact-us">{t("contactLink")}</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href="/me" prefetch={false}>

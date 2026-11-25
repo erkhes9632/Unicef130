@@ -26,7 +26,14 @@ const fromSitemap = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
   (m) => new URL(m[1]!).pathname,
 );
 // Cached pages that are not in the sitemap (/join = the signed-out view; the proxy runs first).
-const extra = ["/sign-in", "/en/sign-in", "/join", "/en/join", "/contact", "/en/contact"];
+const extra = [
+  "/sign-in",
+  "/en/sign-in",
+  "/join",
+  "/en/join",
+  "/page-not-found",
+  "/en/page-not-found",
+];
 const paths = [...new Set([...fromSitemap, ...extra])];
 
 /** Status after reading the whole body (0 = network error). */

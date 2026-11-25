@@ -45,7 +45,7 @@ function Publish({ name, defaultChecked }: { name: string; defaultChecked: boole
   );
 }
 
-function Bilingual({
+export function Bilingual({
   id,
   label,
   value,

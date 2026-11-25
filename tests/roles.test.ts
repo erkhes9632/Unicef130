@@ -5,7 +5,7 @@
 import { describe, expect, test } from "bun:test";
 import { frontendApiFromPublishableKey, signInPathFor } from "@/lib/auth/clerk";
 import { decideAccess, homePathFor, routeArea, toRole } from "@/lib/auth/roles";
-import { filterUsers, parseUserFilters } from "@/lib/users/list";
+import { parseUserFilters } from "@/lib/users/list";
 import { checkUserAction, roleAfter } from "@/lib/users/rules";
 import { mirrorFromClerk } from "@/lib/users/sync";
 import { planRoleChange, instanceOf, type ClerkUserLite } from "../scripts/lib/admin-role";
@@ -124,24 +124,9 @@ describe("account action guards", () => {
 });
 
 describe("users list filters", () => {
-  const rows = [
-    { name: "Батын Анужин", email: "anujin@gmail.com", role: "member" as const, banned: false },
-    { name: "Clerk Admin", email: "boss@school.mn", role: "admin" as const, banned: false },
-    { name: "", email: "new@gmail.com", role: null, banned: false },
-    { name: "Bad Actor", email: "x@y.mn", role: null, banned: true },
-  ];
-  test("role filters", () => {
-    expect(filterUsers(rows, { q: "", role: "admin" }).map((r) => r.email)).toEqual([
-      "boss@school.mn",
-    ]);
-    expect(filterUsers(rows, { q: "", role: "applicant" })).toHaveLength(2);
-    expect(filterUsers(rows, { q: "", role: "banned" }).map((r) => r.email)).toEqual(["x@y.mn"]);
-  });
-  test("search by Cyrillic name (case-insensitive) or e-mail", () => {
-    expect(filterUsers(rows, { q: "анужин", role: "" })).toHaveLength(1);
-    expect(filterUsers(rows, { q: "GMAIL", role: "" })).toHaveLength(2);
-  });
   test("unknown filter values are ignored, search is trimmed and capped", () => {
+    expect(parseUserFilters({ q: "а" }).q).toBe(""); // searching starts from 2 characters
+    expect(parseUserFilters({ role: "noname" }).role).toBe("noname");
     expect(parseUserFilters({ role: "editor", q: "  анужин " })).toEqual({ role: "", q: "анужин" });
     expect(parseUserFilters({ q: "x".repeat(200) }).q).toHaveLength(80);
   });
@@ -187,7 +172,10 @@ describe("D1 mirror of a Clerk user", () => {
     expect(m).toMatchObject({
       id: "user_1",
       email: "main@gmail.com",
-      name: "Анужин Бат",
+      // Mongolian order: "Овог Нэр".
+      name: "Бат Анужин",
+      firstName: "Анужин",
+      lastName: "Бат",
       role: "member",
       banned: false,
       twoFactorEnabled: true,

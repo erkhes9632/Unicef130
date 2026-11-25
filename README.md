@@ -6,7 +6,7 @@ Live at **[130foreverychild.site](https://130foreverychild.site)** (Mongolian by
 
 ## What's on the site
 
-- **Public pages:** about, impact report, news, events, gallery, FAQ and contact. Available in Mongolian and English, light and dark.
+- **Public pages:** about, impact report, news, events, gallery, FAQ (shown once a question is published) and "how to support us". Available in Mongolian and English, light and dark. There is no contact form: the club's e-mail and Instagram are in the footer of every page and on `/support`.
 - **Membership:** when enrollment is open, students sign in and apply. Admins review applications, and accepted students become members.
 - **Member area (`/me`):** volunteer hours, event sign-ups and certificates.
 - **Admin panel (`/admin`):** content, applications, users, attendance and site settings.
@@ -17,7 +17,7 @@ There are three kinds of accounts: applicants (anyone who has signed in), member
 
 Next.js 16 (App Router, Server Actions) with TypeScript, Tailwind v4 and shadcn/ui. Translations use next-intl.
 
-It runs on Cloudflare Workers through `@opennextjs/cloudflare`. Data is in D1 (through Drizzle) and images are in R2. Sign-in is handled by Clerk (Google or an email code, no passwords). The contact form is protected by Turnstile. I use Bun for everything, not npm or yarn.
+It runs on Cloudflare Workers through `@opennextjs/cloudflare`. Data is in D1 (through Drizzle) and images are in R2. Sign-in is handled by Clerk (Google or an email code, no passwords). I use Bun for everything, not npm or yarn.
 
 ```
 src/app/[locale]   public pages
@@ -51,7 +51,7 @@ bun run admin:grant -- you@example.com --dev
 
 Run `bun run hooks:install` once so that `bun run check` runs before every commit.
 
-`bun run preview` runs the real Worker build on http://localhost:8787. Locally, Turnstile uses test keys and Google Sheets sync is skipped.
+`bun run preview` runs the real Worker build on http://localhost:8787. Locally, Google Sheets sync is skipped.
 
 ### Useful commands
 
@@ -107,17 +107,16 @@ Secrets go in with `bunx wrangler secret put <NAME>`. They never go in files, gi
 
 - `CLERK_SECRET_KEY`
 - `CLERK_WEBHOOK_SIGNING_SECRET`
-- `TURNSTILE_SECRET_KEY`
 - `GOOGLE_*` (optional, for Sheets sync)
 - `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG` (optional, for the statistics page — see "Analytics")
 
-Public config (`SITE_URL`, the Clerk publishable key, the Turnstile site key) lives in `wrangler.jsonc` under `vars`.
+Public config (`SITE_URL`, the Clerk publishable key) lives in `wrangler.jsonc` under `vars`.
 
 **To rotate a secret:**
 
-1. Create a new value in Clerk or Turnstile.
+1. Create a new value in Clerk.
 2. Run `secret put` with the new value.
-3. Check that sign-in, the contact form and the webhooks still work.
+3. Check that sign-in and the webhooks still work.
 4. Delete the old value.
 
 Rotate every secret when the person responsible for the site changes.
@@ -149,10 +148,13 @@ Admins can't demote, ban or delete themselves, and the last admin can't be remov
 
 - **Enrollment:** open and close dates, which grades can apply, extra questions and a capacity limit. While enrollment is open, a banner shows on the site.
 - **Applications:** move each one through New → Reviewing → Interview → Accepted / Rejected / Waitlist, and export to CSV. Accepting an application makes the person a member.
-- **Users:** search, change roles, deactivate (can be undone) or delete for good. Deleting removes personal data, but the volunteer hours stay in the totals anonymously.
+- **Users:** search, correct a name and class («Нэр засах»), change roles, deactivate (can be undone) or delete for good. Deleting removes personal data, but the volunteer hours stay in the totals anonymously. People also fix their own name and class in «Миний мэдээлэл» (`/me`, or `/me/profile` for applicants); the name is written to Clerk and to D1, and a late Clerk webhook never undoes it (`users.profile_updated_at`).
+- **Lists:** every admin list has the same filter bar: results update while typing (300 ms, from 2 letters), selects apply at once, filters stay in the address, 25 rows per page.
 - **Events:** mark attendance. Marking someone as present adds their volunteer hours.
 - **Content:** news, gallery, FAQ, about page and site settings. Sections left empty are simply hidden. If an English field is empty, the Mongolian text is shown instead.
-- **Statistics:** visitors, popular pages, where visitors come from, site speed and the club's own numbers, in plain words (see "Analytics"). A line at the top says whether the site is fine, or what needs doing.
+- **Dashboard (Хяналтын самбар):** a line that says whether the site is fine, a "Хийх зүйлс" box (new applications, enrollment closing soon, no published FAQ, accounts without a name), quick actions, the newest applications, then the statistics (see "Analytics").
+- **Members:** names are hidden by default. «Нийтэд харуулах» asks the admin to confirm a parent's or guardian's consent (stored with the time and the admin) and refreshes the public pages within seconds. Leaders appear on «Бидний тухай» and `/members`, other members in the `/members` name list. The page separates "Тайлангийн гишүүн" (annual report) from "Сайтад бүртгэлтэй" (website accounts).
+- **Support page:** Admin → «Дэмжих хуудас» edits the `/support` text; the contact e-mail and Instagram are in Сайтын тохиргоо.
 
 Shortcuts: `Ctrl/⌘ + K` to search, `Ctrl/⌘ + S` to save.
 
@@ -197,13 +199,15 @@ redeploy. Roll back with the backup or D1 Time Travel
 
 ## Analytics
 
-Admin → **Statistik** shows two kinds of numbers:
+Admin → **Хяналтын самбар** (`/admin`) shows two kinds of numbers below the to-do box:
 
 - **Visitors** from Cloudflare Web Analytics: visits, pages viewed, top pages, where people come
   from, countries, devices and site speed. It uses no cookies and stores no personal data, so no
   cookie banner is needed (this is also stated on `/privacy`).
-- **Club numbers** from the database: new users, members, applications, volunteer hours,
-  messages. Totals only, never names.
+- **Club numbers** from the database: new accounts, applications, volunteer hours, content.
+  Totals only, never names. Membership figures are labelled by source: the annual report's
+  numbers (Admin → Жилийн үр дүн, "total" row: joined / active / hours — the public pages show
+  these) and the members who have a website account.
 
 The page loads a small JSON summary from `/api/admin/stats` (admins only) and draws the charts
 in the browser; visitor numbers are cached for 10 minutes. "CSV татах" downloads the same totals.
@@ -236,6 +240,12 @@ more than that, so visitors should only ever get cached pages.
 - **After a deploy** the cache is empty: `bun run deploy` runs `bun run cache:warm`, which visits
   every page from the sitemap one at a time, reads each response to the end, and retries a 5xx
   once. Pages that still fail are listed, but the script exits 0 (`--strict` makes it exit 1).
+- **Unknown URLs:** `worker.ts` answers them with one shared, cached 404 page per language
+  (`/page-not-found`, status 404) — a path no route can match, or a news/event/album address
+  whose slug isn't in D1 (`src/lib/not-found-route.ts`). A random URL costs a cache lookup, not
+  a render. A new public page section must be added to `PAGE_SEGMENTS` (a test checks it).
+- **Admin pages** are rendered per request (about 18–23 ms CPU locally whatever the list size;
+  lists are 25 rows, counts are SQL `count()`), the statistics come as small JSON (~5 ms).
 - **Cold start:** `worker.ts` loads the Next.js server, every route module and the proxy when the
   isolate starts (startup has its own CPU limit; about 90 ms locally). Loaded lazily, the first
   request of an isolate paid for it, and if that request was stopped (Error 1102, or a visitor
@@ -295,16 +305,13 @@ The look is warm and friendly: an off-white and cream light theme, a warm charco
 - **Languages.** Every string lives in both `messages/mn.json` and `messages/en.json` (a test checks that they match). On English pages, news or events without an English version are shown in Mongolian with an "Available in Mongolian" badge.
 - **Header.** The desktop menu appears from 1280 px wide; below that there's a drawer. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
 
-## Showing student names (`SHOW_LEADER_NAMES`)
+## Showing student names
 
-Students' names stay hidden until the club has written consent from parents or guardians. Two switches in `src/config/site.ts` control this:
-
-```ts
-export const SHOW_LEADER_NAMES = false; // leadership cards: role + initial avatar only
-export const SHOW_MEMBER_NAMES = false; // /members: aggregate numbers only
-```
-
-Set one to `true` and deploy to show names. Even then, a name is shown only if an admin has marked that person as public (Admin → Members → "Нэрийг нийтэд харуулах").
+Students' names are hidden by default (most members are minors). There is no global switch: each
+member's «Нийтэд харуулах» (Admin → Гишүүд) decides. Turning it on asks the admin to confirm
+that a parent or guardian agreed; the confirmation is stored (`members.consent_confirmed_at`,
+`consent_confirmed_by`). Leaders then show with their name on «Бидний тухай» and `/members`,
+other members in the `/members` "Манай гишүүд" list. Individual hours are never public.
 
 ## Logo
 

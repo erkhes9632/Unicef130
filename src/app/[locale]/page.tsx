@@ -26,13 +26,13 @@ import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { getBranding } from "@/lib/branding";
-import { getUpcomingEvents } from "@/lib/data/events";
+import { getUpcomingEvents, listYearActivities } from "@/lib/data/events";
 import { getGalleryPreview } from "@/lib/data/gallery";
 import { displayYear, getLatestImpact } from "@/lib/data/impact";
 import { pick } from "@/lib/data/localize";
 import { getLatestNews } from "@/lib/data/news";
 import { getHomeStats, getSiteSettings, safeExternalUrl, safeImageUrl } from "@/lib/data/settings";
-import { formatMnt, formatNumber } from "@/lib/dates/format";
+import { formatNumber } from "@/lib/dates/format";
 import { pageMetadata } from "@/lib/seo";
 import { statKind } from "@/lib/stat-icon";
 import { cn } from "@/lib/utils";
@@ -94,6 +94,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     { members: t("Home.stats.members"), events: t("Home.stats.events") },
     { featuredOnly: true },
   );
+  // The band below the stats row shows other figures than the row (no number twice): the
+  // number of activities, the goals they served and, when the row doesn't show it, online reach.
+  const yearActivities = impact ? await listYearActivities(locale, impact.schoolYear) : [];
+  const sdgCount = new Set(yearActivities.flatMap((a) => a.sdgs)).size;
+  const shownValues = new Set(stats.map((s) => s.value.replace(/\s/g, "")));
   const socials = settings.socials;
   const partners = settings.partners.map((p) => ({
     name: pick(locale, p.name, p.nameEn),
@@ -273,23 +278,23 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               <dl className="grid grid-cols-2 gap-4 pt-2 sm:grid-cols-3">
                 {[
                   { label: t("Impact.activities"), value: String(impact.total.activities) },
-                  { label: t("Impact.reachTotal"), value: formatNumber(impact.total.total) },
-                  ...(impact.total.donationAmount > 0
-                    ? [
-                        {
-                          label: t("Impact.donation"),
-                          value: formatMnt(impact.total.donationAmount),
-                        },
-                      ]
+                  ...(sdgCount > 0
+                    ? [{ label: t("Home.impactSdgs"), value: String(sdgCount) }]
                     : []),
-                ].map((s) => (
-                  <div key={s.label} className="flex flex-col">
-                    <dt className="text-sm text-muted-foreground">{s.label}</dt>
-                    <dd className="order-first font-heading text-2xl font-extrabold text-brand-green-strong sm:text-4xl">
-                      <CountUp value={s.value} />
-                    </dd>
-                  </div>
-                ))}
+                  ...(impact.total.online > 0 &&
+                  !shownValues.has(formatNumber(impact.total.online).replace(/\s/g, ""))
+                    ? [{ label: t("Home.impactOnline"), value: formatNumber(impact.total.online) }]
+                    : []),
+                ]
+                  .filter((s) => !shownValues.has(s.value))
+                  .map((s) => (
+                    <div key={s.label} className="flex flex-col">
+                      <dt className="text-sm text-muted-foreground">{s.label}</dt>
+                      <dd className="order-first font-heading text-2xl font-extrabold text-brand-green-strong sm:text-4xl">
+                        <CountUp value={s.value} />
+                      </dd>
+                    </div>
+                  ))}
               </dl>
             </div>
             <Button asChild size="lg">

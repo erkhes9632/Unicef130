@@ -11,19 +11,25 @@ import {
 } from "@/components/admin/application-controls";
 import { ApplicationsList } from "@/components/admin/applications-list";
 import { ConfirmAction } from "@/components/admin/confirm-action";
-import { NativeSelect } from "@/components/admin/form";
+import { FilterBar } from "@/components/admin/filter-bar";
 import { AdminPageHeader } from "@/components/admin/page-header";
+import { Pager } from "@/components/admin/pager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getDb } from "@/db";
 import { applications, applicationStatuses, recruitmentPeriods, users } from "@/db/schema";
 import { helpOptionLabels } from "@/lib/admin/labels";
+import { PAGE_SIZE } from "@/lib/admin/list-limits";
+import { pageOffset, pageParam } from "@/lib/admin/list-query";
 import { isSheetsConfigured } from "@/lib/applications/sheets-sync";
 import { requireAdmin } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
-import { parseApplicationFilters, queryApplications } from "@/lib/recruitment/admin-query";
+import {
+  applicationOrder,
+  applicationWhere,
+  parseApplicationFilters,
+} from "@/lib/recruitment/admin-query";
 import { applicationStatusLabels } from "@/lib/recruitment/logic";
 import { cn } from "@/lib/utils";
 import {
@@ -38,15 +44,13 @@ import {
 
 export const metadata: Metadata = { title: "Өргөдлүүд" };
 
-const PAGE_SIZE = 25;
-
 export default async function AdminApplicationsPage({
   searchParams,
 }: PageProps<"/admin/applications">) {
   await requireAdmin();
   const sp = await searchParams;
   const filters = parseApplicationFilters(sp);
-  const page = Math.max(1, Number.parseInt(String(sp.page ?? "1"), 10) || 1);
+  const page = pageParam(sp);
 
   const db = await getDb();
   const periodWhere =
@@ -55,8 +59,16 @@ export default async function AdminApplicationsPage({
       : filters.period
         ? eq(applications.periodId, filters.period)
         : undefined;
-  const [matched, counts, periods, classes, sheetsOn, settings] = await Promise.all([
-    queryApplications(filters),
+  const where = applicationWhere(filters);
+  const [[matchedCount], rows, counts, periods, classes, sheetsOn, settings] = await Promise.all([
+    db.select({ n: count() }).from(applications).where(where),
+    db
+      .select()
+      .from(applications)
+      .where(where)
+      .orderBy(...applicationOrder(filters))
+      .limit(PAGE_SIZE)
+      .offset(pageOffset(page)),
     db
       .select({ status: applications.status, n: count() })
       .from(applications)
@@ -82,9 +94,7 @@ export default async function AdminApplicationsPage({
   const countBy = Object.fromEntries(counts.map((c) => [c.status, c.n])) as Record<string, number>;
   const total = counts.reduce((a, c) => a + c.n, 0);
 
-  const pageCount = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
-  const current = Math.min(page, pageCount);
-  const rows = matched.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  const matched = matchedCount?.n ?? 0;
   // Account flags for the rows on this page (applications sent before sign-in have none).
   const accountIds = [...new Set(rows.flatMap((r) => (r.userId ? [r.userId] : [])))];
   const accounts = accountIds.length
@@ -211,7 +221,9 @@ export default async function AdminApplicationsPage({
             />
           </div>
           {a.sheetsError && (
-            <p className="text-xs text-destructive">Sheets алдаа: {a.sheetsError}</p>
+            <p className="text-xs text-destructive">
+              Google Sheets руу хуулж чадсангүй: {a.sheetsError}
+            </p>
           )}
           {a.userId && (
             <DecisionMessageForm
@@ -258,97 +270,65 @@ export default async function AdminApplicationsPage({
         </ul>
       </nav>
 
-      <form className="mb-6 grid gap-3 rounded-2xl bg-card p-4 ring-1 ring-border sm:grid-cols-2 lg:grid-cols-6">
-        <input type="hidden" name="status" value={filters.status} />
-        <label className="space-y-1 text-xs font-semibold lg:col-span-2">
-          <span>Хайх (нэр, утас, и-мэйл)</span>
-          <Input name="q" defaultValue={filters.q} placeholder="Анужин / 8811 / name@gmail.com" />
-        </label>
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Элсэлт</span>
-          <NativeSelect name="period" defaultValue={filters.period}>
-            <option value="">Бүгд</option>
-            {periods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-            <option value="none">Элсэлтгүй (хуучин)</option>
-          </NativeSelect>
-        </label>
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Анги</span>
-          <NativeSelect name="class" defaultValue={filters.className}>
-            <option value="">Бүгд</option>
-            {classes
-              .map((c) => c.c)
-              .sort((a, b) => a.localeCompare(b, "mn", { numeric: true }))
-              .map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-          </NativeSelect>
-        </label>
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Эхлэх огноо</span>
-          <Input type="date" name="from" defaultValue={filters.from} />
-        </label>
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Дуусах огноо</span>
-          <Input type="date" name="to" defaultValue={filters.to} />
-        </label>
-        <label className="space-y-1 text-xs font-semibold">
-          <span>Эрэмбэ</span>
-          <NativeSelect name="sort" defaultValue={filters.sort}>
-            <option value="new">Шинэ нь эхэндээ</option>
-            <option value="old">Хуучин нь эхэндээ</option>
-            <option value="class">Ангиар</option>
-          </NativeSelect>
-        </label>
-        <div className="flex items-end gap-2 lg:col-span-2">
-          <Button type="submit">Шүүх</Button>
-          <Button asChild variant="ghost">
-            <Link href="/admin/applications">Цэвэрлэх</Link>
-          </Button>
-        </div>
-      </form>
-
-      <p className="mb-3 text-sm text-muted-foreground">
-        {matched.length} өргөдөл{pageCount > 1 ? ` · ${current} / ${pageCount}-р хуудас` : ""}
-      </p>
-      {rows.length === 0 ? (
-        <p className="rounded-2xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-          Энэ шүүлтүүрт тохирох өргөдөл алга.
-        </p>
-      ) : (
-        <ApplicationsList
-          key={`${current}-${filters.status}-${matched.length}`}
-          items={items}
-          bulkSetStatus={bulkSetStatus}
-        />
-      )}
-      {pageCount > 1 && (
-        <nav aria-label="Хуудаслалт" className="mt-4 flex items-center justify-between text-sm">
-          {current > 1 ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={href({ page: String(current - 1) })}>← Өмнөх</Link>
-            </Button>
-          ) : (
-            <span />
-          )}
-          <span className="text-muted-foreground">
-            {current} / {pageCount}
-          </span>
-          {current < pageCount ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={href({ page: String(current + 1) })}>Дараах →</Link>
-            </Button>
-          ) : (
-            <span />
-          )}
-        </nav>
-      )}
+      <FilterBar
+        search={{
+          label: "Хайх (нэр, утас, и-мэйл)",
+          placeholder: "Анужин / 8811 / name@gmail.com",
+        }}
+        fields={[
+          {
+            type: "select",
+            name: "period",
+            label: "Элсэлт",
+            options: [
+              { value: "", label: "Бүгд" },
+              ...periods.map((p) => ({ value: p.id, label: p.name })),
+              { value: "none", label: "Элсэлтгүй (хуучин)" },
+            ],
+          },
+          {
+            type: "select",
+            name: "class",
+            label: "Анги",
+            options: [
+              { value: "", label: "Бүгд" },
+              ...classes
+                .map((c) => c.c)
+                .sort((a, b) => a.localeCompare(b, "mn", { numeric: true }))
+                .map((c) => ({ value: c, label: c })),
+            ],
+          },
+          { type: "date", name: "from", label: "Эхлэх огноо" },
+          { type: "date", name: "to", label: "Дуусах огноо" },
+          {
+            type: "select",
+            name: "sort",
+            label: "Эрэмбэ",
+            options: [
+              { value: "", label: "Шинэ нь эхэндээ" },
+              { value: "old", label: "Хуучин нь эхэндээ" },
+              { value: "class", label: "Ангиар" },
+            ],
+          },
+        ]}
+        alsoClear={["status"]}
+        count={matched}
+        noun="өргөдөл"
+        emptyText="Энэ шүүлтүүрт тохирох өргөдөл алга."
+      >
+        {rows.length === 0 ? (
+          <p className="rounded-2xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
+            Өргөдөл хараахан ирээгүй байна.
+          </p>
+        ) : (
+          <ApplicationsList
+            key={`${page}-${filters.status}-${matched}`}
+            items={items}
+            bulkSetStatus={bulkSetStatus}
+          />
+        )}
+        <Pager path="/admin/applications" params={sp} page={page} total={matched} />
+      </FilterBar>
     </>
   );
 }

@@ -94,16 +94,3 @@ export function buildJoinSchema({
     });
 }
 export type JoinFormValues = z.input<ReturnType<typeof buildJoinSchema>>;
-
-export const contactFormSchema = z.object({
-  name: trimmed(2, 100),
-  email: z
-    .string()
-    .trim()
-    .min(1, { error: "required" })
-    .max(254, { error: "tooLong" })
-    .pipe(z.email({ error: "email" })),
-  subject: z.string().trim().max(150, { error: "tooLong" }),
-  message: trimmed(10, 2000),
-});
-export type ContactFormValues = z.input<typeof contactFormSchema>;

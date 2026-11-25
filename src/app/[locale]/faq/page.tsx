@@ -70,7 +70,7 @@ export default async function FaqPage({ params }: PageProps<"/[locale]/faq">) {
         <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-3 text-center">
           <p className="font-semibold">{t("more")}</p>
           <Button asChild variant="outline">
-            <Link href="/contact">{t("contact")}</Link>
+            <Link href="/support#contact-us">{t("contact")}</Link>
           </Button>
         </div>
       </Section>

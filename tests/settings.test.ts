@@ -2,14 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { defaultHelpOptions, defaultSettings, parseSettings } from "@/lib/settings/types";
 
 describe("site settings parsing", () => {
-  test("empty database → empty defaults (no invented facts)", () => {
+  test("empty database → empty defaults, except the club's own contact channels", () => {
     const s = parseSettings(new Map());
     expect(s.stats).toEqual([]);
     expect(s.partners).toEqual([]);
     expect(s.socials).toEqual([]);
-    expect(s.contact.email).toBe("");
-    expect(s.contact.phone).toBe("");
-    expect(s.contact.officeHours).toBe("");
+    expect(s.contact.email).toBe("130foreverychild@gmail.com");
+    expect(s.contact.instagram).toBe("130_foreverychild");
     expect(s.donation).toEqual({ url: "", text: "", textEn: "" });
     // Draft About text is hidden until the club publishes it.
     expect(s.about.historyPublished).toBe(false);
@@ -26,6 +25,8 @@ describe("site settings parsing", () => {
           "socials",
           [
             { platform: "facebook", url: "" },
+            { platform: "youtube", url: "https://y" },
+            // Instagram moved to the contact channels: an old social row is dropped.
             { platform: "instagram", url: "https://i" },
           ],
         ],
@@ -33,13 +34,13 @@ describe("site settings parsing", () => {
     );
     expect(s.stats).toEqual([]);
     expect(s.donation.url).toBe("https://school.example/donate");
-    expect(s.socials).toEqual([{ platform: "instagram", url: "https://i" }]);
+    expect(s.socials).toEqual([{ platform: "youtube", url: "https://y" }]);
   });
 
   test("bad fields fall back per field, valid ones are kept", () => {
     const s = parseSettings(
       new Map<string, unknown>([
-        ["contact", { email: "club@school.mn", phone: 12345, unknown: "x" }],
+        ["contact", { email: "club@school.mn", instagram: "not a handle!", unknown: "x" }],
         [
           "helpOptions",
           [
@@ -51,7 +52,7 @@ describe("site settings parsing", () => {
       ]),
     );
     expect(s.contact.email).toBe("club@school.mn");
-    expect(s.contact.phone).toBe("");
+    expect(s.contact.instagram).toBe("");
     expect(s.helpOptions).toEqual([{ key: "art", label: "Зураг зурах", labelEn: "" }]);
     expect(s.about.historyPublished).toBe(false);
     expect(s.about.mission).toBe("Зорилго");
@@ -62,5 +63,19 @@ describe("site settings parsing", () => {
     const json = JSON.stringify(defaultSettings);
     expect(json).not.toContain("example.com");
     expect(json).not.toContain("0000");
+  });
+});
+
+describe("Instagram handle", () => {
+  test("accepts @name, name and profile URLs; rejects anything else", async () => {
+    const { instagramHandle } = await import("@/lib/settings/types");
+    expect(instagramHandle("@130_foreverychild")).toBe("130_foreverychild");
+    expect(instagramHandle("https://www.instagram.com/130_foreverychild/")).toBe(
+      "130_foreverychild",
+    );
+    expect(instagramHandle("instagram.com/club.130?igsh=x")).toBe("club.130");
+    expect(instagramHandle("")).toBe("");
+    expect(instagramHandle("https://evil.example/x")).toBe("");
+    expect(instagramHandle("javascript:alert(1)")).toBe("");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildJoinSchema, contactFormSchema } from "@/lib/validation/forms";
+import { buildJoinSchema } from "@/lib/validation/forms";
 
 const questions = [
   { id: "q1", type: "text" as const, options: [], required: true },
@@ -60,21 +60,5 @@ describe("join form schema (per recruitment period)", () => {
       expect(open.safeParse({ ...validJoin, answers: {}, className: c }).success).toBe(true);
     for (const p of ["88112233", "+976 8811 2233", "976-8811-2233", "8811-2233"])
       expect(open.safeParse({ ...validJoin, answers: {}, phone: p }).success).toBe(true);
-  });
-});
-
-describe("contact form schema", () => {
-  test("validates", () => {
-    expect(
-      contactFormSchema.safeParse({
-        name: "Эцэг эх",
-        email: "a@b.mn",
-        subject: "",
-        message: "Сайн байна уу, асуулт байна.",
-      }).success,
-    ).toBe(true);
-    expect(
-      contactFormSchema.safeParse({ name: "Э", email: "bad", subject: "", message: "hi" }).success,
-    ).toBe(false);
   });
 });

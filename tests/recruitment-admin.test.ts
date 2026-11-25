@@ -1,6 +1,9 @@
 /** Admin-side recruitment rules: list filters, search, and the period form schema. */
+import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
-import { matchesSearch, parseApplicationFilters } from "@/lib/recruitment/admin-query";
+import { drizzle } from "drizzle-orm/bun-sqlite";
+import { applications } from "@/db/schema";
+import { applicationWhere, parseApplicationFilters } from "@/lib/recruitment/admin-query";
 import { periodInputSchema } from "@/lib/validation/recruitment";
 
 describe("parseApplicationFilters", () => {
@@ -62,29 +65,43 @@ describe("parseApplicationFilters", () => {
   });
 });
 
-describe("matchesSearch", () => {
-  const row = { fullName: "Батын Анужин", phone: "+97688112233", email: "anujin@gmail.com" };
+describe("application search (SQL)", () => {
+  const sqlite = new Database(":memory:");
+  sqlite.run(
+    "CREATE TABLE applications (id TEXT, user_id TEXT, period_id TEXT, full_name TEXT NOT NULL, class_name TEXT NOT NULL, phone TEXT NOT NULL, email TEXT, status TEXT NOT NULL, created_at INTEGER NOT NULL)",
+  );
+  sqlite.run(
+    "INSERT INTO applications VALUES ('a1', NULL, NULL, 'Батын Анужин', '10А', '+976 8811-2233', 'anujin@gmail.com', 'new', 1)",
+  );
+  sqlite.run(
+    "INSERT INTO applications VALUES ('a2', NULL, NULL, 'Болдын Тэмүүлэн', '9Б', '99001122', NULL, 'new', 2)",
+  );
+  const db = drizzle(sqlite);
+  const find = (q: string) =>
+    db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(applicationWhere(parseApplicationFilters({ q })))
+      .all()
+      .map((r) => r.id);
 
-  test("empty query matches everything", () => {
-    expect(matchesSearch(row, "")).toBe(true);
+  test("empty or 1-character query matches everything", () => {
+    expect(find("")).toEqual(["a1", "a2"]);
+    expect(find("а")).toEqual(["a1", "a2"]);
   });
-
-  test("name: case-insensitive Cyrillic substring", () => {
-    expect(matchesSearch(row, "анужин")).toBe(true);
-    expect(matchesSearch(row, "БАТЫН")).toBe(true);
-    expect(matchesSearch(row, "Болд")).toBe(false);
+  test("name: start of a word, Cyrillic in any case", () => {
+    expect(find("анужин")).toEqual(["a1"]);
+    expect(find("БАТЫН")).toEqual(["a1"]);
+    expect(find("тэм")).toEqual(["a2"]);
+    expect(find("Ганаа")).toEqual([]);
   });
-
-  test("phone: digits only, at least 3, separators ignored", () => {
-    expect(matchesSearch(row, "8811 2233")).toBe(true);
-    expect(matchesSearch(row, "2233")).toBe(true);
-    expect(matchesSearch(row, "22")).toBe(false);
-    expect(matchesSearch(row, "9999")).toBe(false);
+  test("phone: 3+ digits, separators ignored", () => {
+    expect(find("8811 2233")).toEqual(["a1"]);
+    expect(find("2233")).toEqual(["a1"]);
+    expect(find("9999")).toEqual([]);
   });
-
-  test("e-mail: case-insensitive; missing e-mail never matches", () => {
-    expect(matchesSearch(row, "ANUJIN@gmail")).toBe(true);
-    expect(matchesSearch({ ...row, email: null }, "anujin@gmail")).toBe(false);
+  test("e-mail prefix; missing e-mail never matches", () => {
+    expect(find("ANUJIN@gmail")).toEqual(["a1"]);
   });
 });
 

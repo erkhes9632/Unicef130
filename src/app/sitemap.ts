@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { getDb } from "@/db";
 import { albums, events, news } from "@/db/schema";
 import { routing } from "@/i18n/routing";
+import { hasPublishedFaqs } from "@/lib/data/faq";
 import { logger } from "@/lib/logger";
 import { getSiteUrl, localizedPath } from "@/lib/seo";
 
@@ -18,9 +19,7 @@ const staticPaths = [
   "/members",
   "/gallery",
   "/join",
-  "/contact",
   "/support",
-  "/faq",
   "/privacy",
 ];
 
@@ -41,9 +40,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   });
 
-  const items: MetadataRoute.Sitemap = staticPaths.map((p) =>
-    entry(p, undefined, p === "/" ? 1 : 0.8),
-  );
+  const paths = (await hasPublishedFaqs()) ? [...staticPaths, "/faq"] : staticPaths;
+  const items: MetadataRoute.Sitemap = paths.map((p) => entry(p, undefined, p === "/" ? 1 : 0.8));
   try {
     const db = await getDb();
     const [newsRows, eventRows, albumRows] = await Promise.all([

@@ -21,7 +21,7 @@ import { MobileNavLinks } from "./nav-links";
 import { ThemeChoice } from "./theme-toggle";
 
 /** Drawer below `xl`: grouped links, the role button, search, language and theme. */
-export function MobileNav({ labels }: { labels: CtaLabels }) {
+export function MobileNav({ labels, showFaq }: { labels: CtaLabels; showFaq: boolean }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
   const { signedIn, role } = useHeaderSession();
@@ -63,7 +63,7 @@ export function MobileNav({ labels }: { labels: CtaLabels }) {
           )}
         </div>
         <nav aria-label={t("Nav.label")} className="px-2 py-2">
-          <MobileNavLinks onNavigate={close} />
+          <MobileNavLinks onNavigate={close} showFaq={showFaq} />
         </nav>
         <div className="space-y-2 border-t p-4">
           <Button asChild variant="outline" size="lg" className="w-full">

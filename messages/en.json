@@ -14,7 +14,8 @@
     "logoAlt": "School No. 130 UNICEF Club",
     "website": "Website",
     "emptyDescription": "Join the club and do good together.",
-    "untranslated": "Available in Mongolian"
+    "untranslated": "Available in Mongolian",
+    "newTab": "opens in a new tab"
   },
   "Nav": {
     "label": "Main navigation",
@@ -25,7 +26,6 @@
     "members": "Members",
     "gallery": "Gallery",
     "support": "Support",
-    "contact": "Contact",
     "join": "Join",
     "openMenu": "Open menu",
     "impact": "Impact",
@@ -57,7 +57,8 @@
     "admin": "Admin",
     "privacy": "Privacy policy",
     "schoolPlace": "School No. 130, Ulaanbaatar",
-    "writeToUs": "Write to us"
+    "copyEmail": "Copy the e-mail address",
+    "copied": "Copied"
   },
   "NotFound": {
     "title": "Page not found",
@@ -95,7 +96,9 @@
     "impactEyebrow": "Impact",
     "impactTitle": "Our {year} results",
     "impactCta": "See the results",
-    "beneficiariesTitle": "Organisations that received donations"
+    "beneficiariesTitle": "Organisations that received donations",
+    "impactSdgs": "Sustainable Development Goals",
+    "impactOnline": "People reached online"
   },
   "About": {
     "metaTitle": "About",
@@ -171,7 +174,8 @@
     "emptyUpcomingHint": "New events will appear here once they are scheduled. Meanwhile, see what we've done below.",
     "emptyUpcomingCta": "Become a member",
     "pastTitle": "Past events",
-    "allPast": "All past events"
+    "allPast": "All past events",
+    "pastEvent": "(past event)"
   },
   "Members": {
     "metaTitle": "Members",
@@ -179,19 +183,17 @@
     "title": "Club members",
     "description": "Active students from different classes who want to help children.",
     "leadership": "Leadership",
-    "members": "Members",
     "classLabel": "Class: {className}",
     "joinTitle": "Want to join our team?",
     "joinBody": "Students from any class can join the club.",
     "empty": "The member list is empty for now.",
     "leadershipOfYear": "Leadership {year}",
     "otherYears": "Other years",
-    "activeTitle": "Active members {year}",
-    "activeBody": "Members who volunteered at least {hours} hours this school year (with consent to show their names).",
     "statMembers": "Active members",
     "statsTitle": "The club in numbers",
     "whatTitle": "What do members do?",
-    "namesHiddenNote": "Students' names are published only with consent from parents or guardians. For now only the roles are shown."
+    "namesHiddenNote": "Students' names are published only after a parent or guardian has agreed. Where we don't have that yet, only the role is shown.",
+    "ourMembers": "Our members"
   },
   "Gallery": {
     "metaTitle": "Gallery",
@@ -264,61 +266,31 @@
     "blockedBody": "New applications from this account are not possible. Please contact the club if you have questions.",
     "contactUs": "Contact us"
   },
-  "Contact": {
-    "metaTitle": "Contact",
-    "eyebrow": "Contact",
-    "title": "Get in touch",
-    "description": "Questions, ideas or partnership requests? Write to us.",
-    "address": "Address",
-    "email": "Email",
-    "phone": "Phone",
-    "hours": "Hours",
-    "social": "Social media",
-    "mapTitle": "Location",
-    "formTitle": "Send a message",
-    "infoTitle": "Get in touch",
-    "infoBody": "Send us your question or idea with the form. The club leaders will reply.",
-    "schoolPlace": "School No. 130, Ulaanbaatar"
-  },
   "Support": {
     "metaTitle": "Support",
     "eyebrow": "Support",
     "title": "How can you support us?",
     "description": "Even a small act of help can make a big difference in a child's life.",
-    "ways": {
-      "volunteer": {
-        "title": "Volunteer",
-        "body": "Help at events, read to children, help with organising."
-      },
-      "donateItems": {
-        "title": "Donate items",
-        "body": "Warm clothes, books, school supplies, toys — clean and in good condition."
-      },
-      "partner": {
-        "title": "Partner with us",
-        "body": "Organisations and businesses can start joint campaigns and projects."
-      },
-      "share": {
-        "title": "Spread the word",
-        "body": "Share our campaigns with your friends and family."
-      }
-    },
-    "donateTitle": "Financial donations",
-    "donateBody": "Financial donations are accepted only according to official school procedures.",
     "donateButton": "Donate",
-    "contactCta": "Contact us"
+    "contactTitle": "Get in touch",
+    "emailLabel": "E-mail",
+    "emailButton": "Write an e-mail",
+    "instagramButton": "Message us on Instagram"
   },
   "Search": {
     "metaTitle": "Search",
     "title": "Search",
-    "description": "Search news and events.",
+    "description": "Search news, events, photo albums, the FAQ and the About page.",
     "placeholder": "What are you looking for?",
     "submit": "Search",
     "results": "“{query}” — {count, plural, one {# result} other {# results}}",
     "noResults": "Nothing found for “{query}”.",
-    "hint": "For example: donation, children's rights, reading",
+    "hint": "For example: donation, tree planting, volleyball",
     "news": "News",
-    "events": "Events"
+    "events": "Events",
+    "albums": "Photo albums",
+    "faq": "FAQ",
+    "about": "About us"
   },
   "Share": {
     "title": "Share",
@@ -346,17 +318,10 @@
     "reasonPlaceholder": "Tell us a little about yourself",
     "helpWith": "How would you like to help?",
     "consent": "I agree that this information may be used for club registration. (If under 18, my parent/guardian has been informed.)",
-    "name": "Name",
-    "subject": "Subject",
-    "message": "Message",
     "submit": "Send",
     "submitting": "Sending...",
     "joinSuccessTitle": "Thank you! We've received your application.",
-    "contactSuccessTitle": "Message sent!",
-    "contactSuccessBody": "We'll reply as soon as we can.",
-    "sendAnother": "Send another",
     "genericError": "Something went wrong. Please try again.",
-    "captchaError": "Please complete the security check. If you cannot see it, reload the page.",
     "errors": {
       "required": "This field is required",
       "tooShort": "Too short",
@@ -369,10 +334,6 @@
       "nameCyrillic": "Please write your family name and given name in Cyrillic (e.g. Батын Анужин)",
       "noLinks": "Links are not allowed"
     },
-    "turnstileLoadError": "The security check couldn't load. Check your connection and reload the page.",
-    "unavailableTitle": "Form temporarily unavailable",
-    "unavailable": "The form is temporarily closed while spam protection is being set up. Please try again later.",
-    "unavailableBack": "Back to home",
     "fullNameHint": "In Cyrillic: family name and given name",
     "classNameSelect": "Choose your class",
     "choose": "Choose",
@@ -490,15 +451,8 @@
     "signedUpWaitlist": "All places are taken: you are on the waiting list.",
     "signupCancelled": "Sign-up cancelled.",
     "attendedTitle": "Events you attended",
-    "profileTitle": "My details",
-    "name": "Name",
     "team": "Team",
     "memberSince": "Member since",
-    "class": "Class",
-    "classHint": "For example 10A. Update it when a new school year starts.",
-    "classSaved": "Class updated.",
-    "save": "Save",
-    "profileHint": "The club leaders edit your name and team.",
     "noMemberRecord": "Your member record isn't linked yet. Please ask the club leaders.",
     "accountTitle": "Account",
     "deleteAccount": "Delete my account",
@@ -512,14 +466,44 @@
     "errors": {
       "unauthenticated": "Please sign in again.",
       "forbidden": "You can't do this.",
-      "invalid": "Write the class like 10A.",
       "closed": "Sign-up is closed.",
       "notFound": "Not found.",
       "adminSelfDelete": "Admins can't delete their own account.",
       "confirm": "Type DELETE exactly.",
-      "server": "Something went wrong. Please try again."
+      "server": "Something went wrong. Please try again.",
+      "invalid": "Invalid value."
     },
-    "certificate": "Certificate of participation"
+    "certificate": "Certificate of participation",
+    "profile": {
+      "title": "My details",
+      "intro": "Please keep your name and class correct — this is how the club's leaders see you. Your name is not shown publicly on the site.",
+      "lastName": "Last name",
+      "firstName": "First name",
+      "className": "Class",
+      "classHint": "For example 10B. Please update it when the new school year starts.",
+      "classOptional": "(optional)",
+      "chooseClass": "Choose your class",
+      "email": "E-mail",
+      "emailNote": "To change your e-mail, please ask an admin.",
+      "save": "Save",
+      "saved": "Saved",
+      "link": "Edit my name and class",
+      "pageTitle": "My details",
+      "errors": {
+        "required": "Please fill in this field",
+        "tooLong": "At most 40 characters",
+        "nameChars": "Use Cyrillic or Latin letters, spaces, “-” and “.” only",
+        "className": "Write your class like 10B (or choose it from the list)",
+        "rate": "Too many saves. Please try again in an hour.",
+        "unauthenticated": "Please sign in again.",
+        "forbidden": "You are not allowed to do this.",
+        "notFound": "Not found.",
+        "server": "Something went wrong. Please try again."
+      },
+      "back": "Back"
+    },
+    "memberTitle": "Membership",
+    "teamHint": "Club leaders set your team."
   },
   "Certificate": {
     "title": "Certificate of participation",
@@ -554,8 +538,7 @@
     "collect": [
       "When you sign in: your e-mail address and name.",
       "Membership application: full name, class, phone number, why you want to join, how you would like to help, answers to that recruitment's extra questions, and your consent.",
-      "After you become a member: class, team, volunteer hours and the events you signed up for.",
-      "Contact form: name, e-mail address, subject and message."
+      "After you become a member: class, team, volunteer hours and the events you signed up for."
     ],
     "notCollected": "We don't store IP addresses and use no advertising or tracking cookies. Your browser only keeps the cookies needed to sign in and the colour theme you chose.",
     "analytics": "We count visits with Cloudflare Web Analytics. It uses no cookies and collects no personal data: it only shows totals such as how many pages were viewed, from which country and on what kind of device.",
@@ -563,7 +546,7 @@
     "google": "When you sign in with Google we only receive your name, e-mail address and profile picture. We never see your password, contacts, files or any other Google data. Sign-in is handled by the Clerk service.",
     "whoTitle": "Who can see it",
     "who": [
-      "Applications, phone numbers and messages are seen only by the club's admins (student leaders and the supervising teacher).",
+      "Applications and phone numbers are seen only by the club's admins (student leaders and the supervising teacher).",
       "A member's name appears on the site only with their consent. Individual volunteer hours are never shown publicly.",
       "We never sell or share your data. The site runs on Cloudflare (database and images); Clerk handles sign-in."
     ],
@@ -571,12 +554,12 @@
     "retentionTitle": "How long we keep it",
     "retentionRejected": "Applications that were not accepted are deleted automatically {days} days after the recruitment closes.",
     "retentionAccount": "When you delete your account, your account, applications and event sign-ups are removed and your member record is anonymised. Your hours stay in the club's yearly totals without your name.",
-    "retentionMessages": "Contact messages are deleted by the admins once they have been answered.",
     "deleteTitle": "Asking us to delete your data",
     "deleteMember": "Members: open “My page” → “Delete my account” to do it yourself.",
-    "deleteOthers": "Applicants, parents and guardians: send us a request through the contact form and a club admin will delete the account and applications.",
+    "deleteOthers": "Applicants, parents and guardians: send the club a request by e-mail or Instagram and a club admin will delete the account and applications.",
     "deleteEmail": "You can also e-mail <mail>{email}</mail>.",
-    "contactLink": "Send a request",
-    "meLink": "My page"
+    "contactLink": "How to reach us",
+    "meLink": "My page",
+    "contactChannels": "The site has no contact form. You reach the club by e-mail or Instagram; those messages stay with that service (Gmail, Instagram) and are not stored on this site."
   }
 }

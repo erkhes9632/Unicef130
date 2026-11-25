@@ -8,6 +8,7 @@ import { monthGrid, todayUb, ubParts } from "@/lib/dates/ub-time";
 import { cn } from "@/lib/utils";
 
 export type CalendarEvent = { id: string; slug: string; title: string; startsAt: string };
+type DayEvent = CalendarEvent & { past?: boolean };
 
 /** Month grid (Monday first, Ulaanbaatar time); rendered in the browser on the events page. */
 export function MonthCalendar({
@@ -21,8 +22,11 @@ export function MonthCalendar({
   locale: "mn" | "en";
   year: number;
   month: number;
-  events: CalendarEvent[];
+  /** `past`: already over (shown muted, with a label for screen readers). */
+  events: DayEvent[];
   labels: {
+    /** Screen-reader suffix of a past event, e.g. "(болж өнгөрсөн)". */
+    pastEvent: string;
     prevMonth: string;
     nextMonth: string;
     today: string;
@@ -33,7 +37,7 @@ export function MonthCalendar({
 }) {
   const weeks = monthGrid(year, month);
   const today = todayUb();
-  const byDay = new Map<number, CalendarEvent[]>();
+  const byDay = new Map<number, DayEvent[]>();
   for (const e of events) {
     const { day } = ubParts(e.startsAt);
     byDay.set(day, [...(byDay.get(day) ?? []), e]);
@@ -91,7 +95,8 @@ export function MonthCalendar({
                     className={cn(
                       "h-14 rounded-xl align-top sm:h-24",
                       day ? "bg-muted/40" : "bg-transparent",
-                      dayEvents.length > 0 && "bg-brand-purple-soft",
+                      dayEvents.length > 0 &&
+                        (dayEvents.every((e) => e.past) ? "bg-muted" : "bg-brand-purple-soft"),
                     )}
                   >
                     {day && (
@@ -111,9 +116,15 @@ export function MonthCalendar({
                             <li key={e.id}>
                               <Link
                                 href={`/events/${e.slug}`}
-                                className="line-clamp-2 rounded-md bg-brand-purple px-1.5 py-0.5 text-[11px] leading-tight font-semibold text-white hover:bg-brand-purple-strong"
+                                className={cn(
+                                  "line-clamp-2 rounded-md px-1.5 py-0.5 text-[11px] leading-tight font-semibold",
+                                  e.past
+                                    ? "bg-surface-2 text-muted-foreground ring-1 ring-border hover:text-foreground"
+                                    : "bg-brand-purple text-white hover:bg-brand-purple-strong",
+                                )}
                               >
                                 {e.title}
+                                {e.past && <span className="sr-only"> {labels.pastEvent}</span>}
                               </Link>
                             </li>
                           ))}
@@ -128,7 +139,13 @@ export function MonthCalendar({
                             ).replace("#", String(dayEvents.length))}
                           >
                             {dayEvents.map((e) => (
-                              <span key={e.id} className="size-1.5 rounded-full bg-brand-purple" />
+                              <span
+                                key={e.id}
+                                className={cn(
+                                  "size-1.5 rounded-full",
+                                  e.past ? "bg-muted-foreground/50" : "bg-brand-purple",
+                                )}
+                              />
                             ))}
                           </span>
                         )}

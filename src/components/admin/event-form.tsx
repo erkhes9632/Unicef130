@@ -78,7 +78,7 @@ export function EventForm({
             <Input id="title" name="title" defaultValue={initial?.title} required maxLength={200} />
           </AdminField>
           <AdminField
-            label="Slug (URL)"
+            label="Хаяг (URL)"
             htmlFor="slug"
             hint="Хоосон орхивол нэрнээс автоматаар үүсгэнэ."
             errors={e.slug}
@@ -229,7 +229,7 @@ export function EventForm({
         </FormSection>
         <FormSection
           title="Нүүр зураг"
-          description="Зураггүй бол чиглэл, SDG-тэй загвар харагдана."
+          description="Зураггүй бол чиглэл, тогтвортой хөгжлийн зорилготой загвар харагдана."
         >
           <ImageField
             id="coverUrl"
@@ -317,7 +317,12 @@ export function EventForm({
               defaultValue={initial?.beneficiaries.join(", ") ?? ""}
             />
           </AdminField>
-          <AdminField label="SDG дугаарууд" htmlFor="sdgs" hint="Жишээ: 1, 10" errors={e.sdgs}>
+          <AdminField
+            label="Тогтвортой хөгжлийн зорилго (дугаар)"
+            htmlFor="sdgs"
+            hint="Аль зорилгод хамаарах вэ: дугаарыг таслалаар (жишээ: 1, 10). 1–17."
+            errors={e.sdgs}
+          >
             <Input id="sdgs" name="sdgs" defaultValue={initial?.sdgs.join(", ") ?? ""} />
           </AdminField>
           <AdminField

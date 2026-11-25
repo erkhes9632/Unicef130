@@ -17,11 +17,20 @@ export type ImpactRow = {
   donationAmount: number;
 };
 
+/** Official membership figures of one school year (annual report); zeros = not entered. */
+export type ReportMembership = {
+  schoolYear: string;
+  joined: number;
+  active: number;
+  hours: number;
+};
+
 type ImpactYear = {
   schoolYear: string;
   /** Club directions in fixed order (missing ones omitted). */
   directions: ImpactRow[];
   total: ImpactRow | null;
+  membership: ReportMembership | null;
 };
 
 /** "2025-2026" → "2025–2026" */
@@ -58,11 +67,37 @@ export const getImpactYear = cache(async (schoolYear: string): Promise<ImpactYea
     donationAmount: r.donationAmount,
   });
   const by = new Map(rows.map((r) => [r.direction, toRow(r)]));
+  const t = rows.find((r) => r.direction === "total");
   return {
     schoolYear,
     directions: order.map((d) => by.get(d)).filter((r): r is ImpactRow => !!r),
     total: by.get("total") ?? null,
+    membership:
+      t && (t.membersJoined || t.membersActive || t.volunteerHours)
+        ? {
+            schoolYear,
+            joined: t.membersJoined,
+            active: t.membersActive,
+            hours: t.volunteerHours,
+          }
+        : null,
   };
+});
+
+/**
+ * The latest official membership figures (the one source for "идэвхтэй гишүүн", "элссэн",
+ * "сайн дурын цаг" on public pages). Null when no year has them.
+ */
+export const getReportMembership = cache(async (): Promise<ReportMembership | null> => {
+  try {
+    for (const year of await listImpactYears()) {
+      const y = await getImpactYear(year);
+      if (y?.membership) return y.membership;
+    }
+  } catch (err) {
+    logger.error("impact", "membership read failed", err);
+  }
+  return null;
 });
 
 /** Latest year with numbers (for the home teaser and /impact default). */

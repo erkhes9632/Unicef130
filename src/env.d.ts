@@ -9,10 +9,6 @@ interface CloudflareEnv {
   CLERK_SECRET_KEY?: string;
   /** Svix signing secret of the Clerk webhook endpoint (wrangler secret). */
   CLERK_WEBHOOK_SIGNING_SECRET?: string;
-  /** Cloudflare Turnstile site key (public). Missing → official test site key. */
-  TURNSTILE_SITE_KEY?: string;
-  /** Cloudflare Turnstile secret. Missing → test secret in development only; production rejects forms. */
-  TURNSTILE_SECRET_KEY?: string;
   /** Google service account used to append join applications to a Sheet (optional). */
   GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?: string;

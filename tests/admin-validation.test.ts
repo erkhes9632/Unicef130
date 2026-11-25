@@ -120,18 +120,13 @@ describe("admin schemas", () => {
       eventInputSchema.safeParse({ ...base, startsAt: new Date(2026, 1, 1), endsAt: null }).success,
     ).toBe(true);
   });
-  test("settings: only Google Maps embeds and https social links", () => {
+  test("settings: contact channels, https social links, safe images", () => {
     const s = {
       contact: {
         address: "",
         addressEn: "",
-        email: "",
-        phone: "",
-        officeHours: "",
-        officeHoursEn: "",
-        mapEmbedUrl: "https://www.google.com/maps/embed?pb=1",
-        mapLat: "",
-        mapLng: "",
+        email: "130foreverychild@gmail.com",
+        instagram: "https://www.instagram.com/130_foreverychild/",
       },
       announcement: { enabled: false, text: "", textEn: "", href: "/join" },
       membership: { rejectedRetentionDays: 90, activeMemberHours: null },
@@ -194,26 +189,22 @@ describe("admin schemas", () => {
         helpOptions: [s.helpOptions[0], s.helpOptions[0]],
       }).success,
     ).toBe(false);
-    // coordinates: both or none, within range
-    expect(
-      settingsInputSchema.safeParse({ ...s, contact: { ...s.contact, mapLat: "47.9" } }).success,
-    ).toBe(false);
+    // Instagram: a profile URL is stored as the handle; anything else is refused
+    expect(settingsInputSchema.parse(s).contact.instagram).toBe("130_foreverychild");
     expect(
       settingsInputSchema.safeParse({
         ...s,
-        contact: { ...s.contact, mapLat: "147.9", mapLng: "106.9" },
+        contact: { ...s.contact, instagram: "https://evil.example/x" },
       }).success,
+    ).toBe(false);
+    expect(
+      settingsInputSchema.safeParse({ ...s, contact: { ...s.contact, email: "not-an-email" } })
+        .success,
     ).toBe(false);
     expect(
       settingsInputSchema.safeParse({
         ...s,
         branding: { ...s.branding, heroImageUrl: "javascript:alert(1)" },
-      }).success,
-    ).toBe(false);
-    expect(
-      settingsInputSchema.safeParse({
-        ...s,
-        contact: { ...s.contact, mapEmbedUrl: "https://evil.example/embed" },
       }).success,
     ).toBe(false);
     expect(

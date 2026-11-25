@@ -12,7 +12,10 @@ export default async function NewMemberPage() {
   const teams = await listTeams();
   return (
     <>
-      <AdminPageHeader title="Гишүүн нэмэх" />
+      <AdminPageHeader
+        title="Гишүүн нэмэх"
+        description="Клубын удирдлага эсвэл гишүүнийг нэмнэ. Нэр анхнаасаа нийтэд харагдахгүй."
+      />
       <MemberForm action={saveMember.bind(null, null)} teams={teams} />
     </>
   );

@@ -9,9 +9,11 @@ import { NewsCard } from "@/components/news/news-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { resolveLocale } from "@/i18n/locale";
+import { Link } from "@/i18n/navigation";
 import { getPathname } from "@/i18n/navigation";
 import { searchEvents } from "@/lib/data/events";
 import { searchNews } from "@/lib/data/news";
+import { searchOtherContent } from "@/lib/data/search";
 import { pageMetadata } from "@/lib/seo";
 
 // Per visitor (session / query string): never cached, unlike the public pages.
@@ -36,11 +38,17 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
   const sp = await searchParams;
   const query = (typeof sp.q === "string" ? sp.q : "").trim().slice(0, 100);
   const t = await getTranslations("Search");
-  const [news, events] =
+  const [news, events, other] =
     query.length >= 2
-      ? await Promise.all([searchNews(locale, query), searchEvents(locale, query)])
-      : [[], []];
-  const total = news.length + events.length;
+      ? await Promise.all([
+          searchNews(locale, query),
+          searchEvents(locale, query),
+          searchOtherContent(locale, query),
+        ])
+      : [[], [], { albums: [], faqs: [], about: null }];
+  const total =
+    news.length + events.length + other.albums.length + other.faqs.length + (other.about ? 1 : 0);
+  const card = "block rounded-2xl bg-card p-5 ring-1 ring-border hover:shadow-md";
 
   return (
     <>
@@ -102,6 +110,56 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                     <EventCard key={e.id} item={e} />
                   ))}
                 </div>
+              </section>
+            )}
+            {other.albums.length > 0 && (
+              <section aria-labelledby="search-albums">
+                <h2 id="search-albums" className="mb-4 text-2xl font-extrabold">
+                  {t("albums")}
+                </h2>
+                <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {other.albums.map((a) => (
+                    <li key={a.id}>
+                      <Link href={`/gallery/${a.slug}`} className={card}>
+                        <span className="font-bold">{a.title}</span>
+                        {a.description && (
+                          <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">
+                            {a.description}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {other.faqs.length > 0 && (
+              <section aria-labelledby="search-faq">
+                <h2 id="search-faq" className="mb-4 text-2xl font-extrabold">
+                  {t("faq")}
+                </h2>
+                <ul className="space-y-3">
+                  {other.faqs.map((f) => (
+                    <li key={f.id}>
+                      <Link href="/faq" className={card}>
+                        <span className="font-bold">{f.question}</span>
+                        <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">
+                          {f.answer}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {other.about && (
+              <section aria-labelledby="search-about">
+                <h2 id="search-about" className="mb-4 text-2xl font-extrabold">
+                  {t("about")}
+                </h2>
+                <Link href="/about" className={card}>
+                  <span className="text-sm text-muted-foreground">{other.about}</span>
+                </Link>
               </section>
             )}
           </div>

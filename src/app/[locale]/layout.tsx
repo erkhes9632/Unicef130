@@ -11,8 +11,10 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { baseClientNamespaces } from "@/i18n/client-namespaces";
 import { routing } from "@/i18n/routing";
 import { getClubNames } from "@/lib/branding";
+import { pick } from "@/lib/data/localize";
 import { getSiteSettings } from "@/lib/data/settings";
 import { getSiteUrl, jsonLd } from "@/lib/seo";
+import { instagramUrl } from "@/lib/settings/types";
 
 import "../globals.css";
 
@@ -68,7 +70,20 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
     ...(settings.club.foundedYear ? { foundingDate: String(settings.club.foundedYear) } : {}),
     parentOrganization: { "@type": "EducationalOrganization", name: "130-р сургууль" },
     ...(settings.contact.email ? { email: settings.contact.email } : {}),
-    sameAs: settings.socials.map((s) => s.url),
+    ...(settings.contact.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: pick(locale, settings.contact.address, settings.contact.addressEn),
+            addressLocality: locale === "en" ? "Ulaanbaatar" : "Улаанбаатар",
+            addressCountry: "MN",
+          },
+        }
+      : {}),
+    sameAs: [
+      ...(settings.contact.instagram ? [instagramUrl(settings.contact.instagram)] : []),
+      ...settings.socials.map((s) => s.url),
+    ],
   };
 
   return (

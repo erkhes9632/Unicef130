@@ -5,6 +5,7 @@ import { HeaderCta } from "@/components/auth/header-cta";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
+import { hasPublishedFaqs } from "@/lib/data/faq";
 import { LocaleSwitcher } from "./locale-switcher";
 import { MobileNav } from "./mobile-nav";
 import { NavLinks } from "./nav-links";
@@ -12,6 +13,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 export async function SiteHeader() {
   const t = await getTranslations();
+  const showFaq = await hasPublishedFaqs();
   // Role labels; the role itself is known only in the browser (cached page, see role-hint.ts).
   const ctaLabels = {
     join: t("Common.joinCta"),
@@ -39,7 +41,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav aria-label={t("Nav.label")} className="mx-auto hidden xl:block">
-          <NavLinks />
+          <NavLinks showFaq={showFaq} />
         </nav>
 
         <div className="ml-auto flex items-center gap-0.5 xl:ml-0">
@@ -63,7 +65,7 @@ export async function SiteHeader() {
           </span>
           <HeaderCta labels={ctaLabels} className="ml-1.5 hidden lg:inline-flex" />
           <HeaderAccount />
-          <MobileNav labels={{ ...ctaLabels, admin: t("Auth.menuAdmin") }} />
+          <MobileNav labels={{ ...ctaLabels, admin: t("Auth.menuAdmin") }} showFaq={showFaq} />
         </div>
       </div>
     </header>

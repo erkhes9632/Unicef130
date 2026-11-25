@@ -1,6 +1,12 @@
 import "@/lib/validation/zod-config";
 import { z } from "zod";
-import { MAX_FEATURED_STATS, partnerTypes, socialPlatforms, statKinds } from "@/lib/settings/types";
+import {
+  MAX_FEATURED_STATS,
+  instagramHandle,
+  partnerTypes,
+  socialPlatforms,
+  statKinds,
+} from "@/lib/settings/types";
 import { SLUG_MAX, slugRegex } from "@/lib/slug";
 import { clubDirections, newsCategories } from "@/lib/types";
 import { richTextSchema } from "./rich-text";
@@ -174,15 +180,6 @@ const imageUrlText = z
     { error: "Зургийн хаяг буруу байна." },
   );
 
-const coordinate = (max: number, label: string) =>
-  z
-    .string()
-    .trim()
-    .max(20)
-    .refine((v) => v === "" || (/^-?\d{1,3}(\.\d+)?$/.test(v) && Math.abs(Number(v)) <= max), {
-      error: `${label}: зөв тоо оруулна уу (жишээ: ${max === 90 ? "47.9184" : "106.9177"}).`,
-    });
-
 export const settingsInputSchema = z.object({
   announcement: z.object({
     enabled: z.boolean(),
@@ -228,28 +225,19 @@ export const settingsInputSchema = z.object({
     heroImageAlt: text(200, "Зургийн тайлбар"),
     heroImageAltEn: text(200, "Image description"),
   }),
-  contact: z
-    .object({
-      address: text(300, "Хаяг"),
-      addressEn: text(300, "Address"),
-      email: z.union([z.literal(""), z.email({ error: "И-мэйл буруу." })]),
-      phone: text(40, "Утас"),
-      officeHours: text(120, "Цагийн хуваарь"),
-      officeHoursEn: text(120, "Office hours"),
-      mapEmbedUrl: z
-        .string()
-        .trim()
-        .max(2000)
-        .refine((v) => v === "" || v.startsWith("https://www.google.com/maps/embed"), {
-          error:
-            "Google Maps → Share → Embed a map хэсгээс авсан хаягийг (https://www.google.com/maps/embed...) оруулна уу.",
-        }),
-      mapLat: coordinate(90, "Өргөрөг"),
-      mapLng: coordinate(180, "Уртраг"),
-    })
-    .refine((c) => (c.mapLat === "") === (c.mapLng === ""), {
-      error: "Газрын зурагт өргөрөг, уртраг хоёуланг нь оруулна уу.",
-    }),
+  contact: z.object({
+    address: text(300, "Хаяг"),
+    addressEn: text(300, "Address"),
+    email: z.union([z.literal(""), z.email({ error: "И-мэйл буруу." })]),
+    instagram: z
+      .string()
+      .trim()
+      .max(200)
+      .refine((v) => v === "" || instagramHandle(v) !== "", {
+        error: "Instagram: @нэр эсвэл https://www.instagram.com/нэр/ хэлбэрээр оруулна уу.",
+      })
+      .transform(instagramHandle),
+  }),
   socials: z.array(z.object({ platform: z.enum(socialPlatforms), url: httpsUrl })),
   stats: z
     .array(
@@ -343,3 +331,26 @@ export const albumImagesSchema = z
   )
   .min(1)
   .max(50);
+
+const supportPair = (label: string) =>
+  z.object({
+    title: text(80, `${label}: гарчиг`).refine((v) => v !== "", {
+      error: `${label}: гарчиг хоосон байна.`,
+    }),
+    titleEn: text(80, `${label}: title`),
+    body: text(400, `${label}: тайлбар`),
+    bodyEn: text(400, `${label}: text`),
+  });
+
+/** «Дэмжих» page text (admin → «Дэмжих» хуудас). */
+export const supportInputSchema = z.object({
+  intro: text(300, "Танилцуулга"),
+  introEn: text(300, "Intro"),
+  ways: z.object({
+    volunteer: supportPair("Сайн дурын ажилтан"),
+    donateItems: supportPair("Эд зүйлсээр хандивлах"),
+    partner: supportPair("Хамтран ажиллах"),
+    share: supportPair("Мэдээлэл түгээх"),
+  }),
+  donate: supportPair("Мөнгөн хандив"),
+});

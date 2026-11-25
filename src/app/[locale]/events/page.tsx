@@ -71,6 +71,7 @@ export default async function EventsPage({ params }: PageProps<"/[locale]/events
               nextMonth: t("nextMonth"),
               today: t("today"),
               eventsOnDay: { one: plural(1), other: plural(2) },
+              pastEvent: t("pastEvent"),
             },
           }}
         />

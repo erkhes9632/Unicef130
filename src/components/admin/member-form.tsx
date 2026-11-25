@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,8 @@ export function MemberForm({
 }) {
   const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
+  const wasPublic = initial?.showPublicly ?? false;
+  const [showPublic, setShowPublic] = useState(wasPublic);
   return (
     <form
       action={formAction}
@@ -89,22 +91,9 @@ export function MemberForm({
                 <option value="member">Гишүүн</option>
               </NativeSelect>
             </AdminField>
-            <AdminField
-              label="Эрэмбэ"
-              htmlFor="sortOrder"
-              hint="Бага тоо эхэнд харагдана"
-              errors={e.sortOrder}
-            >
-              <Input
-                id="sortOrder"
-                name="sortOrder"
-                type="number"
-                min={0}
-                max={10000}
-                defaultValue={initial?.sortOrder ?? 100}
-              />
-            </AdminField>
           </div>
+          {/* Order is changed with ↑ / ↓ in the list; the number is kept as it is. */}
+          <input type="hidden" name="sortOrder" value={initial?.sortOrder ?? 100} />
           <div className="flex items-center gap-2">
             <Checkbox id="active" name="active" defaultChecked={initial?.active ?? true} />
             <Label htmlFor="active">Идэвхтэй гишүүн</Label>
@@ -113,14 +102,27 @@ export function MemberForm({
             <Checkbox
               id="showPublicly"
               name="showPublicly"
-              defaultChecked={initial?.showPublicly ?? false}
+              checked={showPublic}
+              onCheckedChange={(v) => setShowPublic(v === true)}
               className="mt-0.5"
             />
             <Label htmlFor="showPublicly" className="leading-snug">
-              Нэрийг сайт дээр харуулах (насанд хүрээгүй бол эцэг эх/асран хамгаалагчийн зөвшөөрөл
-              авсан)
+              Нэрийг нийтэд харуулах
+              <span className="block font-normal text-muted-foreground">
+                Удирдлага: «Бидний тухай» болон «Гишүүд» хуудасны «Удирдлага» хэсэгт. Гишүүн:
+                «Гишүүд» хуудасны «Манай гишүүд» жагсаалтад.
+              </span>
             </Label>
           </div>
+          {showPublic && !wasPublic && (
+            <div className="flex items-start gap-2 rounded-xl bg-brand-gold-soft p-3">
+              <Checkbox id="consent" name="consent" className="mt-0.5" required />
+              <Label htmlFor="consent" className="leading-snug">
+                Энэ сурагчийн нэрийг сайтад нийтлэхэд эцэг эх / асран хамгаалагч зөвшөөрсөн.
+                {e.consent && <span className="block text-destructive">{e.consent[0]}</span>}
+              </Label>
+            </div>
+          )}
           <AdminField
             label="Хичээлийн жил"
             htmlFor="schoolYear"

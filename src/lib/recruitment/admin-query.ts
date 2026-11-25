@@ -1,7 +1,9 @@
 import "server-only";
-import { and, asc, desc, eq, gte, isNull, lt, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db";
 import { applications, applicationStatuses, type ApplicationStatus } from "@/db/schema";
+import { MIN_SEARCH } from "@/lib/admin/list-limits";
+import { wordPrefix } from "@/lib/admin/list-query";
 
 /** Filters of the admin applications list (also used by the CSV export). */
 type ApplicationFilters = {
@@ -34,28 +36,16 @@ export function parseApplicationFilters(params: Params): ApplicationFilters {
     className: get("class").slice(0, 10),
     from: isDate(get("from")) ? get("from") : "",
     to: isDate(get("to")) ? get("to") : "",
-    q: get("q").slice(0, 80),
+    q: [...get("q")].length >= MIN_SEARCH ? get("q").slice(0, 80) : "",
     sort: sort === "old" || sort === "class" ? sort : "new",
   };
 }
 
-/** Case-insensitive match on name / phone / e-mail (JS: SQLite cannot fold Cyrillic). */
-export function matchesSearch(
-  row: { fullName: string; phone: string; email: string | null },
-  q: string,
-) {
-  if (!q) return true;
-  const needle = q.toLocaleLowerCase("mn");
-  const digits = q.replace(/\D/g, "");
-  return (
-    row.fullName.toLocaleLowerCase("mn").includes(needle) ||
-    (digits.length >= 3 && row.phone.replace(/\D/g, "").includes(digits)) ||
-    (row.email ?? "").toLowerCase().includes(needle.trim())
-  );
-}
-
-/** Applications matching the filters (dates in Ulaanbaatar time), searched and sorted. */
-export async function queryApplications(f: ApplicationFilters) {
+/**
+ * SQL condition for the filters (dates in Ulaanbaatar time). Search: a word of the name or the
+ * e-mail starts with the term (Cyrillic in any case), or the phone contains 3+ typed digits.
+ */
+export function applicationWhere(f: ApplicationFilters): SQL | undefined {
   const where: SQL[] = [];
   if (f.period === "none") where.push(isNull(applications.periodId));
   else if (f.period) where.push(eq(applications.periodId, f.period));
@@ -66,17 +56,35 @@ export async function queryApplications(f: ApplicationFilters) {
     where.push(
       lt(applications.createdAt, new Date(Date.parse(`${f.to}T00:00:00+08:00`) + 86_400_000)),
     );
-  const order = {
+  if (f.q) {
+    const digits = f.q.replace(/\D/g, "");
+    const text = wordPrefix([applications.fullName, applications.email], f.q);
+    where.push(
+      digits.length >= 3
+        ? or(
+            text,
+            sql`replace(replace(${applications.phone}, ' ', ''), '-', '') LIKE ${`%${digits}%`}`,
+          )!
+        : text,
+    );
+  }
+  return where.length ? and(...where) : undefined;
+}
+
+export const applicationOrder = (f: ApplicationFilters) =>
+  ({
     new: [desc(applications.createdAt)],
     old: [asc(applications.createdAt)],
     class: [asc(applications.className), asc(applications.fullName)],
-  }[f.sort];
+  })[f.sort];
+
+/** Every application matching the filters (CSV export). */
+export async function queryApplications(f: ApplicationFilters) {
   const db = await getDb();
-  const rows = await db
+  return db
     .select()
     .from(applications)
-    .where(where.length ? and(...where) : undefined)
-    .orderBy(...order)
+    .where(applicationWhere(f))
+    .orderBy(...applicationOrder(f))
     .limit(5000);
-  return rows.filter((r) => matchesSearch(r, f.q));
 }

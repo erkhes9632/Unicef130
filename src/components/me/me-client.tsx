@@ -10,7 +10,6 @@ import {
   cancelSignup,
   deleteMyAccount,
   signUpForEvent,
-  updateMyClass,
   type MeResult,
 } from "@/app/[locale]/me/actions";
 import { Button } from "@/components/ui/button";
@@ -36,40 +35,6 @@ function useMeAction() {
       } else toast.error(t(`errors.${res.error ?? "server"}`));
     });
   return { pending, run, t };
-}
-
-export function ClassForm({ className }: { className: string }) {
-  const { pending, run, t } = useMeAction();
-  const [value, setValue] = useState(className);
-  return (
-    <form
-      className="flex flex-wrap items-end gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        run(
-          () => updateMyClass(value),
-          () => t("classSaved"),
-        );
-      }}
-    >
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-semibold">{t("class")}</span>
-        <Input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          maxLength={10}
-          className="w-28"
-          aria-describedby="me-class-hint"
-        />
-      </label>
-      <Button type="submit" variant="outline" disabled={pending || value.trim() === className}>
-        {pending && <Loader2 className="animate-spin" />} {t("save")}
-      </Button>
-      <p id="me-class-hint" className="w-full text-xs text-muted-foreground">
-        {t("classHint")}
-      </p>
-    </form>
-  );
 }
 
 export function SignupButton({

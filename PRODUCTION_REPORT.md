@@ -19,19 +19,19 @@
 | Нэвтрэлт         | ✅    | `/sign-in` (нэг дэлгэц), `/sign-out`; Clerk зөвхөн бүртгэлийн хэсгүүдэд ачаалагдана                                                   |
 | Элсэлт           | ✅    | Нэвтэрч өргөдөл гаргана; нэг бүртгэл — нэг элсэлтэд нэг өргөдөл; төлөв `/join` дээр                                                   |
 | Гишүүний хэсэг   | ✅    | `/me`: сайн дурын цаг, арга хэмжээнд бүртгүүлэх (хүлээлгийн жагсаалттай), гэрчилгээ, бүртгэл устгах                                   |
-| Админ хэсэг      | ✅    | Контент, элсэлт, өргөдөл, хэрэглэгчид, сайн дурын цаг/ирц, зурвас, тохиргоо, үйлдлийн түүх, статистик                                 |
+| Админ хэсэг      | ✅    | Контент, элсэлт, өргөдөл, хэрэглэгчид, сайн дурын цаг/ирц, тохиргоо, үйлдлийн түүх; хяналтын самбар = статистик                       |
 | Админ руу хүрэх  | ✅    | Header-т «Админ» товч (гар утсанд цэсэнд), нэвтрэхэд админ → `/admin`; эрхгүй бол тайлбар хуудас                                      |
 | Өдөр бүрийн cron | ✅    | 03:30 УБ: хугацаа дууссан тэнцээгүй өргөдөл, хуучин rate-limit мөр устгана                                                            |
 | Google Sheets    | ➖    | Тохируулаагүй (заавал биш); өргөдөл D1-д хадгалагдана                                                                                 |
 
 ## 3. Тохируулсан үйлчилгээ (зөвхөн нэр)
 
-| Үйлчилгээ  | Тохиргоо                                                                                                                                                                                       |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare | Worker `unicef-club-130`, custom domain, D1 `unicef-club-130-db`, R2 `unicef-club-130-media`, `unicef-club-130-opennext-cache`, Turnstile widget                                               |
-| Clerk      | Production instance; Google OAuth (өөрийн credential); session token `role` claim; webhook `/api/webhooks/clerk`                                                                               |
-| vars       | `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `TURNSTILE_SITE_KEY`, `GOOGLE_SHEET_TAB`                                                                                                      |
-| Secret     | `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `TURNSTILE_SECRET_KEY`; (заавал биш) `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG` · устгах: `BETTER_AUTH_SECRET` |
+| Үйлчилгээ  | Тохиргоо                                                                                                                                                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare | Worker `unicef-club-130`, custom domain, D1 `unicef-club-130-db`, R2 `unicef-club-130-media`, `unicef-club-130-opennext-cache` (Turnstile widget — устгана)                                                                |
+| Clerk      | Production instance; Google OAuth (өөрийн credential); session token `role` claim; webhook `/api/webhooks/clerk`                                                                                                           |
+| vars       | `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `GOOGLE_SHEET_TAB`                                                                                                                                                        |
+| Secret     | `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET` (`TURNSTILE_SECRET_KEY` — deploy-ийн дараа устгана); (заавал биш) `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG` · устгах: `BETTER_AUTH_SECRET` |
 
 ## 4. Аюулгүй байдал ба хувийн мэдээлэл
 
@@ -40,7 +40,7 @@
 - Webhook: Svix гарын үсэг + хугацааны шалгалт (5 минутаас хуучин мессеж татгалзана); ижил
   мессеж дахин ирвэл аюулгүй (upsert / давтан устгал хор хөнөөлгүй).
 - Админ өөрийгөө, сүүлчийн админыг хасах/идэвхгүй болгох/устгах боломжгүй.
-- Header: CSP (өөрийн домэйн + Turnstile, Google Maps embed, Cloudflare Web Analytics; Clerk зөвхөн
+- Header: CSP (өөрийн домэйн + Cloudflare Web Analytics; Clerk болон түүний bot хамгаалалт зөвхөн
   бүртгэлийн хэсэгт). Кэшлэгдсэн хуудас хүн бүрт ижил тул nonce биш `'unsafe-inline'` — хэрэглэгчийн
   агуулга HTML-ээр хэзээ ч render хийгддэггүй. HSTS, `X-Frame-Options: DENY`, `nosniff`,
   Referrer/Permissions-Policy.

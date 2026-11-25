@@ -60,6 +60,7 @@ const statusStyle: Record<PublicStatus, { icon: typeof Check; tone: string }> = 
 /** The applicant's own application: public status + the admin's optional message. */
 async function StatusCard({ app, locale }: { app: MyApplication; locale: Locale }) {
   const t = await getTranslations("Join");
+  const tProfile = await getTranslations("Me.profile");
   const status = publicStatus(app.status);
   const { icon: Icon, tone } = statusStyle[status];
   const steps = status === "pending" ? (t.raw("pendingSteps") as string[]) : [];
@@ -90,11 +91,18 @@ async function StatusCard({ app, locale }: { app: MyApplication; locale: Locale 
           {app.decisionMessage}
         </blockquote>
       )}
-      {status !== "accepted" && (
-        <Button asChild variant="outline">
-          <Link href="/events">{t("seeEvents")}</Link>
+      <div className="flex flex-wrap gap-3">
+        {status !== "accepted" && (
+          <Button asChild variant="outline">
+            <Link href="/events">{t("seeEvents")}</Link>
+          </Button>
+        )}
+        <Button asChild variant="ghost">
+          <Link href="/me/profile" prefetch={false}>
+            {tProfile("link")}
+          </Link>
         </Button>
-      )}
+      </div>
       {steps.length > 0 && (
         <ol className="space-y-3">
           {steps.map((step, i) => (
@@ -297,7 +305,7 @@ export async function JoinView({ locale, signedIn }: { locale: Locale; signedIn:
     main = (
       <Notice icon={Ban} tone="coral" title={t("blockedTitle")} body={t("blockedBody")}>
         <Button asChild variant="outline">
-          <Link href="/contact">{t("contactUs")}</Link>
+          <Link href="/support#contact-us">{t("contactUs")}</Link>
         </Button>
       </Notice>
     );

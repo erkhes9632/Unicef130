@@ -68,7 +68,7 @@ export function AlbumForm({
             />
           </AdminField>
         </div>
-        <AdminField label="Slug (URL)" htmlFor="slug" errors={e.slug}>
+        <AdminField label="Хаяг (URL)" htmlFor="slug" errors={e.slug}>
           <SlugField id="slug" name="slug" defaultValue={initial?.slug} sourceId="title" />
         </AdminField>
         <AdminField label="Тайлбар" htmlFor="description" errors={e.description}>

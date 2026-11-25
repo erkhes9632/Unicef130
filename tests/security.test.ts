@@ -1,58 +1,16 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import {
-  isTestSecretKey,
-  isTestSiteKey,
-  resolveTurnstileConfig,
-} from "@/lib/integrations/turnstile";
 
-describe("Turnstile production key guard", () => {
-  const realSite = "0x4AAAAAAAB1cDeFgHiJkLmN";
-  const realSecret = "0x4AAAAAAAB1cDeFgHiJkLmN_secretValue123";
-
-  test("recognises Cloudflare's dummy keys", () => {
-    for (const k of [
-      "1x00000000000000000000AA",
-      "2x00000000000000000000AB",
-      "3x00000000000000000000FF",
-      "1x00000000000000000000BB",
-    ])
-      expect(isTestSiteKey(k)).toBe(true);
-    for (const k of [
-      "1x0000000000000000000000000000000AA",
-      "2x0000000000000000000000000000000AA",
-      "3x0000000000000000000000000000000AA",
-    ])
-      expect(isTestSecretKey(k)).toBe(true);
-    expect(isTestSiteKey(realSite)).toBe(false);
-    expect(isTestSecretKey(realSecret)).toBe(false);
-  });
-
-  test("production refuses missing or test keys (forms unavailable)", () => {
-    expect(resolveTurnstileConfig({}).status).toBe("unavailable");
-    expect(resolveTurnstileConfig({ TURNSTILE_SITE_KEY: realSite }).status).toBe("unavailable");
-    expect(
-      resolveTurnstileConfig({
-        TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
-        TURNSTILE_SECRET_KEY: realSecret,
-      }).status,
-    ).toBe("unavailable");
-    expect(
-      resolveTurnstileConfig({
-        TURNSTILE_SITE_KEY: realSite,
-        TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA",
-      }).status,
-    ).toBe("unavailable");
-    expect(
-      resolveTurnstileConfig({ TURNSTILE_SITE_KEY: realSite, TURNSTILE_SECRET_KEY: realSecret }),
-    ).toEqual({ status: "ok", siteKey: realSite, secret: realSecret });
-  });
-
-  test("local development falls back to test keys", () => {
-    const cfg = resolveTurnstileConfig({ NEXTJS_ENV: "development" });
-    expect(cfg.status).toBe("test");
-  });
+test("the contact form and Turnstile are gone (contact = e-mail + Instagram)", () => {
+  for (const f of [
+    "src/lib/integrations/turnstile.ts",
+    "src/components/forms/contact-form.tsx",
+    "src/app/[locale]/contact/page.tsx",
+    "src/app/admin/(panel)/messages/page.tsx",
+  ])
+    expect([f, existsSync(f)]).toEqual([f, false]);
+  expect(readFileSync("wrangler.jsonc", "utf8")).not.toContain("TURNSTILE");
 });
 
 const walkFiles = (dir: string, keep: (name: string) => boolean) => {

@@ -1,16 +1,14 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { z } from "zod";
 import { getDb } from "@/db";
-import { applications, contactMessages } from "@/db/schema";
+import { applications } from "@/db/schema";
 import { runInBackground, syncApplicationToSheets } from "@/lib/applications/sheets-sync";
 import { AuthError, assertSignedIn } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
-import { verifyTurnstile } from "@/lib/integrations/turnstile";
 import { logger } from "@/lib/logger";
-import { consumeRateLimit, hashIp } from "@/lib/rate-limit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { countTaken, listPeriods } from "@/lib/recruitment/data";
 import {
   findOpenPeriod,
@@ -18,15 +16,7 @@ import {
   normalizeClass,
   normalizeMnPhone,
 } from "@/lib/recruitment/logic";
-import { buildJoinSchema, contactFormSchema } from "@/lib/validation/forms";
-
-type FormActionResult =
-  | { ok: true }
-  | {
-      ok: false;
-      error: "validation" | "captcha" | "unavailable" | "rate" | "server";
-      fieldErrors?: Record<string, string[] | undefined>;
-    };
+import { buildJoinSchema } from "@/lib/validation/forms";
 
 type JoinActionResult =
   | { ok: true; waitlisted: boolean }
@@ -44,14 +34,6 @@ type JoinActionResult =
         | "rate";
       fieldErrors?: Record<string, string[] | undefined>;
     };
-
-const contactServerSchema = contactFormSchema.extend({
-  turnstileToken: z.string().max(2048).optional(),
-});
-
-async function clientIp() {
-  return (await headers()).get("cf-connecting-ip");
-}
 
 const isUniqueViolation = (err: unknown) =>
   err instanceof Error && /UNIQUE constraint failed/i.test(`${err.message} ${String(err.cause)}`);
@@ -150,37 +132,6 @@ export async function submitJoinApplication(input: unknown): Promise<JoinActionR
     return { ok: true, waitlisted: status === "waitlist" };
   } catch (err) {
     logger.error("join", "failed to store application", err);
-    return { ok: false, error: "server" };
-  }
-}
-
-/** Contact form: validate → Turnstile → rate limit → D1 (admins read it in /admin/messages). */
-export async function submitContactMessage(input: unknown): Promise<FormActionResult> {
-  const parsed = contactServerSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: "validation",
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-    };
-  }
-  const check = await verifyTurnstile(parsed.data.turnstileToken, await clientIp());
-  if (check !== "ok")
-    return { ok: false, error: check === "unavailable" ? "unavailable" : "captcha" };
-  const { name, email, subject, message } = parsed.data;
-  try {
-    // At most 3 messages per network address in 10 minutes.
-    const limit = await consumeRateLimit(
-      `contact:${await hashIp(await clientIp())}`,
-      3,
-      10 * 60 * 1000,
-    );
-    if (!limit.allowed) return { ok: false, error: "rate" };
-    const db = await getDb();
-    await db.insert(contactMessages).values({ name, email: email.toLowerCase(), subject, message });
-    return { ok: true };
-  } catch (err) {
-    logger.error("contact", "failed to store message", err);
     return { ok: false, error: "server" };
   }
 }

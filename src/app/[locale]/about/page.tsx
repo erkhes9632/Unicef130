@@ -5,7 +5,6 @@ import { PageHero } from "@/components/common/page-hero";
 import { Section, SectionHeading } from "@/components/common/section";
 import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
-import { SHOW_LEADER_NAMES } from "@/config/site";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { getBranding } from "@/lib/branding";
@@ -224,7 +223,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
           />
           <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
-              <MemberCard key={m.id} member={m} index={i} anonymous={!SHOW_LEADER_NAMES} />
+              <MemberCard key={m.id} member={m} index={i} anonymous={!m.name} />
             ))}
           </ul>
         </Section>

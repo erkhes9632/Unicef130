@@ -2,20 +2,19 @@
 
 import {
   BarChart3,
-  DoorOpen,
   CalendarDays,
   Clock,
+  DoorOpen,
+  FileText,
+  HandHeart,
+  HelpCircle,
   Images,
   Inbox,
   LayoutDashboard,
   type LucideIcon,
-  Mail,
   Newspaper,
   ScrollText,
-  FileText,
-  HelpCircle,
   Settings,
-  ChartColumn,
   UserCog,
   Users,
 } from "lucide-react";
@@ -27,6 +26,8 @@ type AdminNavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Items of the "Бусад" group sit at the bottom, under a small heading. */
+  group?: "other";
 };
 
 export const adminNav: AdminNavItem[] = [
@@ -38,40 +39,42 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/hours", label: "Сайн дурын цаг", icon: Clock },
   { href: "/admin/recruitment", label: "Элсэлт", icon: DoorOpen },
   { href: "/admin/applications", label: "Өргөдлүүд", icon: Inbox },
-  { href: "/admin/messages", label: "Зурвасууд", icon: Mail },
   { href: "/admin/impact", label: "Жилийн үр дүн", icon: BarChart3 },
   { href: "/admin/pages/about", label: "Бидний тухай хуудас", icon: FileText },
+  { href: "/admin/pages/support", label: "Дэмжих хуудас", icon: HandHeart },
   { href: "/admin/faq", label: "Түгээмэл асуулт", icon: HelpCircle },
-  { href: "/admin/settings", label: "Сайтын тохиргоо", icon: Settings },
-  { href: "/admin/users", label: "Хэрэглэгчид", icon: UserCog },
-  { href: "/admin/audit", label: "Үйлдлийн түүх", icon: ScrollText },
-  { href: "/admin/stats", label: "Статистик", icon: ChartColumn },
+  { href: "/admin/settings", label: "Сайтын тохиргоо", icon: Settings, group: "other" },
+  { href: "/admin/users", label: "Хэрэглэгчид", icon: UserCog, group: "other" },
+  { href: "/admin/audit", label: "Үйлдлийн түүх", icon: ScrollText, group: "other" },
 ];
 
 /** Admin menu (only admins reach the panel; every page checks the role on the server). */
 export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const item = ({ href, label, icon: Icon }: AdminNavItem) => {
+    const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
+    return (
+      <li key={href}>
+        <Link
+          href={href}
+          onClick={onNavigate}
+          aria-current={active ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
+            active && "bg-brand-cyan-soft text-foreground",
+          )}
+        >
+          <Icon className="size-4" aria-hidden="true" />
+          {label}
+        </Link>
+      </li>
+    );
+  };
   return (
-    <ul className="space-y-1">
-      {adminNav.map(({ href, label, icon: Icon }) => {
-        const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
-        return (
-          <li key={href}>
-            <Link
-              href={href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
-                active && "bg-brand-cyan-soft text-foreground",
-              )}
-            >
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      <ul className="space-y-1">{adminNav.filter((i) => !i.group).map(item)}</ul>
+      <p className="mt-6 mb-1 px-3 text-xs font-semibold text-muted-foreground">Бусад</p>
+      <ul className="space-y-1">{adminNav.filter((i) => i.group === "other").map(item)}</ul>
+    </>
   );
 }

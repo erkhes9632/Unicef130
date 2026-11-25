@@ -17,12 +17,10 @@ import { Section, SectionHeading } from "@/components/common/section";
 import { StatTile } from "@/components/common/stat-tile";
 import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
-import { SHOW_LEADER_NAMES, SHOW_MEMBER_NAMES } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { displayYear, getLatestImpact } from "@/lib/data/impact";
-import { listActiveMembers, listMembers } from "@/lib/data/members";
-import { getSiteSettings } from "@/lib/data/settings";
+import { displayYear, getLatestImpact, getReportMembership } from "@/lib/data/impact";
+import { listMembers } from "@/lib/data/members";
 import { formatNumber } from "@/lib/dates/format";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -45,28 +43,26 @@ const pillars = [
 ] as const;
 
 /**
- * Who we are, without exposing students: aggregate numbers, what members do (the three
- * pillars), the leadership (names only when SHOW_LEADER_NAMES) and how to join. Individual
- * member names appear only when SHOW_MEMBER_NAMES is turned on (consent), and then only for
- * rows marked public by an admin.
+ * Who we are, without exposing students: the official numbers, what members do (the three
+ * pillars), the leadership (a name only where an admin confirmed consent) and how to join.
+ * Members' names appear only for rows marked «Нийтэд харуулах» (a plain list, no photos).
  */
 export async function MembersView({ locale, requested }: { locale: Locale; requested?: string }) {
   const t = await getTranslations();
-  const [{ leadership, leadershipYear, leadershipYears, members, activeCount }, settings, impact] =
+  const [{ leadership, leadershipYear, leadershipYears, members, activeCount }, impact, official] =
     await Promise.all([
       listMembers(locale, { leadershipYear: requested }),
-      getSiteSettings(),
       getLatestImpact().catch(() => null),
+      getReportMembership(),
     ]);
   if (requested && leadershipYear !== requested) notFound();
-  const active = SHOW_MEMBER_NAMES
-    ? await listActiveMembers(locale, settings.membership.activeMemberHours)
-    : null;
-  const isEmpty = activeCount === 0 && leadership.length === 0;
+  // The annual report's figure, not a count of database rows (website accounts differ).
+  const activeShown = official?.active || activeCount;
+  const isEmpty = activeShown === 0 && leadership.length === 0;
 
   const stats = [
-    ...(activeCount > 0
-      ? [{ icon: Users, value: formatNumber(activeCount), label: t("Members.statMembers") }]
+    ...(activeShown > 0
+      ? [{ icon: Users, value: formatNumber(activeShown), label: t("Members.statMembers") }]
       : []),
     ...(impact?.total
       ? [
@@ -166,41 +162,20 @@ export async function MembersView({ locale, requested }: { locale: Locale; reque
           )}
           <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {leadership.map((m, i) => (
-              <MemberCard
-                key={m.id}
-                member={m}
-                index={i}
-                size="large"
-                anonymous={!SHOW_LEADER_NAMES}
-              />
+              <MemberCard key={m.id} member={m} index={i} size="large" anonymous={!m.name} />
             ))}
           </ul>
-          {!SHOW_LEADER_NAMES && (
+          {leadership.some((m) => !m.name) && (
             <InfoNote className="mt-6">{t("Members.namesHiddenNote")}</InfoNote>
           )}
         </Section>
       )}
 
-      {SHOW_MEMBER_NAMES && members.length > 0 && (
+      {members.length > 0 && (
         <Section>
-          <SectionHeading title={t("Members.members")} />
-          <ul className="reveal-group grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {members.map((m, i) => (
-              <MemberCard key={m.id} member={m} index={i + 2} />
-            ))}
-          </ul>
-        </Section>
-      )}
-      {active && active.names.length > 0 && (
-        <Section>
-          <SectionHeading
-            title={t("Members.activeTitle", { year: displayYear(active.year) })}
-            description={t("Members.activeBody", {
-              hours: settings.membership.activeMemberHours ?? 0,
-            })}
-          />
+          <SectionHeading title={t("Members.ourMembers")} />
           <ul className="flex flex-wrap gap-2">
-            {active.names.map((m) => (
+            {members.map((m) => (
               <li
                 key={m.id}
                 className="rounded-full bg-brand-green-soft px-4 py-2 font-semibold text-foreground"
