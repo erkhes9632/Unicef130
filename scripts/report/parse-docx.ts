@@ -48,6 +48,8 @@ const KNOWN_NAMES = `private/member-names-${SCHOOL_YEAR}.json`;
 const REVIEW_FILE = "private/members-review.md";
 const FULL_EDGE = 1600;
 const THUMB_EDGE = 480;
+/** Middle size for phones and article covers (srcset 480 / 960 / 1600). */
+const MEDIUM_EDGE = 960;
 const WEBP_QUALITY = 80;
 
 const sha256 = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
@@ -400,6 +402,8 @@ for (const o of occurrences) {
   const thumbKey = `content/${SCHOOL_YEAR}/${activity.slug}/${nn}-thumb.webp`;
   const outFile = `${MEDIA_DIR}/web/${activity.slug}/${nn}.webp`;
   const thumbFile = `${MEDIA_DIR}/web/${activity.slug}/${nn}-thumb.webp`;
+  const mediumKey = `content/${SCHOOL_YEAR}/${activity.slug}/${nn}-md.webp`;
+  const mediumFile = `${MEDIA_DIR}/web/${activity.slug}/${nn}-md.webp`;
   mkdirSync(dirname(outFile), { recursive: true });
 
   // sharp drops EXIF/XMP/ICC text by default (no withMetadata), so no GPS survives.
@@ -415,12 +419,17 @@ for (const o of occurrences) {
     .resize({ width: THUMB_EDGE, height: THUMB_EDGE, fit: "inside", withoutEnlargement: true })
     .webp({ quality: WEBP_QUALITY })
     .toBuffer({ resolveWithObject: true });
-  for (const out of [full.data, thumb.data]) {
+  const medium = await pipeline()
+    .resize({ width: MEDIUM_EDGE, height: MEDIUM_EDGE, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: WEBP_QUALITY })
+    .toBuffer({ resolveWithObject: true });
+  for (const out of [full.data, thumb.data, medium.data]) {
     const m = await sharp(out).metadata();
     if (m.exif || m.xmp || m.iptc) throw new Error(`${file}: metadata left in the WebP output`);
   }
   writeFileSync(outFile, full.data);
   writeFileSync(thumbFile, thumb.data);
+  writeFileSync(mediumFile, medium.data);
   manifest.images.push({
     ...base,
     order,
@@ -440,6 +449,9 @@ for (const o of occurrences) {
       thumbHeight: thumb.info.height,
       md5: md5(full.data),
       thumbMd5: md5(thumb.data),
+      mediumKey,
+      mediumFile,
+      mediumMd5: md5(medium.data),
     },
   });
 }
@@ -469,7 +481,11 @@ for (const [name, text] of [
   [OUT_JSON, json],
   ["manifest.json", manifestJson],
 ] as const)
-  if (/(?<![\d.])\d{8}(?![\d.])/.test(text.replace(/"(sha256|md5|thumbMd5)": "[0-9a-f]+"/g, "")))
+  if (
+    /(?<![\d.])\d{8}(?![\d.])/.test(
+      text.replace(/"(sha256|md5|thumbMd5|mediumMd5)": "[0-9a-f]+"/g, ""),
+    )
+  )
     throw new Error(`${name}: looks like it contains a phone number — not written`);
 writeFileSync(OUT_JSON, json);
 writeFileSync(`${MEDIA_DIR}/manifest.json`, manifestJson);

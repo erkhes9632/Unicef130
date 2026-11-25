@@ -46,8 +46,7 @@ const ways = [
   },
 ] as const;
 
-const card =
-  "group relative flex gap-4 rounded-3xl bg-card p-6 ring-1 ring-border transition-shadow hover:shadow-lg";
+const card = "group relative flex gap-4 rounded-3xl bg-card p-6 ring-1 ring-border hover:shadow-lg";
 const iconBox = "flex size-14 shrink-0 items-center justify-center rounded-2xl";
 
 export default async function SupportPage({ params }: PageProps<"/[locale]/support">) {

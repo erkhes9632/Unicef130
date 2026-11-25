@@ -10,6 +10,9 @@ import { formatDate, formatNumber } from "@/lib/dates/format";
 import { getMyMemberPage } from "@/lib/members/data";
 import { schoolYearOf } from "@/lib/members/logic";
 
+// Per visitor (session / query string): never cached, unlike the public pages.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/me/certificate">): Promise<Metadata> {

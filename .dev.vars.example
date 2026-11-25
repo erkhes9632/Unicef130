@@ -27,3 +27,12 @@ TURNSTILE_SITE_KEY=
 # GOOGLE_SHEET_ID=1AbC...   (from the sheet URL: /spreadsheets/d/<ID>/edit)
 # GOOGLE_SHEET_TAB=Applications
 
+
+# Cloudflare Web Analytics for Admin → Статистик (optional). Empty → the page says the visitor
+# numbers are not connected; everything else works. See README → Analytics.
+# CF_ANALYTICS_API_TOKEN=   (API token with "Account Analytics: Read" only)
+# CF_ACCOUNT_ID=
+# CF_WEB_ANALYTICS_SITE_TAG=
+CF_ANALYTICS_API_TOKEN=
+CF_ACCOUNT_ID=
+CF_WEB_ANALYTICS_SITE_TAG=

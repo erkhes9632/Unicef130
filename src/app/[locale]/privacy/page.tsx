@@ -77,6 +77,7 @@ export default async function PrivacyPage({ params }: PageProps<"/[locale]/priva
           <Block icon={ListChecks} title={t("collectTitle")}>
             <Bullets items={t.raw("collect") as string[]} />
             <p>{t("notCollected")}</p>
+            <p>{t("analytics")}</p>
           </Block>
 
           <Block icon={KeyRound} title={t("googleTitle")}>

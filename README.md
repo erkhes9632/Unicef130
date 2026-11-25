@@ -39,7 +39,7 @@ You need Bun 1.3 or newer. You don't need a Cloudflare account, because D1 and R
 bun install
 cp .dev.vars.example .dev.vars    # add your Clerk *development* keys (pk_test_ / sk_test_)
 bun run db:migrate:local
-bun run db:seed:local             # sample content, local only
+bun run report:import -- --local  # real content from private/ (otherwise the site starts empty)
 bun run dev                       # http://localhost:3000
 ```
 
@@ -67,6 +67,7 @@ Run `bun run hooks:install` once so that `bun run check` runs before every commi
 | `bun run admin:revoke -- <email> [--dev]` | remove admin (won't remove the last admin)   |
 | `bun run brand:assets`                    | generate favicon and OG image from the logo  |
 | `bun run report:import -- --local`        | rebuild the yearly report content locally    |
+| `bun run cache:warm [-- --url <site>]`    | fill the page cache (runs after `deploy`)    |
 
 ## Deploying
 
@@ -76,12 +77,12 @@ Deploys are done by hand. There's no CI. Check you're logged in to the right Clo
 git pull && bun install
 bun run check && bun run cf:build
 bunx wrangler d1 migrations list DB --remote   # anything pending?
-bun run deploy
+bun run deploy                                 # build + deploy + cache:warm
 ```
 
 If there's a new migration, back up first, then run `bun run db:migrate:remote` before deploying. If a migration drops a column or table, ship the code that stops using it first, and only run the migration after that.
 
-Never run `db:seed:local` against production.
+Every deploy starts with an empty page cache; `bun run deploy` warms it straight away (see "Performance & caching").
 
 **Production resources**
 
@@ -108,6 +109,7 @@ Secrets go in with `bunx wrangler secret put <NAME>`. They never go in files, gi
 - `CLERK_WEBHOOK_SIGNING_SECRET`
 - `TURNSTILE_SECRET_KEY`
 - `GOOGLE_*` (optional, for Sheets sync)
+- `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG` (optional, for the statistics page — see "Analytics")
 
 Public config (`SITE_URL`, the Clerk publishable key, the Turnstile site key) lives in `wrangler.jsonc` under `vars`.
 
@@ -150,7 +152,7 @@ Admins can't demote, ban or delete themselves, and the last admin can't be remov
 - **Users:** search, change roles, deactivate (can be undone) or delete for good. Deleting removes personal data, but the volunteer hours stay in the totals anonymously.
 - **Events:** mark attendance. Marking someone as present adds their volunteer hours.
 - **Content:** news, gallery, FAQ, about page and site settings. Sections left empty are simply hidden. If an English field is empty, the Mongolian text is shown instead.
-- **System status:** health of D1, R2, Clerk, webhooks and Turnstile, plus a content export.
+- **Statistics:** visitors, popular pages, where visitors come from, site speed and the club's own numbers, in plain words (see "Analytics"). A line at the top says whether the site is fine, or what needs doing.
 
 Shortcuts: `Ctrl/⌘ + K` to search, `Ctrl/⌘ + S` to save.
 
@@ -167,7 +169,7 @@ bun scripts/report/run-import.ts --local --dry-run
 ```
 
 1. `scripts/report/parse-docx.ts` reads the .docx → `private/report-<year>.json` (no phone numbers)
-   and `private/report-media/` (manifest, originals, WebP 1600 px + 480 px thumbs, no EXIF/GPS).
+   and `private/report-media/` (manifest, originals, WebP 1600 / 960 / 480 px, no EXIF/GPS).
    Every image needs a decision in `PHOTO_REVIEW`; differences with the .docx are printed.
 2. `scripts/report/build-import.ts` → `private/import-<year>.sql` + `private/r2-upload-list.txt`.
 3. `scripts/report/run-import.ts` applies the SQL and syncs R2 under `content/` (uploads changed
@@ -188,8 +190,55 @@ bun scripts/report/run-import.ts --remote --dry-run
 bun scripts/report/run-import.ts --remote --confirm-production   # refuses without a backup < 60 min
 ```
 
-Pages are rendered per request (`no-store`), so no cache purge is needed. Roll back with the
-backup or D1 Time Travel (`bunx wrangler d1 time-travel restore DB --timestamp <before-import>`).
+The import writes to D1 directly, so cached pages pick it up at their next hourly refresh. To show
+it right away, save anything in the admin panel (every admin save refreshes the public pages) or
+redeploy. Roll back with the backup or D1 Time Travel
+(`bunx wrangler d1 time-travel restore DB --timestamp <before-import>`).
+
+## Analytics
+
+Admin → **Statistik** shows two kinds of numbers:
+
+- **Visitors** from Cloudflare Web Analytics: visits, pages viewed, top pages, where people come
+  from, countries, devices and site speed. It uses no cookies and stores no personal data, so no
+  cookie banner is needed (this is also stated on `/privacy`).
+- **Club numbers** from the database: new users, members, applications, volunteer hours,
+  messages. Totals only, never names.
+
+The page loads a small JSON summary from `/api/admin/stats` (admins only) and draws the charts
+in the browser; visitor numbers are cached for 10 minutes. "CSV татах" downloads the same totals.
+
+**Setup (free):**
+
+1. Cloudflare dashboard → _Analytics & Logs_ → _Web Analytics_ → _Add a site_ →
+   `130foreverychild.site` → automatic setup. Note the **site tag**.
+2. _My Profile_ → _API Tokens_ → _Create token_ → custom token with **Account › Account
+   Analytics › Read** only, for this account.
+3. Copy the **account ID** (Workers overview, right side).
+4. `bunx wrangler secret put CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`,
+   `CF_WEB_ANALYTICS_SITE_TAG`, then deploy.
+
+Without these secrets (or if the API fails) the page says the visitor numbers aren't connected and
+everything else still works. Locally, leave them empty in `.dev.vars`.
+
+## Performance & caching
+
+The site runs on the Workers **Free plan**: 10 ms of CPU per request. Rendering a page takes far
+more than that, so visitors should only ever get cached pages.
+
+- **Public pages** (`app/[locale]`) are ISR: rendered on the first visit, then served from the
+  OpenNext cache (R2 + a per-data-centre copy). `worker.ts` answers repeat visits from the
+  Cache API before OpenNext even loads (about 1–2 ms of CPU). Images under `/media/` come straight
+  from R2 with a one-year `immutable` cache header.
+- **Freshness:** pages refresh in the background every hour, and right after any admin save
+  (`revalidateTag(..., "max")`: visitors get the cached page while a Durable Object re-renders it,
+  with retries). The data-centre copy lives two minutes.
+- **After a deploy** the cache is empty: `bun run deploy` runs `bun run cache:warm`, which visits
+  every page from the sitemap (and retries any that fail).
+- **Account areas** (`/admin`, `/me`, signed-in `/join`, `/search`) are rendered per request. The
+  proxy runs only there; `/join` for signed-out visitors and `/sign-in` are cached too.
+- To measure: `bunx wrangler tail` shows `cpuTime` per request; locally, start
+  `bunx wrangler dev --inspector-port 9230` and profile with Chrome DevTools.
 
 ## Privacy
 
@@ -214,8 +263,9 @@ Most of our users are students under 18, so we keep things minimal. More details
 ## Notes for developers
 
 - Code, comments and commit messages are in English (Conventional Commits). All UI text goes in `messages/*.json`.
-- Permissions are checked on the server. For pages, use `requireAdmin()` and `requireMember()`. For server actions, use `assertAdmin()` and `assertMember()`. Both live in `src/lib/auth/session.ts`. Middleware only checks whether someone is signed in.
-- Clerk only loads on the sign-in, join, me and admin routes. The public header is rendered on the server.
+- Permissions are checked on the server. For pages, use `requireAdmin()` and `requireMember()`. For server actions, use `assertAdmin()` and `assertMember()`. Both live in `src/lib/auth/session.ts`. The proxy (`src/proxy.ts`) only runs for the account areas and only checks whether someone is signed in.
+- Clerk only loads on the sign-in, join, me and admin routes. Public pages are cached, so the header shows the sign-in state from a display-only cookie (`src/lib/auth/role-hint.ts`); access is always decided on the server.
+- Public pages must stay cacheable: no `headers()`, `cookies()` or `searchParams` in `app/[locale]` (except the account pages, which say `dynamic = "force-dynamic"`). Filters read the query string in the browser (`useUrlQuery`).
 - Use `logger` instead of `console`, and log IDs, not personal info.
 - After touching auth, run `bun run preview` and `bun run test:e2e`.
 
@@ -226,13 +276,13 @@ The look is warm and friendly: an off-white and cream light theme, a warm charco
 - **Tokens only.** Colours, shadows and surfaces are CSS variables in `src/app/globals.css`, with one value for light and one for dark. Components use token classes such as `bg-card`, `text-muted-foreground`, `bg-surface-2`, `text-brand-cyan-strong` and `shadow-soft`, never raw hex or palette shades. `tests/design.test.ts` fails on raw colours. White and black are allowed only in the documented places, such as text on SDG tiles and logo tiles.
 - **Contrast.** Every text and background pair passes WCAG AA in both themes. Primary buttons are cyan with dark ink text, because white on cyan is too faint. Links and focus rings use the darker `#086F99` / `#0A7FAE` in light mode.
 - **Shared components:**
-  - `BrandLockup` (variants `header`, `footer`, `sidebar`, `compact`), `Section` (`surface="base" | "tint" | "card"`), `Eyebrow`, `SectionHeading`;
+  - `BrandLockup` / `BrandLogo` (variants `horizontal`, `compact`, `stacked`, `mark`), `Section` (`surface="base" | "tint" | "card"`), `Eyebrow`, `SectionHeading`;
   - `StatTile`, `PartnerChip`, `InfoNote`, `EmptyState`, `UntranslatedBadge`;
   - `CoverImage` (shows a pillar-tinted card with a date stamp until a photo is uploaded), `HeroCollage`;
   - `Button` (44 px tall; variants include `warm`), `ErrorSummary` for forms, `StickyActions` for long admin forms.
-- **Motion.** Sections fade in once per page view (`.reveal`, `.reveal-group`, `.grow-x`, `.draw-line`, driven by `components/layout/reveal-observer.tsx`). Cards lift slightly on hover (`hover-lift`), and numbers count up once. Nothing is hidden without JavaScript, and all motion is off when the device asks for reduced motion.
+- **Motion.** Sections fade in once per page view (`.reveal`, `.reveal-group`, `.grow-x`, `.draw-line`, driven by `components/layout/reveal-observer.tsx`). Cards lift slightly on hover (`hover-lift`, transform only), and numbers count up once. Small chips use `tap-target` for a 44 × 44 px hit area. Nothing is hidden without JavaScript, and all motion is off when the device asks for reduced motion.
 - **Languages.** Every string lives in both `messages/mn.json` and `messages/en.json` (a test checks that they match). On English pages, news or events without an English version are shown in Mongolian with an "Available in Mongolian" badge.
-- **Header.** The desktop menu appears from 1024 px wide; below that there's a drawer. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
+- **Header.** The desktop menu appears from 1280 px wide; below that there's a drawer. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
 
 ## Showing student names (`SHOW_LEADER_NAMES`)
 

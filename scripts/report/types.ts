@@ -120,6 +120,10 @@ export const manifestSchema = z.object({
           thumbHeight: z.number().int(),
           md5: z.string(),
           thumbMd5: z.string(),
+          /** 960 px variant (srcset). */
+          mediumKey: z.string(),
+          mediumFile: z.string(),
+          mediumMd5: z.string(),
         })
         .nullable(),
     }),

@@ -66,11 +66,6 @@ function toItem(locale: Locale, e: Row): EventItem {
   };
 }
 
-/** An event counts as upcoming until it ends (or until its start if it has no end time). */
-export function isUpcoming(e: Pick<EventItem, "startsAt" | "endsAt">, now = Date.now()) {
-  return Date.parse(e.endsAt ?? e.startsAt) >= now;
-}
-
 const upcomingWhere = (now: Date) =>
   and(
     eq(events.published, true),
@@ -102,23 +97,20 @@ export async function listEvents(locale: Locale, scope: "upcoming" | "past", lim
   return rows.map((r) => toItem(locale, r));
 }
 
-export async function getUpcomingEvents(locale: Locale, limit = 3) {
-  return listEvents(locale, "upcoming", limit);
-}
-
-/** Events that start within the given month (Ulaanbaatar time, UTC+8). `month` is 1–12. */
-export async function getEventsInMonth(locale: Locale, year: number, month: number) {
-  const start = new Date(`${year}-${String(month).padStart(2, "0")}-01T00:00:00+08:00`);
-  const nextYear = month === 12 ? year + 1 : year;
-  const nextMonth = month === 12 ? 1 : month + 1;
-  const end = new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+08:00`);
+/** Every published event (the events page sorts and groups them in the browser). */
+export async function listAllEvents(locale: Locale) {
   const db = await getDb();
   const rows = await db
     .select()
     .from(events)
-    .where(and(eq(events.published, true), gte(events.startsAt, start), lt(events.startsAt, end)))
-    .orderBy(asc(events.startsAt));
+    .where(eq(events.published, true))
+    .orderBy(desc(events.startsAt))
+    .limit(500);
   return rows.map((r) => toItem(locale, r));
+}
+
+export async function getUpcomingEvents(locale: Locale, limit = 3) {
+  return listEvents(locale, "upcoming", limit);
 }
 
 export async function getEventBySlug(locale: Locale, slug: string) {

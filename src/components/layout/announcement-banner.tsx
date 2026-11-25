@@ -82,7 +82,7 @@ export async function AnnouncementBanner() {
         </span>
         <Link
           href="/join"
-          className="-my-2 inline-flex items-center gap-1 py-2.5 font-bold underline underline-offset-4"
+          className="-my-3 inline-flex min-h-11 items-center gap-1 font-bold underline underline-offset-4"
         >
           {t("cta")} <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>

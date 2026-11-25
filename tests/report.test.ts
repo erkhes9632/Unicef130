@@ -63,7 +63,7 @@ describe.skipIf(!has)("2025–2026 report data", () => {
   });
 
   test("no phone numbers in the JSON, the manifest or the SQL", () => {
-    const strip = (s: string) => s.replace(/"(sha256|md5|thumbMd5)": "[0-9a-f]+"/g, "");
+    const strip = (s: string) => s.replace(/"(sha256|md5|thumbMd5|mediumMd5)": "[0-9a-f]+"/g, "");
     expect(strip(readFileSync(FILE, "utf8"))).not.toMatch(PHONE);
     expect(strip(readFileSync(MANIFEST, "utf8"))).not.toMatch(PHONE);
     if (existsSync(SQL)) expect(readFileSync(SQL, "utf8")).not.toMatch(PHONE);

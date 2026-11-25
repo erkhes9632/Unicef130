@@ -2,16 +2,9 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-export function ThemeProvider({
-  children,
-  nonce,
-}: {
-  children: React.ReactNode;
-  /** CSP nonce for the small inline script that applies the saved theme before paint. */
-  nonce?: string;
-}) {
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <NextThemesProvider nonce={nonce} attribute="class" defaultTheme="system" enableSystem>
+    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
       {children}
     </NextThemesProvider>
   );

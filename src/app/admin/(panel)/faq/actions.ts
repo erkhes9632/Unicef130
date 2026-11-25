@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { faqs } from "@/db/schema";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { logActivity, shortId } from "@/lib/admin/activity";
+import { revalidatePublic } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 
 const faqSchema = z.object({
@@ -27,8 +28,7 @@ const faqSchema = z.object({
 
 function revalidateFaq() {
   revalidatePath("/admin/faq");
-  revalidatePath("/faq");
-  revalidatePath("/en/faq");
+  revalidatePublic();
 }
 
 /** Creates (id = null) or updates a question. */

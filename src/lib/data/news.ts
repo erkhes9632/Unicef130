@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gt, inArray, isNotNull, lt, lte, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, lt, lte, ne } from "drizzle-orm";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
@@ -26,8 +26,6 @@ export type NewsItem = {
   /** English page, no English title yet: the Mongolian text is shown with a badge. */
   untranslated: boolean;
 };
-
-const NEWS_PAGE_SIZE = 6;
 
 type Row = typeof news.$inferSelect;
 
@@ -59,37 +57,11 @@ function toItem(locale: Locale, r: Row): NewsItem {
 const visible = () =>
   and(eq(news.status, "published"), isNotNull(news.publishedAt), lte(news.publishedAt, new Date()));
 
-export async function listNews({
-  locale,
-  page = 1,
-  pageSize = NEWS_PAGE_SIZE,
-  category,
-  sdg,
-}: {
-  locale: Locale;
-  page?: number;
-  pageSize?: number;
-  category?: NewsCategory;
-  /** Only posts tagged with this SDG (1–17). */
-  sdg?: number;
-}) {
+/** Every visible post, newest first (the news page filters and pages them in the browser). */
+export async function listAllNews(locale: Locale) {
   const db = await getDb();
-  const where = and(
-    visible(),
-    category ? eq(news.category, category) : undefined,
-    sdg ? sql`exists (select 1 from json_each(${news.sdgs}) where value = ${sdg})` : undefined,
-  );
-  const [{ total } = { total: 0 }] = await db.select({ total: count() }).from(news).where(where);
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const current = Math.min(Math.max(1, page), pageCount);
-  const rows = await db
-    .select()
-    .from(news)
-    .where(where)
-    .orderBy(desc(news.publishedAt))
-    .limit(pageSize)
-    .offset((current - 1) * pageSize);
-  return { items: rows.map((r) => toItem(locale, r)), total, page: current, pageCount };
+  const rows = await db.select().from(news).where(visible()).orderBy(desc(news.publishedAt));
+  return rows.map((r) => toItem(locale, r));
 }
 
 export async function getLatestNews(locale: Locale, limit = 3) {

@@ -1,6 +1,6 @@
 # PRODUCTION_REPORT — Сайтын одоогийн байдал
 
-**Огноо:** 2026-11-20 · **Сайт:** https://130foreverychild.site · Deploy: гараар (`bun run deploy`)
+**Огноо:** 2026-11-25 (кэш, статистик, лого — локалд бэлэн, deploy хийгдээгүй) · **Сайт:** https://130foreverychild.site · Deploy: гараар (`bun run deploy`)
 
 ## 1. Хураангуй
 
@@ -8,7 +8,8 @@
   нэвтрээгүй үед нэвтрэх хуудас руу. `wrangler tail` дээр алдаа 0.
 - Нэвтрэлт: Clerk production (Google + и-мэйл код). Эрх: `admin` / `member` / эрхгүй.
 - Production D1 бүх migration-тай (0000–0008), жишээ/тест хэрэглэгч, зохиомол контент байхгүй.
-- Хамгийн том үлдсэн эрсдэл: **Workers Free-ийн CPU хязгаар** (хүсэлт бүрт 10 ms) — §5.
+- Workers **Free** план (хүсэлт бүрт 10 ms CPU): нийтийн хуудсууд кэшээс өгөгдөнө (≈1–5 ms) — §5.
+  Үргэлж Free план дээр үлдэнэ.
 
 ## 2. Юу ажилладаг вэ
 
@@ -18,29 +19,31 @@
 | Нэвтрэлт         | ✅    | `/sign-in` (нэг дэлгэц), `/sign-out`; Clerk зөвхөн бүртгэлийн хэсгүүдэд ачаалагдана                                                   |
 | Элсэлт           | ✅    | Нэвтэрч өргөдөл гаргана; нэг бүртгэл — нэг элсэлтэд нэг өргөдөл; төлөв `/join` дээр                                                   |
 | Гишүүний хэсэг   | ✅    | `/me`: сайн дурын цаг, арга хэмжээнд бүртгүүлэх (хүлээлгийн жагсаалттай), гэрчилгээ, бүртгэл устгах                                   |
-| Админ хэсэг      | ✅    | Контент, элсэлт, өргөдөл, хэрэглэгчид, сайн дурын цаг/ирц, зурвас, тохиргоо, үйлдлийн түүх, системийн төлөв                           |
+| Админ хэсэг      | ✅    | Контент, элсэлт, өргөдөл, хэрэглэгчид, сайн дурын цаг/ирц, зурвас, тохиргоо, үйлдлийн түүх, статистик                                 |
 | Админ руу хүрэх  | ✅    | Header-т «Админ» товч (гар утсанд цэсэнд), нэвтрэхэд админ → `/admin`; эрхгүй бол тайлбар хуудас                                      |
 | Өдөр бүрийн cron | ✅    | 03:30 УБ: хугацаа дууссан тэнцээгүй өргөдөл, хуучин rate-limit мөр устгана                                                            |
 | Google Sheets    | ➖    | Тохируулаагүй (заавал биш); өргөдөл D1-д хадгалагдана                                                                                 |
 
 ## 3. Тохируулсан үйлчилгээ (зөвхөн нэр)
 
-| Үйлчилгээ  | Тохиргоо                                                                                                                                         |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Cloudflare | Worker `unicef-club-130`, custom domain, D1 `unicef-club-130-db`, R2 `unicef-club-130-media`, `unicef-club-130-opennext-cache`, Turnstile widget |
-| Clerk      | Production instance; Google OAuth (өөрийн credential); session token `role` claim; webhook `/api/webhooks/clerk`                                 |
-| vars       | `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `TURNSTILE_SITE_KEY`, `GOOGLE_SHEET_TAB`                                                        |
-| Secret     | `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `TURNSTILE_SECRET_KEY` · устгах: `BETTER_AUTH_SECRET` (хуучин)                               |
+| Үйлчилгээ  | Тохиргоо                                                                                                                                                                                       |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare | Worker `unicef-club-130`, custom domain, D1 `unicef-club-130-db`, R2 `unicef-club-130-media`, `unicef-club-130-opennext-cache`, Turnstile widget                                               |
+| Clerk      | Production instance; Google OAuth (өөрийн credential); session token `role` claim; webhook `/api/webhooks/clerk`                                                                               |
+| vars       | `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `TURNSTILE_SITE_KEY`, `GOOGLE_SHEET_TAB`                                                                                                      |
+| Secret     | `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `TURNSTILE_SECRET_KEY`; (заавал биш) `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG` · устгах: `BETTER_AUTH_SECRET` |
 
 ## 4. Аюулгүй байдал ба хувийн мэдээлэл
 
-- Эрх: middleware зөвхөн нэвтэрсэн эсэхийг шалгана; хуудас, Server Action, route бүр эрхийг
+- Эрх: proxy (`src/proxy.ts`) зөвхөн бүртгэлийн хэсгүүдэд ажиллаж нэвтэрсэн эсэхийг шалгана; хуудас, Server Action, route бүр эрхийг
   сервер дээр D1-ээс (шаардлагатай үед Clerk-ээс засаж) шалгана — статик тест үүнийг баталгаажуулна.
 - Webhook: Svix гарын үсэг + хугацааны шалгалт (5 минутаас хуучин мессеж татгалзана); ижил
   мессеж дахин ирвэл аюулгүй (upsert / давтан устгал хор хөнөөлгүй).
 - Админ өөрийгөө, сүүлчийн админыг хасах/идэвхгүй болгох/устгах боломжгүй.
-- Header: nonce-тэй CSP (Clerk, Turnstile, Google Maps embed л зөвшөөрөгдсөн), HSTS,
-  `X-Frame-Options: DENY`, `nosniff`, Referrer/Permissions-Policy.
+- Header: CSP (өөрийн домэйн + Turnstile, Google Maps embed, Cloudflare Web Analytics; Clerk зөвхөн
+  бүртгэлийн хэсэгт). Кэшлэгдсэн хуудас хүн бүрт ижил тул nonce биш `'unsafe-inline'` — хэрэглэгчийн
+  агуулга HTML-ээр хэзээ ч render хийгддэггүй. HSTS, `X-Frame-Options: DENY`, `nosniff`,
+  Referrer/Permissions-Policy.
 - Upload: зөвхөн админ, JPG/PNG/WebP (magic byte), 5 MB; хөтөч дахин encode хийж, сервер мөн
   EXIF/GPS/XMP-ийг арилгана; R2 түлхүүр санамсаргүй (UUID); устгасан зураг R2-оос устна.
 - CSV экспорт formula injection-оос хамгаалагдсан; rate limit `cf-connecting-ip`-ийн HMAC hash-аар.
@@ -50,14 +53,17 @@
 
 ## 5. Гүйцэтгэл ба хязгаар
 
-| Хэмжүүр                    | Утга                                                                     |
-| -------------------------- | ------------------------------------------------------------------------ |
-| Worker bundle              | 12.6 MiB uncompressed / 2.7 MiB gzip (хязгаар 64 MiB)                    |
-| Нийтийн хуудасны JS (gzip) | ≈ 256 KB; Clerk нийтийн хуудсанд ачаалагдахгүй                           |
-| Lighthouse (mobile)        | Performance 92–99, Accessibility / Best Practices / SEO 100 (2026-11-16) |
-| CPU                        | Free план: хүсэлт бүрт **10 ms** — Next.js SSR хэтрэх эрсдэлтэй          |
+| Хэмжүүр                           | Өмнө (production, 2026-11-21)        | Одоо (локал workerd)                   |
+| --------------------------------- | ------------------------------------ | -------------------------------------- |
+| Нийтийн хуудасны CPU              | 30–110 ms (3/64 `exceededCpu` → 503) | кэшээс 0–1.7 ms, OpenNext кэш 3–4.5 ms |
+| `/join` (нэвтрээгүй), `/sign-in`  | 31–247 ms                            | 4–8 ms (кэш)                           |
+| TTFB (кэштэй хуудас)              | 150–370 ms                           | p50 2 ms, p99 7 ms                     |
+| 200 дараалсан хүсэлт              | —                                    | 200 × 200, 5xx 0                       |
+| Lighthouse mobile (home / impact) | 92–99                                | 100 / 100 (Accessibility, BP, SEO 100) |
 
-Error 1102 (`exceededCpu`) лог дээр гарвал **Workers Paid ($5/сар)** руу шилжинэ.
+Нийтийн хуудас ISR (R2 + Cache API + Durable Object queue); `worker.ts` давтан хүсэлтийг
+OpenNext ачаалахаас өмнө Cache API-аас өгнө. Админ засвар хийхэд хуудсууд ард нь шинэчлэгдэнэ.
+Deploy бүрийн дараа `cache:warm`. Дэлгэрэнгүй: README → «Performance & caching».
 
 ## 6. Мэдэгдэж буй хязгаарлалт
 

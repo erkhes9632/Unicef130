@@ -13,12 +13,18 @@ import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { getClubNames } from "@/lib/branding";
-import { getEventBySlug, getEventSignupInfo, isUpcoming } from "@/lib/data/events";
+import { getEventBySlug, getEventSignupInfo } from "@/lib/data/events";
 import { getAlbumForEvent } from "@/lib/data/gallery";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
 import { findSlugRedirect } from "@/lib/data/redirects";
 import { formatDate, formatDateRange, formatTimeRange } from "@/lib/dates/format";
+import { isUpcoming } from "@/lib/dates/ub-time";
 import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
+
+/** Rendered on the first visit, then served from the cache (ISR; see app/[locale]/layout.tsx). */
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({
   params,
@@ -96,7 +102,7 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
   return (
     <article className="container-page max-w-5xl py-8 sm:py-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structured)} />
-      <Button asChild variant="ghost" size="sm" className="mb-6 -ml-3">
+      <Button asChild variant="ghost" className="mb-6 -ml-3">
         <Link href="/events">
           <ArrowLeft /> {t("backToList")}
         </Link>

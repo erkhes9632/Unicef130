@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Locale } from "@/i18n/routing";
 import { formatDate } from "@/lib/dates/format";
+import { responsiveSrc } from "@/lib/media/variants";
 import { SDGS } from "@/lib/sdg";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +62,7 @@ export function CoverImage({
   locale,
   className,
   priority = false,
+  sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
 }: {
   src: string | null;
   alt: string;
@@ -72,12 +74,15 @@ export function CoverImage({
   locale?: Locale;
   className?: string;
   priority?: boolean;
+  /** Rendered width hint for the srcset (cards by default). */
+  sizes?: string;
 }) {
   if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- R2 image, pre-sized on upload
       <img
         src={src}
+        {...responsiveSrc(src, sizes)}
         alt={alt}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}

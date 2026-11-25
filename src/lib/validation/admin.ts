@@ -29,7 +29,7 @@ const slug = z
     error: "Зөвхөн жижиг латин үсэг, тоо, зураас (-) ашиглана.",
   });
 
-/** Relative path (/media/..., /placeholders/...) or https URL. */
+/** Relative path (/media/..., /brand/...) or https URL. */
 const imageUrl = z
   .string()
   .trim()

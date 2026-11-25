@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { roleHintCookie } from "@/lib/auth/role-hint";
 import { homePathFor, SIGN_IN_PATH } from "@/lib/auth/roles";
 import { getFreshUser } from "@/lib/auth/session";
 
@@ -14,5 +15,11 @@ export async function GET(request: NextRequest) {
   const target = user
     ? homePathFor(user.role, locale)
     : `${locale === "en" ? "/en" : ""}${SIGN_IN_PATH}`;
-  return NextResponse.redirect(new URL(target, request.url));
+  const response = NextResponse.redirect(new URL(target, request.url));
+  // Display-only hint for the cached public header (see lib/auth/role-hint.ts).
+  response.headers.append(
+    "Set-Cookie",
+    roleHintCookie(user ? (user.role ?? "applicant") : null, request.nextUrl.protocol === "https:"),
+  );
+  return response;
 }

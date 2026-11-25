@@ -27,12 +27,24 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
 - ☐ Clerk → Webhooks → endpoint → Testing → `user.created` илгээх → Attempts **200**.
 - ☐ Хуучин нэвтрэлтийн secret-ийг устгах: `bunx wrangler secret delete BETTER_AUTH_SECRET`.
 - ☐ Cloudflare болон Clerk-д 2 дахь хариуцагчийг (хариуцсан багш) нэмэх.
-- ☐ Workers Paid ($5/сар) эсэхийг шийдэх: Free план хүсэлт бүрт 10 ms CPU; лог дээр Error 1102
-  (`exceededCpu`) гарвал Paid руу шилжинэ.
+- ☐ Web Analytics + статистик (заавал биш, үнэгүй): README → «Analytics» (site tag, API token,
+  `CF_ACCOUNT_ID` → `wrangler secret put` 3 удаа).
 - ☐ Контент (PRODUCTION_REPORT §6): лого, холбоо барих, сошиал, зураг, гишүүдийн зөвшөөрөл.
 - ☐ Google Cloud → OAuth consent screen → Privacy policy URL: `https://130foreverychild.site/privacy`
   (бөглөөгүй бол).
 - ☐ Google Search Console-д `https://130foreverychild.site/sitemap.xml` (заавал биш).
+
+## Энэ хувилбарын анхны deploy (кэш + статистик, 2026-11)
+
+1. ☐ Нөөц: `bunx wrangler d1 export DB --remote --output private/backups/before-cache-$(date +%F-%H%M).sql`
+2. ☐ `bun run db:migrate:remote` (0010 = кэшийн `revalidations` хүснэгт; зөвхөн нэмнэ).
+3. ☐ Зургийн 960 px хувилбар: `bun scripts/report/run-import.ts --remote --dry-run` → зөвхөн
+   `-md.webp` upload гарах ёстой → `--remote --confirm-production` (DB өөрчлөгдөхгүй, idempotent).
+   **Deploy-оос өмнө** хийнэ: шинэ код `srcset`-д 960 px файлыг заадаг.
+4. ☐ `bun run deploy` (Durable Object `DOQueueHandler`-ийн migration автоматаар; дараа нь
+   `cache:warm` бүх хуудсыг кэшлэнэ). Warm-up-д 5xx үлдвэл `bun run cache:warm` дахин.
+5. ☐ Шалгах: `bunx wrangler tail --format json` → нийтийн хуудсуудын `cpuTime` 1–5 ms,
+   `outcome: ok`; нүүр, `/en`, мэдээ, `/join`, `/sign-in`, `/admin` (админаар), `/admin/stats`.
 
 ## Энгийн deploy (код өөрчлөгдсөн үед)
 
@@ -40,7 +52,7 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
 - ☐ `bun run check` (lint, typecheck, format, knip, тест) ногоон
 - ☐ Нэвтрэлт/эрхэд хүрсэн бол: `bun run preview` + `bun run test:e2e`
 - ☐ `bunx wrangler d1 migrations list DB --remote` — шинэ migration байвал доорх хэсэг
-- ☐ `bun run deploy`
+- ☐ `bun run deploy` (build → deploy → `cache:warm`)
 - ☐ Шалгах: нүүр, `/en`, `/join`, `/sign-in`, `/admin` (админаар) + `bunx wrangler tail --status error`
   хэдэн минут
 

@@ -5,6 +5,8 @@ import { SocialLinks } from "@/components/brand/social-links";
 import { PageHero } from "@/components/common/page-hero";
 import { ContactForm } from "@/components/forms/contact-form";
 import { FormsUnavailable } from "@/components/forms/forms-unavailable";
+import { ClientMessages } from "@/components/providers/client-messages";
+import { formNamespaces } from "@/i18n/client-namespaces";
 import { resolveLocale } from "@/i18n/locale";
 import { getSiteSettings, publicContact } from "@/lib/data/settings";
 import { getTurnstileSiteKey } from "@/lib/integrations/turnstile";
@@ -99,7 +101,9 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
               {t("formTitle")}
             </h2>
             {turnstileSiteKey ? (
-              <ContactForm turnstileSiteKey={turnstileSiteKey} />
+              <ClientMessages namespaces={formNamespaces}>
+                <ContactForm turnstileSiteKey={turnstileSiteKey} />
+              </ClientMessages>
             ) : (
               <FormsUnavailable />
             )}

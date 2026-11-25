@@ -12,7 +12,7 @@ import { ubParts } from "@/lib/dates/ub-time";
 import { cn } from "@/lib/utils";
 
 const LINK =
-  "inline-flex min-h-11 items-center text-muted-foreground hover:text-foreground sm:min-h-9";
+  "inline-flex min-h-11 min-w-11 items-center text-muted-foreground hover:text-foreground";
 
 export async function SiteFooter() {
   const t = await getTranslations();

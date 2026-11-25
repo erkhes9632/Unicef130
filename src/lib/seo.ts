@@ -1,14 +1,14 @@
 import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { cache } from "react";
 import { routing, type Locale } from "@/i18n/routing";
 import { getClubNames } from "@/lib/branding";
+import { fitDescription } from "@/lib/meta-description";
 
 /**
- * Public origin of the site. Order: SITE_URL var (set in production) → NEXT_PUBLIC_SITE_URL
- * (build time) → the current request's host. Never hard-code the domain.
+ * Public origin of the site: SITE_URL var (wrangler vars / .dev.vars) → NEXT_PUBLIC_SITE_URL
+ * (build time) → localhost. Never reads the request, so cached pages stay static.
  */
 export const getSiteUrl = cache(async (): Promise<string> => {
   try {
@@ -17,18 +17,7 @@ export const getSiteUrl = cache(async (): Promise<string> => {
   } catch {
     // outside a request
   }
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, "");
-  try {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") ?? h.get("host");
-    if (host) {
-      const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-      return `${proto}://${host}`;
-    }
-  } catch {
-    // no request (build time)
-  }
-  return "http://localhost:3000";
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:8787").replace(/\/+$/, "");
 });
 
 /** "/news" → "/news" (mn) or "/en/news" (en). */
@@ -69,10 +58,12 @@ export async function pageMetadata({
     routing.locales.map((l) => [l, `${base}${localizedPath(l, path)}`]),
   );
   const fallback = DEFAULT_OG_IMAGE[locale === "en" ? "en" : "mn"];
+  const names = await getClubNames(locale);
+  const desc = fitDescription(description, names.name);
   const images = image && !image.endsWith(".svg") ? [{ url: image }] : [fallback];
   return {
     ...(title ? { title } : {}),
-    description,
+    description: desc,
     alternates: {
       canonical: url,
       languages: { ...languages, "x-default": languages[routing.defaultLocale]! },
@@ -81,13 +72,18 @@ export async function pageMetadata({
       type,
       url,
       title,
-      description,
-      siteName: (await getClubNames(locale)).short,
+      description: desc,
+      siteName: names.short,
       locale: locale === "en" ? "en_US" : "mn_MN",
       images,
       ...(publishedTime ? { publishedTime } : {}),
     },
-    twitter: { card: "summary_large_image", title, description, images: images.map((i) => i.url) },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: desc,
+      images: images.map((i) => i.url),
+    },
     ...(noIndex ? { robots: { index: false, follow: true } } : {}),
   };
 }

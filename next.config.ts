@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { buildCsp, staticSecurityHeaders } from "./src/lib/security-headers";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -15,7 +16,55 @@ if (process.env.NODE_ENV === "development" && existsSync(".dev.vars")) {
   }
 }
 
+/**
+ * Paths handled by the proxy (Clerk, sign-in gate, CSP with Clerk's origin). Everything else is a
+ * public page served from the cache, with the headers below.
+ */
+const ACCOUNT_AREAS = "(?:en/)?(?:me|join|sign-in|sign-out)(?:/|$)|admin(?:/|$)|auth/|api/admin/";
+/** Not a page: framework files, API, uploads, the logo kit, files with an extension. */
+const NOT_A_PAGE = "en(?:/|$)|mn(?:/|$)|admin(?:/|$)|api/|auth/|media/|brand/|_next/|.*\\.";
+
+const publicHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: buildCsp({ dev: process.env.NODE_ENV === "development", https: true }),
+  },
+  ...Object.entries(staticSecurityHeaders({ https: true })).map(([key, value]) => ({ key, value })),
+];
+
 const nextConfig: NextConfig = {
+  // Mongolian pages have no prefix (/about); they live in app/[locale] as /mn/about. A rewrite
+  // (cheap, no proxy run) maps them; /mn/... addresses redirect to the unprefixed form.
+  async redirects() {
+    return [
+      { source: "/mn", destination: "/", permanent: true },
+      { source: "/mn/:path*", destination: "/:path*", permanent: true },
+      // "Системийн төлөв" became the statistics page.
+      { source: "/admin/system", destination: "/admin/stats", permanent: true },
+      // Year pages used to be ?year= (the pages are cached now, so it is a path segment).
+      ...["", "/en"].flatMap((prefix) =>
+        ["impact", "members"].map((page) => ({
+          source: `${prefix}/${page}`,
+          has: [{ type: "query" as const, key: "year", value: "(?<year>\\d{4}-\\d{4})" }],
+          destination: `${prefix}/${page}/:year`,
+          permanent: true,
+        })),
+      ),
+    ];
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/", destination: "/mn" },
+        { source: `/:path((?!${NOT_A_PAGE}).+)`, destination: "/mn/:path" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+  async headers() {
+    return [{ source: `/((?!${ACCOUNT_AREAS}).*)`, headers: publicHeaders }];
+  },
   env: {
     // Clerk: no usage telemetry (users are mostly minors) and no "keyless" demo app.
     NEXT_PUBLIC_CLERK_TELEMETRY_DISABLED: "1",
@@ -25,6 +74,8 @@ const nextConfig: NextConfig = {
   // NOTE: `cacheComponents` / `partialPrefetching` (create-next-app defaults) are disabled on purpose:
   // with them enabled the Worker hangs on workerd ("Cache Components ... setTimeout()" warning).
   // Re-test before enabling again.
+  // 404 for URLs outside the two root layouts (app/[locale], app/admin).
+  experimental: { globalNotFound: true },
   images: {
     // Images are served straight from R2 / public (resized in the browser before upload),
     // so the Next.js optimizer (unsupported on Workers without extra bindings) is off.

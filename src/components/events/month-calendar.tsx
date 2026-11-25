@@ -1,30 +1,39 @@
+"use client";
+
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getLocale, getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import type { EventItem } from "@/lib/data/events";
 import { formatDate } from "@/lib/dates/format";
-import { monthGrid, monthKey, shiftMonth, todayUb, ubParts } from "@/lib/dates/ub-time";
+import { monthGrid, todayUb, ubParts } from "@/lib/dates/ub-time";
 import { cn } from "@/lib/utils";
 
-/** Server-rendered month grid (Monday first, Ulaanbaatar time). Navigation via ?month=. */
-export async function MonthCalendar({
+export type CalendarEvent = { id: string; slug: string; title: string; startsAt: string };
+
+/** Month grid (Monday first, Ulaanbaatar time); rendered in the browser on the events page. */
+export function MonthCalendar({
+  locale,
   year,
   month,
   events,
+  labels,
+  onShift,
 }: {
+  locale: "mn" | "en";
   year: number;
   month: number;
-  events: EventItem[];
+  events: CalendarEvent[];
+  labels: {
+    prevMonth: string;
+    nextMonth: string;
+    today: string;
+    /** "# event" / "# events" (# = count). */
+    eventsOnDay: { one: string; other: string };
+  };
+  onShift: (delta: -1 | 1) => void;
 }) {
-  const t = await getTranslations("Events");
-  const locale = await getLocale();
   const weeks = monthGrid(year, month);
   const today = todayUb();
-  const prev = shiftMonth(year, month, -1);
-  const next = shiftMonth(year, month, 1);
-
-  const byDay = new Map<number, EventItem[]>();
+  const byDay = new Map<number, CalendarEvent[]>();
   for (const e of events) {
     const { day } = ubParts(e.startsAt);
     byDay.set(day, [...(byDay.get(day) ?? []), e]);
@@ -34,26 +43,28 @@ export async function MonthCalendar({
     formatDate(locale, Date.UTC(2024, 0, 1 + i, 4), "weekdayShort"),
   );
   const monthLabel = formatDate(locale, Date.UTC(year, month - 1, 15), "monthYear");
-  const href = (y: number, m: number) => ({
-    pathname: "/events",
-    query: { view: "calendar", month: monthKey(y, m) },
-  });
 
   return (
     <div className="rounded-3xl bg-card p-4 ring-1 ring-border sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <Button asChild variant="outline" size="icon" aria-label={t("prevMonth")}>
-          <Link href={href(prev.year, prev.month)}>
-            <ChevronLeft />
-          </Link>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label={labels.prevMonth}
+          onClick={() => onShift(-1)}
+        >
+          <ChevronLeft />
         </Button>
         <h2 className="text-center text-lg font-extrabold sm:text-xl" aria-live="polite">
           {monthLabel}
         </h2>
-        <Button asChild variant="outline" size="icon" aria-label={t("nextMonth")}>
-          <Link href={href(next.year, next.month)}>
-            <ChevronRight />
-          </Link>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label={labels.nextMonth}
+          onClick={() => onShift(1)}
+        >
+          <ChevronRight />
         </Button>
       </div>
 
@@ -90,7 +101,7 @@ export async function MonthCalendar({
                             "flex size-6 items-center justify-center rounded-full text-xs font-semibold",
                             isToday && "bg-brand-cyan text-brand-ink",
                           )}
-                          aria-label={isToday ? t("today") : undefined}
+                          aria-label={isToday ? labels.today : undefined}
                         >
                           {day}
                         </span>
@@ -111,7 +122,10 @@ export async function MonthCalendar({
                           <span
                             role="img"
                             className="flex gap-0.5 sm:hidden"
-                            aria-label={t("eventsOnDay", { count: dayEvents.length })}
+                            aria-label={(dayEvents.length === 1
+                              ? labels.eventsOnDay.one
+                              : labels.eventsOnDay.other
+                            ).replace("#", String(dayEvents.length))}
                           >
                             {dayEvents.map((e) => (
                               <span key={e.id} className="size-1.5 rounded-full bg-brand-purple" />

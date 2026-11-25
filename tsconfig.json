@@ -25,7 +25,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "open-next-worker": ["./.open-next/worker.js"]
     }
   },
   "include": [

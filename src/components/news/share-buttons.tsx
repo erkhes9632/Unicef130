@@ -28,18 +28,18 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-sm font-bold">{t("title")}:</span>
-      <Button asChild variant="outline" size="sm">
+      <Button asChild variant="outline">
         <a href={fbHref} target="_blank" rel="noopener noreferrer" aria-label={t("facebook")}>
           <SocialIcon platform="facebook" className="size-3.5" /> Facebook
         </a>
       </Button>
-      <Button variant="outline" size="sm" onClick={copy}>
+      <Button variant="outline" onClick={copy}>
         <Link2 /> {t("copy")}
       </Button>
       {nativeShare && (
         <Button
           variant="outline"
-          size="sm"
+
           onClick={() => navigator.share({ title, url }).catch(() => {})}
         >
           <Share2 /> {t("native")}

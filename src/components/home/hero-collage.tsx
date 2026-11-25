@@ -1,4 +1,5 @@
 import { GraduationCap, HandHeart, type LucideIcon, Megaphone } from "lucide-react";
+import { responsiveSrc } from "@/lib/media/variants";
 import { cn } from "@/lib/utils";
 
 export type CollagePhoto = { src: string; alt: string };
@@ -71,6 +72,7 @@ export function HeroCollage({
                 // eslint-disable-next-line @next/next/no-img-element -- R2 image, pre-sized on upload
                 <img
                   src={photo.src}
+                  {...responsiveSrc(photo.src, "(min-width: 1024px) 22vw, 45vw")}
                   alt={photo.alt}
                   fetchPriority={i === 0 ? "high" : undefined}
                   loading={i === 0 ? "eager" : "lazy"}

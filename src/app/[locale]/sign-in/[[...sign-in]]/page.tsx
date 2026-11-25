@@ -6,6 +6,11 @@ import { resolveLocale } from "@/i18n/locale";
 import { clerkPublishableKey } from "@/lib/auth/clerk";
 import { AFTER_SIGN_IN_PATH, SIGN_IN_PATH } from "@/lib/auth/roles";
 
+/** The same shell for everyone (Clerk renders in the browser): cached like the public pages. */
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/sign-in/[[...sign-in]]">): Promise<Metadata> {

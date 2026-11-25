@@ -3,8 +3,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { UntranslatedBadge } from "@/components/common/untranslated-badge";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
-import { isUpcoming, type EventItem } from "@/lib/data/events";
+import type { EventItem } from "@/lib/data/events";
 import { formatDateRange, formatTimeRange } from "@/lib/dates/format";
+import { isUpcoming } from "@/lib/dates/ub-time";
 import { DateBadge } from "./date-badge";
 
 export async function EventCard({ item }: { item: EventItem }) {

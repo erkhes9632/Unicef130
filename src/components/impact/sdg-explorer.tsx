@@ -49,7 +49,7 @@ export function SdgExplorer({
                   onClick={() => setSelected(g.n)}
                   style={{ backgroundColor: g.color }}
                   className={cn(
-                    "relative flex aspect-square w-full flex-col items-center justify-center rounded-xl font-heading font-extrabold shadow-sm transition-[scale,box-shadow] duration-200 hover:scale-105 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none sm:rounded-2xl",
+                    "relative flex aspect-square w-full flex-col items-center justify-center rounded-xl font-heading font-extrabold shadow-sm transition-[scale] duration-200 hover:scale-105 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none sm:rounded-2xl",
                     g.light ? "text-white" : "text-black",
                     isSelected &&
                       "scale-105 shadow-lg ring-3 ring-foreground ring-offset-2 ring-offset-background",
@@ -123,7 +123,7 @@ export function SdgExplorer({
             </ul>
             <Link
               href={{ pathname: "/news", query: { sdg: String(goal.n) } }}
-              className="mt-5 inline-flex items-center gap-1 text-sm font-bold text-brand-cyan-strong hover:underline"
+              className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-bold text-brand-cyan-strong hover:underline"
             >
               {labels.news} <ArrowRight className="size-4" aria-hidden="true" />
             </Link>

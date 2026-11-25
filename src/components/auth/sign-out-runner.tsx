@@ -3,6 +3,7 @@
 import { useClerk } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
+import { roleHintCookie } from "@/lib/auth/role-hint";
 
 /** Ends the Clerk session once clerk-js is ready, then returns to the home page. */
 export function SignOutRunner({ home, label }: { home: string; label: string }) {
@@ -10,6 +11,8 @@ export function SignOutRunner({ home, label }: { home: string; label: string }) 
   const loaded = clerk.loaded;
   useEffect(() => {
     if (!loaded) return;
+    // Forget the header's role hint (display only, see lib/auth/role-hint.ts).
+    document.cookie = roleHintCookie(null, location.protocol === "https:");
     // Callback form: a full page load afterwards, so the server-rendered header is re-rendered
     // in the signed-out state (instead of Clerk's client-side redirect).
     void clerk.signOut(() => window.location.assign(home));

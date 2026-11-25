@@ -1,19 +1,20 @@
 /**
- * Security response headers. The Content-Security-Policy uses a per-request nonce (set by the
- * middleware; Next.js adds it to its own scripts), so no inline script runs without it.
+ * Security response headers. Public pages are cached HTML (the same bytes for every visitor), so
+ * the Content-Security-Policy cannot carry a per-request nonce: inline scripts are allowed
+ * ('unsafe-inline'), but only Next.js / theme bootstrapping writes them — user content is never
+ * rendered as HTML (rich text is JSON, rendered by React). Scripts load from our own origin and
+ * the listed hosts only.
  *
- * Allowed third parties: Clerk (sign-in: its Frontend API serves the scripts and the session
- * requests; bot protection runs Cloudflare Turnstile), Cloudflare Turnstile (contact form) and
- * Google Maps (contact page iframe). Images may come from the site itself (R2 via /media),
+ * Allowed third parties: Clerk (account areas only: its Frontend API serves the scripts and the
+ * session requests; bot protection runs Cloudflare Turnstile), Cloudflare Turnstile (contact
+ * form), Google Maps (contact page iframe) and Cloudflare Web Analytics (cookie-free beacon). Images may come from the site itself (R2 via /media),
  * data/blob previews and https (rich text images, Clerk avatars from img.clerk.com).
  */
 export function buildCsp({
-  nonce,
   dev,
   https,
   clerkFrontendApi,
 }: {
-  nonce: string;
   dev: boolean;
   https: boolean;
   /** e.g. https://clerk.example.mn (from the publishable key); omitted when Clerk is not set up. */
@@ -30,9 +31,9 @@ export function buildCsp({
       "script-src",
       [
         "'self'",
-        `'nonce-${nonce}'`,
-        "'strict-dynamic'",
+        "'unsafe-inline'",
         "https://challenges.cloudflare.com",
+        "https://static.cloudflareinsights.com",
         ...clerk,
         // React Fast Refresh needs eval in development only.
         ...(dev ? ["'unsafe-eval'"] : []),
@@ -47,6 +48,7 @@ export function buildCsp({
       [
         "'self'",
         "https://challenges.cloudflare.com",
+        "https://cloudflareinsights.com",
         ...clerk,
         ...clerkProtect,
         ...(dev ? ["ws:"] : []),
@@ -81,11 +83,4 @@ export function staticSecurityHeaders({ https }: { https: boolean }): Record<str
     // Browsers ignore HSTS over http, but it is only meaningful (and only sent) on https.
     ...(https ? { "Strict-Transport-Security": "max-age=31536000; includeSubDomains" } : {}),
   };
-}
-
-export function generateNonce() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
 }

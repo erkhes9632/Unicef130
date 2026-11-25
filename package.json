@@ -13,14 +13,13 @@
     "check": "bun run lint && bun run typecheck && bun run format:check && bun run knip && bun run test",
     "cf:build": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy && bun run cache:warm",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
-    "db:seed:local": "bun scripts/seed.ts",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "db:reset:local": "rm -rf .wrangler/state/v3/d1 && bun run db:migrate:local && bun run db:seed:local",
+    "db:reset:local": "rm -rf .wrangler/state/v3/d1 && bun run db:migrate:local",
     "db:studio:local": "echo \"Open the local D1 in Wrangler: bunx wrangler d1 execute DB --local --command \\\"SELECT name FROM sqlite_master\\\"\"",
     "admin:grant": "bun scripts/admin-role.ts grant",
     "admin:revoke": "bun scripts/admin-role.ts revoke",
@@ -30,7 +29,8 @@
     "report:import": "bun scripts/report/parse-docx.ts && bun scripts/report/build-import.ts && bun scripts/report/run-import.ts",
     "test": "bun test --isolate",
     "test:e2e": "playwright test",
-    "knip": "knip"
+    "knip": "knip",
+    "cache:warm": "bun scripts/warm-cache.ts"
   },
   "dependencies": {
     "@clerk/localizations": "4.24.8",

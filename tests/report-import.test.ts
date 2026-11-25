@@ -87,6 +87,9 @@ const out = (key: string) => ({
   thumbHeight: 360,
   md5: "a",
   thumbMd5: "b",
+  mediumKey: key.replace(".webp", "-md.webp"),
+  mediumFile: `private/${key}`.replace(".webp", "-md.webp"),
+  mediumMd5: "c",
 });
 const manifest: Manifest = {
   source: "x.docx",
@@ -223,7 +226,7 @@ describe("report import SQL", () => {
 
   test("cover = first photo, album only when there are more, uploads listed", () => {
     expect(sql).toContain("/media/content/2025-2026/test-activity-1-2025/01.webp");
-    expect(uploads).toHaveLength(4);
+    expect(uploads).toHaveLength(6); // 2 photos × full, medium, thumb
     expect(uploads.every((u) => u.key.startsWith("content/"))).toBe(true);
   });
 

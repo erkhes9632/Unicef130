@@ -123,8 +123,8 @@ describe("every Server Action checks the role on the server", () => {
     }
   });
 
-  test("the middleware requires a session for /admin and /me (roles are checked by the pages)", () => {
-    const src = readFileSync("src/middleware.ts", "utf8");
+  test("the proxy requires a session for /admin and /me (roles are checked by the pages)", () => {
+    const src = readFileSync("src/proxy.ts", "utf8");
     expect(src).toContain("clerkMiddleware(");
     expect(src).toMatch(/decideAccess\(area/);
     expect(src).toContain("redirectToSignIn");
@@ -172,7 +172,7 @@ describe("Clerk is loaded only in the account areas", () => {
   });
 
   test("only the account-area layouts wrap their pages in ClerkShell", () => {
-    expect(readFileSync("src/app/layout.tsx", "utf8")).not.toContain("ClerkProvider");
+    expect(readFileSync("src/app/[locale]/layout.tsx", "utf8")).not.toContain("ClerkProvider");
     const users = walkFiles("src/app", (f) => /\.tsx$/.test(f)).filter((f) =>
       readFileSync(f, "utf8").includes("<ClerkShell"),
     );
@@ -187,22 +187,33 @@ describe("Clerk is loaded only in the account areas", () => {
     );
   });
 
-  test("the public header renders the account button on the server", () => {
+  test("the cached public header reads only a display hint; access is decided on the server", () => {
     const header = readFileSync("src/components/layout/site-header.tsx", "utf8");
     expect(header).toContain("<HeaderAccount");
     expect(header).not.toContain("AccountMenu");
-    const account = readFileSync("src/components/auth/header-account.tsx", "utf8");
-    expect(account).toContain("getHeaderSession");
-    expect(account).not.toContain('"use client"');
-    const session = readFileSync("src/lib/auth/header-session.ts", "utf8");
-    expect(session).toContain('from "@clerk/nextjs/server"');
-    // The header role comes from D1 (getCurrentUser), not from the token claim alone.
-    expect(session).toContain("getCurrentUser");
-    expect(session).not.toContain("sessionClaims");
+    // No Clerk and no request data in the cached header.
+    for (const f of [
+      "src/components/auth/header-account.tsx",
+      "src/components/auth/header-account-client.tsx",
+      "src/components/auth/header-cta.tsx",
+      "src/components/auth/use-header-session.ts",
+    ]) {
+      const src = readFileSync(f, "utf8");
+      expect(src).not.toContain("@clerk/");
+      expect(src).not.toMatch(/\b(headers|cookies)\(\)/);
+    }
+    // The hint is written from D1 (getCurrentUser / getFreshUser), never from the token claim.
+    for (const f of ["src/app/auth/role-hint/route.ts", "src/app/auth/continue/route.ts"]) {
+      const src = readFileSync(f, "utf8");
+      expect(src).toMatch(/get(Current|Fresh)User/);
+      expect(src).not.toContain("sessionClaims");
+    }
+    const hint = readFileSync("src/lib/auth/role-hint.ts", "utf8");
+    expect(hint).toContain("Never used for access decisions");
   });
 
-  test("the middleware only checks sign-in; roles are decided on the server", () => {
-    const mw = readFileSync("src/middleware.ts", "utf8");
+  test("the proxy only checks sign-in; roles are decided on the server", () => {
+    const mw = readFileSync("src/proxy.ts", "utf8");
     expect(mw).not.toContain("sessionClaims");
     const panel = readFileSync("src/app/admin/(panel)/layout.tsx", "utf8");
     expect(panel).toContain("getAdminAccess");

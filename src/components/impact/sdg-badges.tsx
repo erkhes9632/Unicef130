@@ -33,7 +33,7 @@ export async function SdgBadges({
         const cls = cn(
           "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs shadow-sm",
           info.text === "light" ? "text-white" : "text-black",
-          linked && "transition-opacity hover:opacity-85",
+          linked && "tap-target transition-opacity hover:opacity-85",
         );
         return (
           <li key={n}>

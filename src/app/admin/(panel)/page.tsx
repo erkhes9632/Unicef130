@@ -149,7 +149,7 @@ export default async function AdminDashboard() {
           <li key={label}>
             <Link
               href={href}
-              className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border transition-shadow hover:shadow-md"
+              className="flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border hover:shadow-md"
             >
               <span className={`flex size-11 items-center justify-center rounded-xl ${tone}`}>
                 <Icon className="size-5" aria-hidden="true" />

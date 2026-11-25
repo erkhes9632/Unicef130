@@ -59,7 +59,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/90 px-3 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background px-3 sm:px-6 md:bg-background/90 md:backdrop-blur">
           <AdminMobileNav />
           {/* Sidebar collapsed (below lg): the mark only. */}
           <Link

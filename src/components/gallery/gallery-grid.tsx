@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { responsiveSrc } from "@/lib/media/variants";
 import type { GalleryImage } from "@/lib/types";
 
 /** Masonry-like photo grid with an accessible lightbox (keyboard arrows + swipe). */
@@ -34,6 +35,10 @@ export function GalleryGrid({ images, title }: { images: GalleryImage[]; title: 
               {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnails */}
               <img
                 src={img.thumbUrl}
+                {...responsiveSrc(
+                  img.url,
+                  "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
+                )}
                 alt={img.alt}
                 width={img.width}
                 height={img.height}

@@ -15,7 +15,7 @@ import {
   FileText,
   HelpCircle,
   Settings,
-  Activity,
+  ChartColumn,
   UserCog,
   Users,
 } from "lucide-react";
@@ -45,7 +45,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/settings", label: "Сайтын тохиргоо", icon: Settings },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UserCog },
   { href: "/admin/audit", label: "Үйлдлийн түүх", icon: ScrollText },
-  { href: "/admin/system", label: "Системийн төлөв", icon: Activity },
+  { href: "/admin/stats", label: "Статистик", icon: ChartColumn },
 ];
 
 /** Admin menu (only admins reach the panel; every page checks the role on the server). */

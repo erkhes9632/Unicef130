@@ -39,7 +39,8 @@ type RouteArea = "admin" | "member" | "public";
 /** /admin/* is admin-only, /me/* (and /en/me/*) is for members and admins, the rest is public. */
 export function routeArea(pathname: string): RouteArea {
   if (/^\/admin(\/|$)/.test(pathname)) return "admin";
-  if (/^(\/en)?\/me(\/|$)/.test(pathname)) return "member";
+  // "/mn/me": OpenNext rewrites the unprefixed Mongolian URL before the proxy runs.
+  if (/^(\/(en|mn))?\/me(\/|$)/.test(pathname)) return "member";
   return "public";
 }
 

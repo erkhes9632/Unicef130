@@ -75,7 +75,7 @@ export function SubmitButton({
 /** Bottom bar that stays in view while a long form scrolls (Save is always one tap away). */
 export function StickyActions({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t bg-background/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t bg-background px-4 py-3 sm:-mx-6 sm:px-6 md:bg-background/90 md:backdrop-blur lg:-mx-8 lg:px-8">
       {children}
     </div>
   );

@@ -6,6 +6,9 @@ import { resolveLocale } from "@/i18n/locale";
 import { clerkPublishableKey } from "@/lib/auth/clerk";
 import { SIGN_IN_PATH } from "@/lib/auth/roles";
 
+// Per visitor (session / query string): never cached, unlike the public pages.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/sign-out">): Promise<Metadata> {

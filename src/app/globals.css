@@ -219,6 +219,13 @@
   html {
     @apply scroll-smooth font-sans;
     -webkit-tap-highlight-color: transparent;
+    /* Anchors (#main, #news-list…) land below the sticky header (64 px, 72 px from xl). */
+    scroll-padding-top: 5rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
   body {
     @apply bg-background text-foreground;
@@ -409,10 +416,23 @@
 }
 
 /* Interactive cards lift a little; buttons press in. */
+/* A small chip or badge link with a hit area of at least 44 × 44 px (looks unchanged). */
+@utility tap-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Only the transform animates (cheap, GPU); the shadow switches without a transition. */
 @utility hover-lift {
-  transition:
-    transform var(--dur-2) var(--ease-out-soft),
-    box-shadow var(--dur-2) var(--ease-out-soft);
+  transition: transform var(--dur-2) var(--ease-out-soft);
   @media (hover: hover) and (prefers-reduced-motion: no-preference) {
     &:hover {
       transform: translateY(-3px);

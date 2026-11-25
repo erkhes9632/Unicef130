@@ -1,11 +1,7 @@
 /**
- * Helpers for local maintenance scripts (Bun). They build SQL and run it against the
- * LOCAL D1 via wrangler. Production is changed only by the developer (`--remote` commands in
- * DEPLOY_CHECKLIST / the generated report seed SQL).
+ * SQL literal helpers for the maintenance scripts (the yearly report import builds its SQL
+ * with them). Production is changed only by the developer (README → Yearly report).
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 type SqlValue = string | number | boolean | null | undefined | Date | object;
 
@@ -23,24 +19,4 @@ export function insert(table: string, row: Record<string, SqlValue>) {
   return `INSERT INTO "${table}" (${cols.map((c) => `"${c}"`).join(", ")}) VALUES (${cols
     .map((c) => sqlValue(row[c]))
     .join(", ")});`;
-}
-
-/** Executes SQL against the local D1 database (binding DB). */
-export async function runLocalSql(statements: string[], label: string) {
-  const dir = mkdtempSync(join(tmpdir(), "unicef130-"));
-  const file = join(dir, `${label}.sql`);
-  writeFileSync(file, statements.join("\n") + "\n");
-  try {
-    const proc = Bun.spawn(
-      ["bunx", "wrangler", "d1", "execute", "DB", "--local", `--file=${file}`],
-      {
-        stdout: "inherit",
-        stderr: "inherit",
-      },
-    );
-    const code = await proc.exited;
-    if (code !== 0) throw new Error(`wrangler d1 execute failed with exit code ${code}`);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
 }

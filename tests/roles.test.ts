@@ -1,5 +1,5 @@
 /**
- * Pure rules of the Clerk migration: route access (middleware), roles, account-action guards
+ * Pure rules of the Clerk migration: route access (proxy), roles, account-action guards
  * (self / last admin), user filters, Clerk key helpers, the D1 mirror and the admin script.
  */
 import { describe, expect, test } from "bun:test";
@@ -10,13 +10,15 @@ import { checkUserAction, roleAfter } from "@/lib/users/rules";
 import { mirrorFromClerk } from "@/lib/users/sync";
 import { planRoleChange, instanceOf, type ClerkUserLite } from "../scripts/lib/admin-role";
 
-describe("route access (middleware)", () => {
+describe("route access (proxy)", () => {
   test("areas", () => {
     expect(routeArea("/admin")).toBe("admin");
     expect(routeArea("/admin/users")).toBe("admin");
     expect(routeArea("/administrator")).toBe("public");
     expect(routeArea("/me")).toBe("member");
     expect(routeArea("/en/me/x")).toBe("member");
+    expect(routeArea("/mn/me")).toBe("member"); // after the locale rewrite
+    expect(routeArea("/members")).toBe("public");
     expect(routeArea("/members")).toBe("public");
     expect(routeArea("/join")).toBe("public");
   });
@@ -33,7 +35,7 @@ describe("route access (middleware)", () => {
     expect(decideAccess("public", { signedIn: false })).toEqual({ allow: true });
   });
 
-  test("signed in → the middleware lets the page decide the role (D1 + Clerk, not the claim)", () => {
+  test("signed in → the proxy lets the page decide the role (D1 + Clerk, not the claim)", () => {
     // A missing or stale `role` claim must not lock a real admin out with a silent redirect.
     expect(decideAccess("admin", { signedIn: true })).toEqual({ allow: true });
     expect(decideAccess("member", { signedIn: true })).toEqual({ allow: true });

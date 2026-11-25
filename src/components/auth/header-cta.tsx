@@ -1,44 +1,42 @@
+"use client";
+
 import { ArrowRight, ShieldCheck, UserRound } from "lucide-react";
 import NextLink from "next/link";
-import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { getHeaderSession } from "@/lib/auth/header-session";
+import type { RoleHint } from "@/lib/auth/role-hint";
+import { useHeaderSession } from "./use-header-session";
 
-export type HeaderCtaTarget =
-  | { kind: "join"; href: "/join"; label: string }
-  | { kind: "me"; href: "/me"; label: string }
-  | { kind: "admin"; href: "/admin"; label: string };
+export type CtaLabels = { join: string; me: string; admin: string };
+export type CtaKind = "join" | "me" | "admin";
+
+export function ctaKind(signedIn: boolean, role: RoleHint | null): CtaKind {
+  if (!signedIn) return "join";
+  return role === "admin" ? "admin" : role === "member" ? "me" : "join";
+}
 
 /**
  * The one call-to-action in the header, by role (display only — every page checks access
  * itself): visitors and applicants «Гишүүн болох», members «Миний хэсэг», admins «Админ».
  */
-export async function headerCtaTarget(): Promise<HeaderCtaTarget> {
-  const [session, t] = await Promise.all([getHeaderSession(), getTranslations()]);
-  if (session?.role === "admin")
-    return { kind: "admin", href: "/admin", label: t("Auth.adminButton") };
-  if (session?.role === "member") return { kind: "me", href: "/me", label: t("Auth.menuMe") };
-  return { kind: "join", href: "/join", label: t("Common.joinCta") };
-}
-
-export async function HeaderCta({ className }: { className?: string }) {
-  const cta = await headerCtaTarget();
-  if (cta.kind === "admin")
+export function HeaderCta({ labels, className }: { labels: CtaLabels; className?: string }) {
+  const { signedIn, role } = useHeaderSession();
+  const kind = ctaKind(signedIn, role);
+  if (kind === "admin")
     return (
       <Button asChild variant="outline" className={className}>
         <NextLink href="/admin" prefetch={false}>
           <ShieldCheck aria-hidden="true" />
-          {cta.label}
+          {labels.admin}
         </NextLink>
       </Button>
     );
   return (
-    <Button asChild variant={cta.kind === "me" ? "outline" : "default"} className={className}>
-      <Link href={cta.href}>
-        {cta.kind === "me" && <UserRound aria-hidden="true" />}
-        {cta.label}
-        {cta.kind === "join" && <ArrowRight aria-hidden="true" />}
+    <Button asChild variant={kind === "me" ? "outline" : "default"} className={className}>
+      <Link href={kind === "me" ? "/me" : "/join"}>
+        {kind === "me" && <UserRound aria-hidden="true" />}
+        {kind === "me" ? labels.me : labels.join}
+        {kind === "join" && <ArrowRight aria-hidden="true" />}
       </Link>
     </Button>
   );

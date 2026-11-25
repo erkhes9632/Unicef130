@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { HeaderAccount } from "@/components/auth/header-account";
-import { HeaderCta, headerCtaTarget } from "@/components/auth/header-cta";
+import { HeaderCta } from "@/components/auth/header-cta";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -12,10 +12,15 @@ import { ThemeToggle } from "./theme-toggle";
 
 export async function SiteHeader() {
   const t = await getTranslations();
-  const cta = await headerCtaTarget();
+  // Role labels; the role itself is known only in the browser (cached page, see role-hint.ts).
+  const ctaLabels = {
+    join: t("Common.joinCta"),
+    me: t("Auth.menuMe"),
+    admin: t("Auth.adminButton"),
+  };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur [view-transition-name:site-header] supports-backdrop-filter:bg-background/75 print:hidden">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background [view-transition-name:site-header] md:bg-background/90 md:backdrop-blur md:supports-backdrop-filter:bg-background/75 print:hidden">
       <div className="container-page flex h-16 min-w-0 items-center gap-2 sm:gap-3 xl:h-[4.5rem]">
         {/* Name = the logo's alt (club name, as drawn in the wordmark) + "Нүүр". Horizontal logo
             from lg, compact below; the locale-aware Link goes to this locale's home page. The
@@ -56,11 +61,9 @@ export async function SiteHeader() {
           <span className="hidden sm:inline-flex">
             <ThemeToggle />
           </span>
-          <HeaderCta className="ml-1.5 hidden lg:inline-flex" />
+          <HeaderCta labels={ctaLabels} className="ml-1.5 hidden lg:inline-flex" />
           <HeaderAccount />
-          <MobileNav
-            cta={{ kind: cta.kind, label: cta.kind === "admin" ? t("Auth.menuAdmin") : cta.label }}
-          />
+          <MobileNav labels={{ ...ctaLabels, admin: t("Auth.menuAdmin") }} />
         </div>
       </div>
     </header>

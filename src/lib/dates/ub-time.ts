@@ -55,3 +55,8 @@ export function nowMs() {
 export function ubToday(now: number = Date.now()) {
   return new Date(now + UB_OFFSET_MS).toISOString().slice(0, 10);
 }
+
+/** An event counts as upcoming until it ends (or until its start if it has no end time). */
+export function isUpcoming(e: { startsAt: string; endsAt: string | null }, now = Date.now()) {
+  return Date.parse(e.endsAt ?? e.startsAt) >= now;
+}

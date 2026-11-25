@@ -181,7 +181,10 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
                         className={cn("mt-0.5 size-5 shrink-0", col.check)}
                         aria-hidden="true"
                       />
-                      <Link href={item.href} className="font-medium hover:underline">
+                      <Link
+                        href={item.href}
+                        className="inline-flex min-h-11 items-center font-medium hover:underline"
+                      >
                         {item.title}
                       </Link>
                     </li>
@@ -189,7 +192,10 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
                 </ul>
                 <Link
                   href={{ pathname: "/news", query: { category: col.key } }}
-                  className={cn("mt-5 text-sm font-bold hover:underline", col.check)}
+                  className={cn(
+                    "mt-3 inline-flex min-h-11 items-center text-sm font-bold hover:underline",
+                    col.check,
+                  )}
                 >
                   {t("directionAll", { direction: col.title })} →
                 </Link>

@@ -139,7 +139,7 @@ export function ImpactTimeline({
                         tone?.dot ?? "bg-brand-cyan",
                       )}
                     />
-                    <article className="group relative rounded-2xl bg-card p-4 ring-1 ring-border transition-[box-shadow,translate] duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:p-5">
+                    <article className="group relative rounded-2xl bg-card p-4 ring-1 ring-border transition-[translate] duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:p-5">
                       <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <time dateTime={a.dateTime}>{a.dateLabel}</time>
                         {a.directionLabel && (
@@ -170,7 +170,7 @@ export function ImpactTimeline({
                                 title={s.label}
                                 style={{ backgroundColor: s.color }}
                                 className={cn(
-                                  "inline-flex h-6 items-center rounded-md px-2 text-xs font-extrabold transition-transform hover:scale-105",
+                                  "tap-target inline-flex h-6 items-center rounded-md px-2 text-xs font-extrabold transition-transform hover:scale-105",
                                   s.light ? "text-white" : "text-black",
                                 )}
                               >

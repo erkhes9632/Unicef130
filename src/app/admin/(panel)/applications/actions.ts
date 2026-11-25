@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { applications, applicationStatuses, users } from "@/db/schema";
 import { actionError, fd, type ActionState } from "@/lib/admin/action-state";
 import { logActivity, shortId } from "@/lib/admin/activity";
+import { revalidatePublic } from "@/lib/admin/revalidate";
 import { syncApplicationToSheets } from "@/lib/applications/sheets-sync";
 import { assertAdmin } from "@/lib/auth/session";
 import { applyStatus, purgeApplications } from "@/lib/recruitment/admin-ops";
@@ -122,6 +123,8 @@ export async function setApplyBlocked(userId: string, blocked: boolean): Promise
     });
     revalidatePath("/admin/applications");
     revalidatePath("/admin/users");
+    // Accepting changes public numbers (members, places left in the recruitment banner).
+    revalidatePublic();
     return {
       ok: true,
       message: blocked ? "Дахин өргөдөл гаргахыг хориглолоо." : "Хоригийг цуцаллаа.",

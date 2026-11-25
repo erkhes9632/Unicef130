@@ -14,12 +14,21 @@ import { searchEvents } from "@/lib/data/events";
 import { searchNews } from "@/lib/data/news";
 import { pageMetadata } from "@/lib/seo";
 
+// Per visitor (session / query string): never cached, unlike the public pages.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/search">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = await getTranslations({ locale, namespace: "Search" });
-  return pageMetadata({ locale, path: "/search", title: t("metaTitle"), noIndex: true });
+  return pageMetadata({
+    locale,
+    path: "/search",
+    title: t("metaTitle"),
+    description: t("description"),
+    noIndex: true,
+  });
 }
 
 export default async function SearchPage({ params, searchParams }: PageProps<"/[locale]/search">) {

@@ -1,6 +1,6 @@
 {
   "Metadata": {
-    "description": "The UNICEF Club of School No. 130 is part of the UNICEF Club Mongolia network: a student club organising volunteer activities in three directions — advocacy, education and fundraising."
+    "description": "The UNICEF Club of School No. 130: a student club organising volunteer work in advocacy, education and fundraising."
   },
   "Common": {
     "brandPair": "School No. 130 × UNICEF",
@@ -548,7 +548,7 @@
     "eyebrow": "Privacy",
     "title": "Privacy policy",
     "description": "What we collect, who can see it, when we delete it and how to ask us to delete your data.",
-    "updated": "Last updated: 20 November 2026",
+    "updated": "Last updated: 25 November 2026",
     "intro": "Most people who use this site are students, so we collect only the minimum the club needs.",
     "collectTitle": "What we collect",
     "collect": [
@@ -557,7 +557,8 @@
       "After you become a member: class, team, volunteer hours and the events you signed up for.",
       "Contact form: name, e-mail address, subject and message."
     ],
-    "notCollected": "We don't store IP addresses and use no advertising or tracking cookies and no analytics. Your browser only keeps the cookies needed to sign in and the colour theme you chose.",
+    "notCollected": "We don't store IP addresses and use no advertising or tracking cookies. Your browser only keeps the cookies needed to sign in and the colour theme you chose.",
+    "analytics": "We count visits with Cloudflare Web Analytics. It uses no cookies and collects no personal data: it only shows totals such as how many pages were viewed, from which country and on what kind of device.",
     "googleTitle": "Signing in with Google",
     "google": "When you sign in with Google we only receive your name, e-mail address and profile picture. We never see your password, contacts, files or any other Google data. Sign-in is handled by the Clerk service.",
     "whoTitle": "Who can see it",

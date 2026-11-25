@@ -1,19 +1,14 @@
-import { ArrowRight, CalendarDays, CalendarX2, List } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { EmptyState } from "@/components/common/empty-state";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
 import { EventCard } from "@/components/events/event-card";
-import { MonthCalendar } from "@/components/events/month-calendar";
-import { Button } from "@/components/ui/button";
+import { EventsBrowser } from "@/components/events/events-browser";
 import { resolveLocale } from "@/i18n/locale";
-import { Link } from "@/i18n/navigation";
-import { getEventsInMonth, listEvents } from "@/lib/data/events";
-import { parseMonth } from "@/lib/dates/ub-time";
+import { listAllEvents } from "@/lib/data/events";
+import { nowMs } from "@/lib/dates/ub-time";
 import { pageMetadata } from "@/lib/seo";
-import { cn } from "@/lib/utils";
 
 export async function generateMetadata({
   params,
@@ -28,31 +23,11 @@ export async function generateMetadata({
   });
 }
 
-const tabClass = (active: boolean) =>
-  cn(
-    "inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors",
-    active
-      ? "bg-card text-foreground shadow-soft ring-1 ring-border"
-      : "text-muted-foreground hover:text-foreground",
-  );
-
-export default async function EventsPage({ params, searchParams }: PageProps<"/[locale]/events">) {
+/** Cached page: all events are rendered once; list / calendar / tabs work in the browser. */
+export default async function EventsPage({ params }: PageProps<"/[locale]/events">) {
   const locale = await resolveLocale(params);
-  const sp = await searchParams;
-  const view = sp.view === "calendar" ? "calendar" : "list";
-  const scope = sp.tab === "past" ? "past" : "upcoming";
-  const t = await getTranslations("Events");
-
-  const { year, month } = parseMonth(sp.month);
-  const [items, monthEvents] = await Promise.all([
-    view === "list" ? listEvents(locale, scope) : Promise.resolve([]),
-    view === "calendar" ? getEventsInMonth(locale, year, month) : Promise.resolve([]),
-  ]);
-  // Nothing coming up: say so briefly and show what the club has done instead of an empty page.
-  const pastFallback =
-    view === "list" && scope === "upcoming" && items.length === 0
-      ? await listEvents(locale, "past")
-      : [];
+  const [t, items] = await Promise.all([getTranslations("Events"), listAllEvents(locale)]);
+  const plural = (count: number) => t("eventsOnDay", { count }).replace(String(count), "#");
 
   return (
     <>
@@ -64,93 +39,41 @@ export default async function EventsPage({ params, searchParams }: PageProps<"/[
       />
       <Section className="pt-8 sm:pt-10">
         <h2 className="sr-only">{t("metaTitle")}</h2>
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="inline-flex w-fit rounded-full bg-muted p-1">
-            <Link
-              href="/events"
-              className={tabClass(view === "list")}
-              aria-current={view === "list" ? "page" : undefined}
-            >
-              <List className="size-4" aria-hidden="true" /> {t("listView")}
-            </Link>
-            <Link
-              href={{ pathname: "/events", query: { view: "calendar" } }}
-              className={tabClass(view === "calendar")}
-              aria-current={view === "calendar" ? "page" : undefined}
-            >
-              <CalendarDays className="size-4" aria-hidden="true" /> {t("calendarView")}
-            </Link>
-          </div>
-          {view === "list" && (
-            <div className="inline-flex w-fit rounded-full bg-muted p-1">
-              <Link
-                href="/events"
-                className={tabClass(scope === "upcoming")}
-                aria-current={scope === "upcoming" ? "page" : undefined}
-              >
-                {t("upcoming")}
-              </Link>
-              <Link
-                href={{ pathname: "/events", query: { tab: "past" } }}
-                className={tabClass(scope === "past")}
-                aria-current={scope === "past" ? "page" : undefined}
-              >
-                {t("past")}
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {view === "calendar" ? (
-          <div className="space-y-8">
-            <MonthCalendar year={year} month={month} events={monthEvents} />
-            {monthEvents.length > 0 ? (
-              <div className="reveal-group grid gap-4 lg:grid-cols-2">
-                {monthEvents.map((e) => (
-                  <EventCard key={e.id} item={e} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState icon={CalendarX2} title={t("emptyMonth")} />
-            )}
-          </div>
-        ) : items.length > 0 ? (
-          <div className="reveal-group grid gap-4 lg:grid-cols-2">
-            {items.map((e) => (
-              <EventCard key={e.id} item={e} />
-            ))}
-          </div>
-        ) : scope === "upcoming" && pastFallback.length > 0 ? (
-          <div className="space-y-10">
-            <EmptyState
-              icon={CalendarX2}
-              title={t("emptyUpcoming")}
-              description={t("emptyUpcomingHint")}
-              className="py-8"
-            >
-              <Button asChild>
-                <Link href="/join">{t("emptyUpcomingCta")}</Link>
-              </Button>
-            </EmptyState>
-            <div>
-              <h2 className="mb-5 text-2xl font-extrabold">{t("pastTitle")}</h2>
-              <div className="reveal-group grid gap-4 lg:grid-cols-2">
-                {pastFallback.slice(0, 6).map((e) => (
-                  <EventCard key={e.id} item={e} />
-                ))}
-              </div>
-              {pastFallback.length > 6 && (
-                <Button asChild variant="outline" className="mt-6">
-                  <Link href={{ pathname: "/events", query: { tab: "past" } }}>
-                    {t("allPast")} <ArrowRight />
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <JoinEmptyState title={scope === "upcoming" ? t("emptyUpcoming") : t("emptyPast")} />
-        )}
+        <EventsBrowser
+          locale={locale}
+          renderedAt={nowMs()}
+          events={items.map((e) => ({
+            id: e.id,
+            slug: e.slug,
+            title: e.title,
+            startsAt: e.startsAt,
+            endsAt: e.endsAt,
+          }))}
+          cards={Object.fromEntries(items.map((e) => [e.id, <EventCard key={e.id} item={e} />]))}
+          joinCards={{
+            upcoming: <JoinEmptyState title={t("emptyUpcoming")} />,
+            past: <JoinEmptyState title={t("emptyPast")} />,
+          }}
+          labels={{
+            listView: t("listView"),
+            calendarView: t("calendarView"),
+            upcoming: t("upcoming"),
+            past: t("past"),
+            emptyMonth: t("emptyMonth"),
+            emptyUpcoming: t("emptyUpcoming"),
+            emptyUpcomingHint: t("emptyUpcomingHint"),
+            emptyUpcomingCta: t("emptyUpcomingCta"),
+            emptyPast: t("emptyPast"),
+            pastTitle: t("pastTitle"),
+            allPast: t("allPast"),
+            calendar: {
+              prevMonth: t("prevMonth"),
+              nextMonth: t("nextMonth"),
+              today: t("today"),
+              eventsOnDay: { one: plural(1), other: plural(2) },
+            },
+          }}
+        />
       </Section>
     </>
   );

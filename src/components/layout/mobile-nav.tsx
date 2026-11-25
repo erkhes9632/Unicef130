@@ -4,6 +4,8 @@ import { ArrowRight, Menu, Search, ShieldCheck, UserRound } from "lucide-react";
 import NextLink from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { ctaKind, type CtaLabels } from "@/components/auth/header-cta";
+import { useHeaderSession } from "@/components/auth/use-header-session";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -18,13 +20,12 @@ import { LocaleChoice } from "./locale-switcher";
 import { MobileNavLinks } from "./nav-links";
 import { ThemeChoice } from "./theme-toggle";
 
-/** The role button computed on the server (see `HeaderCta`); display only. */
-export type DrawerCta = { kind: "join" | "me" | "admin"; label: string };
-
-/** Drawer below `lg`: grouped links, the role button, search, language and theme. */
-export function MobileNav({ cta }: { cta: DrawerCta }) {
+/** Drawer below `xl`: grouped links, the role button, search, language and theme. */
+export function MobileNav({ labels }: { labels: CtaLabels }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
+  const { signedIn, role } = useHeaderSession();
+  const kind = ctaKind(signedIn, role);
   const close = () => setOpen(false);
 
   return (
@@ -40,23 +41,23 @@ export function MobileNav({ cta }: { cta: DrawerCta }) {
           <SheetDescription>{t("Common.brandPair")}</SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-2">
-          {cta.kind === "admin" ? (
+          {kind === "admin" ? (
             <Button asChild size="lg" variant="secondary" className="w-full">
               <NextLink href="/admin" prefetch={false} onClick={close}>
-                <ShieldCheck aria-hidden="true" /> {cta.label}
+                <ShieldCheck aria-hidden="true" /> {labels.admin}
               </NextLink>
             </Button>
           ) : (
             <Button
               asChild
               size="lg"
-              variant={cta.kind === "me" ? "secondary" : "default"}
+              variant={kind === "me" ? "secondary" : "default"}
               className="w-full"
             >
-              <Link href={cta.kind === "me" ? "/me" : "/join"} onClick={close}>
-                {cta.kind === "me" && <UserRound aria-hidden="true" />}
-                {cta.label}
-                {cta.kind === "join" && <ArrowRight aria-hidden="true" />}
+              <Link href={kind === "me" ? "/me" : "/join"} onClick={close}>
+                {kind === "me" && <UserRound aria-hidden="true" />}
+                {kind === "me" ? labels.me : labels.join}
+                {kind === "join" && <ArrowRight aria-hidden="true" />}
               </Link>
             </Button>
           )}

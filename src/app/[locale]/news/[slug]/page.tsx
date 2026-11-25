@@ -26,6 +26,11 @@ import { newsCoverTransition } from "@/lib/motion/transitions";
 import { withoutRepeatedLead } from "@/lib/rich-text/sanitize";
 import { getSiteUrl, jsonLd, localizedPath, pageMetadata } from "@/lib/seo";
 
+/** Rendered on the first visit, then served from the cache (ISR; see app/[locale]/layout.tsx). */
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/news/[slug]">): Promise<Metadata> {
@@ -127,6 +132,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
                 icon={coverIconFor(item.category)}
                 sdgs={item.sdgs}
                 priority
+                sizes="(min-width: 1024px) 1024px, 100vw"
               />
             </div>
           </ViewTransition>
@@ -142,7 +148,10 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
           {album && albumImages.length > 0 && (
             <section aria-labelledby="post-album" className="space-y-3">
               <h2 id="post-album" className="text-xl font-extrabold">
-                <Link href={`/gallery/${album.slug}`} className="hover:underline">
+                <Link
+                  href={`/gallery/${album.slug}`}
+                  className="inline-flex min-h-11 items-center hover:underline"
+                >
                   {album.title}
                 </Link>
               </h2>

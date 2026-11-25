@@ -333,6 +333,7 @@ export function buildImport(r: Report, m: Manifest) {
         uploads.push(
           { file: o.file, key: o.key, md5: o.md5 },
           { file: o.thumbFile, key: o.thumbKey, md5: o.thumbMd5 },
+          { file: o.mediumFile, key: o.mediumKey, md5: o.mediumMd5 },
         );
       }
     }

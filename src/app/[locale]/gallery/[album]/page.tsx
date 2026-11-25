@@ -12,6 +12,11 @@ import { getAlbumBySlug } from "@/lib/data/gallery";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
 import { pageMetadata } from "@/lib/seo";
 
+/** Rendered on the first visit, then served from the cache (ISR; see app/[locale]/layout.tsx). */
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/gallery/[album]">): Promise<Metadata> {
@@ -38,7 +43,7 @@ export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery
 
   return (
     <Section className="pt-8 sm:pt-12">
-      <Button asChild variant="ghost" size="sm" className="mb-6 -ml-3">
+      <Button asChild variant="ghost" className="mb-6 -ml-3">
         <Link href="/gallery">
           <ArrowLeft /> {t("backToAlbums")}
         </Link>

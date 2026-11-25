@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
-import { buildCsp, generateNonce, staticSecurityHeaders } from "@/lib/security-headers";
+import { buildCsp, staticSecurityHeaders } from "@/lib/security-headers";
 
 const directives = (csp: string) =>
   Object.fromEntries(
@@ -11,20 +11,30 @@ const directives = (csp: string) =>
   );
 
 describe("Content-Security-Policy", () => {
-  const prod = directives(buildCsp({ nonce: "abc123", dev: false, https: true }));
+  const prod = directives(buildCsp({ dev: false, https: true }));
 
-  test("scripts need the per-request nonce; no inline or eval in production", () => {
-    expect(prod["script-src"]).toContain("'nonce-abc123'");
-    expect(prod["script-src"]).toContain("'strict-dynamic'");
-    expect(prod["script-src"]).not.toContain("'unsafe-inline'");
+  test("cached pages: no nonce; inline allowed, eval never in production", () => {
+    expect(prod["script-src"]).toContain("'self'");
+    expect(prod["script-src"]).toContain("'unsafe-inline'");
+    expect(prod["script-src"].some((v: string) => v.startsWith("'nonce-"))).toBe(false);
     expect(prod["script-src"]).not.toContain("'unsafe-eval'");
   });
 
-  test("only Turnstile and Google Maps are allowed as third parties", () => {
-    expect(prod["script-src"]).toContain("https://challenges.cloudflare.com");
+  test("only Turnstile, Google Maps and Web Analytics are allowed as third parties", () => {
+    expect(prod["script-src"]).toEqual([
+      "'self'",
+      "'unsafe-inline'",
+      "https://challenges.cloudflare.com",
+      "https://static.cloudflareinsights.com",
+    ]);
     expect(prod["frame-src"]).toEqual([
       "https://challenges.cloudflare.com",
       "https://www.google.com",
+    ]);
+    expect(prod["connect-src"]).toEqual([
+      "'self'",
+      "https://challenges.cloudflare.com",
+      "https://cloudflareinsights.com",
     ]);
     expect(prod["default-src"]).toEqual(["'self'"]);
     expect(prod["object-src"]).toEqual(["'none'"]);
@@ -35,38 +45,26 @@ describe("Content-Security-Policy", () => {
   test("the site cannot be framed and upgrades insecure requests on https", () => {
     expect(prod["frame-ancestors"]).toEqual(["'none'"]);
     expect("upgrade-insecure-requests" in prod).toBe(true);
-    const http = directives(buildCsp({ nonce: "n", dev: false, https: false }));
+    const http = directives(buildCsp({ dev: false, https: false }));
     expect("upgrade-insecure-requests" in http).toBe(false);
   });
 
-  test("Clerk: its Frontend API (from the key) and bot-protection hosts only when configured", () => {
+  test("Clerk (account areas): its Frontend API and bot-protection hosts only when configured", () => {
     const clerk = directives(
-      buildCsp({
-        nonce: "n",
-        dev: false,
-        https: true,
-        clerkFrontendApi: "https://clerk.example.mn",
-      }),
+      buildCsp({ dev: false, https: true, clerkFrontendApi: "https://clerk.example.mn" }),
     );
     expect(clerk["script-src"]).toContain("https://clerk.example.mn");
     expect(clerk["connect-src"]).toContain("https://clerk.example.mn");
     expect(clerk["connect-src"]).toContain("https://*.protect.clerk.com:*");
     expect(clerk["frame-src"]).toContain("https://*.protect.clerk.com");
     expect(clerk["worker-src"]).toEqual(["'self'", "blob:"]);
-    expect(clerk["script-src"]).not.toContain("'unsafe-inline'");
-    expect(prod["connect-src"]).toEqual(["'self'", "https://challenges.cloudflare.com"]);
+    expect(prod["script-src"].join(" ")).not.toContain("clerk");
   });
 
   test("development adds only what the dev server needs", () => {
-    const dev = directives(buildCsp({ nonce: "n", dev: true, https: false }));
+    const dev = directives(buildCsp({ dev: true, https: false }));
     expect(dev["script-src"]).toContain("'unsafe-eval'");
     expect(dev["connect-src"]).toContain("ws:");
-  });
-
-  test("nonces are random and header-safe", () => {
-    const a = generateNonce();
-    expect(a).toMatch(/^[A-Za-z0-9+/]{22}==$/);
-    expect(generateNonce()).not.toBe(a);
   });
 });
 
@@ -81,10 +79,23 @@ describe("static security headers", () => {
     expect("Strict-Transport-Security" in staticSecurityHeaders({ https: false })).toBe(false);
   });
 
-  test("the middleware covers pages, admin and API; assets use public/_headers", () => {
-    const mw = readFileSync("src/middleware.ts", "utf8");
-    expect(mw).toContain('response.headers.set("Content-Security-Policy", csp)');
-    expect(mw).toContain('matcher: ["/((?!_next/static|_next/image).*)"]');
+  test("headers: proxy for account areas, next.config for cached pages, _headers for assets", () => {
+    const proxy = readFileSync("src/proxy.ts", "utf8");
+    expect(proxy).toContain('response.headers.set("Content-Security-Policy", csp)');
+    // Clerk only runs in the account areas (Free plan CPU budget).
+    for (const area of [
+      "/admin/:path*",
+      "/me/:path*",
+      "/(en|mn)/me/:path*",
+      "/join",
+      "/(en|mn)/join",
+      "/sign-in/:path*",
+      "/(en|mn)/sign-in/:path*",
+    ])
+      expect(proxy).toContain(`"${area}"`);
+    expect(proxy).not.toContain('"/:path*"');
+    const config = readFileSync("next.config.ts", "utf8");
+    expect(config).toContain("headers: publicHeaders");
     const assets = readFileSync("public/_headers", "utf8");
     expect(assets).toContain("X-Content-Type-Options: nosniff");
   });
