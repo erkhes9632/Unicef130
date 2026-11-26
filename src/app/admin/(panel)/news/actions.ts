@@ -109,7 +109,7 @@ export async function saveNews(
         summary: `«${input.title}» мэдээ нэмэв`,
       });
     }
-    revalidatePublic();
+    revalidatePublic("news");
   } catch (err) {
     return actionError(err);
   }
@@ -131,7 +131,7 @@ export async function deleteNews(id: string): Promise<ActionState> {
       id,
       summary: `«${row.title}» мэдээг устгав`,
     });
-    revalidatePublic();
+    revalidatePublic("news");
     return { ok: true, message: "Мэдээ устгагдлаа." };
   } catch (err) {
     return actionError(err);

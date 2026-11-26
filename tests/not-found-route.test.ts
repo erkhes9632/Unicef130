@@ -1,7 +1,8 @@
 import { readdirSync, statSync } from "node:fs";
+import { readFileSync as read } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { checkRoute, PAGE_SEGMENTS } from "@/lib/not-found-route";
+import { checkRoute, notFoundPath, PAGE_SEGMENTS } from "@/lib/not-found-route";
 
 describe("cheap 404s (worker.ts)", () => {
   test("every public page section is known (a new page must be added to PAGE_SEGMENTS)", () => {
@@ -49,5 +50,21 @@ describe("cheap 404s (worker.ts)", () => {
     expect(checkRoute("/en/gallery/mod-tarikh")).toMatchObject({ table: "albums", locale: "en" });
     expect(checkRoute("/events/%D0%B0")).toMatchObject({ slug: "а" });
     expect(checkRoute("/events/%E0%A4%A").kind).toBe("missing");
+  });
+});
+
+describe("static 404 pages", () => {
+  test("public/errors files exist and match the messages (run `bun run brand:404`)", async () => {
+    const { notFoundHtml } = await import("../scripts/build-404");
+    for (const locale of ["mn", "en"] as const) {
+      const file = `public${notFoundPath(locale)}`;
+      expect([file, read(file, "utf8") === notFoundHtml(locale)]).toEqual([file, true]);
+    }
+  });
+  test("no scripts, no data: a plain HTML file with the home link", () => {
+    const html = read("public/errors/404-en.html", "utf8");
+    expect(html).not.toContain("<script");
+    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('href="/en"');
   });
 });

@@ -42,6 +42,8 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
     title: { default: names.name, template: `%s | ${names.short}` },
     description: t("description"),
     applicationName: names.short,
+    // Short label under the home-screen icon (iOS); the full name stays in the page titles.
+    appleWebApp: { title: "UNICEF 130" },
     icons: rootIcons,
   };
 }

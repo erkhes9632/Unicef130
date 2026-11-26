@@ -24,6 +24,7 @@
     "admin:grant": "bun scripts/admin-role.ts grant",
     "admin:revoke": "bun scripts/admin-role.ts revoke",
     "brand:assets": "bun scripts/brand-assets.ts",
+    "brand:404": "bun scripts/build-404.ts",
     "fonts": "bun scripts/fonts.ts",
     "hooks:install": "git config core.hooksPath .githooks",
     "report:import": "bun scripts/report/parse-docx.ts && bun scripts/report/build-import.ts && bun scripts/report/run-import.ts",

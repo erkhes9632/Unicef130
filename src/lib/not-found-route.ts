@@ -4,7 +4,7 @@
  * new render). worker.ts asks this before OpenNext:
  * - "app": a real route (or something that is not a page) → the app as usual;
  * - "slug": a detail page → the app only if the slug (or an old slug) exists in D1;
- * - "missing": no route can match → the shared, cached 404 page.
+ * - "missing": no route can match → the static 404 page (public/errors).
  * The route list is checked against src/app/[locale] by tests/not-found-route.test.ts.
  */
 
@@ -31,7 +31,6 @@ export const PAGE_SEGMENTS = [
   "sign-out",
   // Redirects (next.config.ts) and the shared 404 page itself.
   "contact",
-  "page-not-found",
 ] as const;
 
 /** Sections whose second segment is a slug, and the table that holds it. */
@@ -68,6 +67,6 @@ export function checkRoute(pathname: string): RouteCheck {
     : { kind: "missing", locale };
 }
 
-/** The shared 404 page of a locale (rendered once, then served from the page cache). */
+/** The static 404 page of a locale (public/errors, built by scripts/build-404.ts). */
 export const notFoundPath = (locale: "mn" | "en") =>
-  locale === "en" ? "/en/page-not-found" : "/page-not-found";
+  locale === "en" ? "/errors/404-en.html" : "/errors/404.html";

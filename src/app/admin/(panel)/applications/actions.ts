@@ -124,7 +124,7 @@ export async function setApplyBlocked(userId: string, blocked: boolean): Promise
     revalidatePath("/admin/applications");
     revalidatePath("/admin/users");
     // Accepting changes public numbers (members, places left in the recruitment banner).
-    revalidatePublic();
+    revalidatePublic("applications");
     return {
       ok: true,
       message: blocked ? "Дахин өргөдөл гаргахыг хориглолоо." : "Хоригийг цуцаллаа.",

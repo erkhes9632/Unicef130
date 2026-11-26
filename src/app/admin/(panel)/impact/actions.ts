@@ -83,7 +83,7 @@ export async function saveImpactYear(
       type: "impact",
       summary: `${year.data} оны үр дүнг шинэчлэв`,
     });
-    revalidatePublic();
+    revalidatePublic("impact");
     return { ok: true, message: "Хадгалагдлаа." };
   } catch (err) {
     return actionError(err);
@@ -104,7 +104,7 @@ export async function createImpactYear(_prev: ActionState, data: FormData): Prom
       type: "impact",
       summary: `${year.data} хичээлийн жил нэмэв`,
     });
-    revalidatePublic();
+    revalidatePublic("impact");
     return { ok: true, message: `${year.data} нэмэгдлээ.` };
   } catch (err) {
     return actionError(err);
@@ -124,7 +124,7 @@ export async function deleteImpactYear(schoolYear: string): Promise<ActionState>
       type: "impact",
       summary: `${schoolYear} оны үр дүнг устгав`,
     });
-    revalidatePublic();
+    revalidatePublic("impact");
     return { ok: true, message: "Устгагдлаа." };
   } catch (err) {
     return actionError(err);

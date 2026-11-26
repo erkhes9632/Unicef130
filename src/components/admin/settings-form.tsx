@@ -56,7 +56,6 @@ function newOptionKey() {
 function Pair({
   id,
   label,
-  labelEn,
   value,
   valueEn,
   max,
@@ -65,7 +64,6 @@ function Pair({
 }: {
   id: string;
   label: string;
-  labelEn: string;
   value: string;
   valueEn: string;
   max: number;
@@ -79,7 +77,7 @@ function Pair({
         <Field id={id} name={id} defaultValue={value} maxLength={max} />
       </AdminField>
       <AdminField
-        label={labelEn}
+        label={`${label} (англи)`}
         htmlFor={`${id}En`}
         hint="Заавал биш. Хоосон бол англи хувилбарт монгол текст харагдана."
       >
@@ -140,7 +138,6 @@ export function SettingsForm({
         <Pair
           id="announcement.text"
           label="Зарлалын текст"
-          labelEn="Announcement (English)"
           value={initial.announcement.text}
           valueEn={initial.announcement.textEn}
           max={200}
@@ -162,7 +159,6 @@ export function SettingsForm({
         <Pair
           id="club.name"
           label="Клубын нэр"
-          labelEn="Club name (English)"
           value={initial.club.name}
           valueEn={initial.club.nameEn}
           max={120}
@@ -171,7 +167,6 @@ export function SettingsForm({
         <Pair
           id="club.shortName"
           label="Богино нэр (хуудасны гарчигт)"
-          labelEn="Short name (English)"
           value={initial.club.shortName}
           valueEn={initial.club.shortNameEn}
           max={60}
@@ -180,7 +175,6 @@ export function SettingsForm({
         <Pair
           id="club.description"
           label="Товч танилцуулга (footer)"
-          labelEn="Short description (English)"
           value={initial.club.description}
           valueEn={initial.club.descriptionEn}
           max={600}
@@ -236,7 +230,6 @@ export function SettingsForm({
         <Pair
           id="branding.heroImageAlt"
           label="Зургийн тайлбар (alt)"
-          labelEn="Image description (English)"
           value={initial.branding.heroImageAlt}
           valueEn={initial.branding.heroImageAltEn}
           max={200}
@@ -251,7 +244,6 @@ export function SettingsForm({
         <Pair
           id="contact.address"
           label="Хаяг"
-          labelEn="Address (English)"
           value={initial.contact.address}
           valueEn={initial.contact.addressEn}
           max={300}
@@ -348,7 +340,7 @@ export function SettingsForm({
                   onChange={(e) => update({ label: e.target.value })}
                 />
               </AdminField>
-              <AdminField label="Label (English)" htmlFor={`stat-labelEn-${i}`}>
+              <AdminField label="Нэр (англи)" htmlFor={`stat-labelEn-${i}`}>
                 <Input
                   id={`stat-labelEn-${i}`}
                   value={s.labelEn}
@@ -412,7 +404,7 @@ export function SettingsForm({
                   onChange={(e) => update({ name: e.target.value })}
                 />
               </AdminField>
-              <AdminField label="Name (English)" htmlFor={`partner-nameEn-${i}`}>
+              <AdminField label="Нэр (англи)" htmlFor={`partner-nameEn-${i}`}>
                 <Input
                   id={`partner-nameEn-${i}`}
                   value={p.nameEn}
@@ -470,7 +462,6 @@ export function SettingsForm({
         <Pair
           id="donation.text"
           label="Хандивын мэдээлэл (банкны данс гэх мэт)"
-          labelEn="Donation info (English)"
           value={initial.donation.text}
           valueEn={initial.donation.textEn}
           max={1500}
@@ -500,7 +491,7 @@ export function SettingsForm({
                   onChange={(e) => update({ label: e.target.value })}
                 />
               </AdminField>
-              <AdminField label="Option (English)" htmlFor={`help-labelEn-${i}`}>
+              <AdminField label="Сонголт (англи)" htmlFor={`help-labelEn-${i}`}>
                 <Input
                   id={`help-labelEn-${i}`}
                   value={o.labelEn}

@@ -79,7 +79,7 @@ export const slugRedirects = sqliteTable(
   "slug_redirects",
   {
     id: id(),
-    kind: text("kind", { enum: ["news", "events"] }).notNull(),
+    kind: text("kind", { enum: ["news", "events", "albums"] }).notNull(),
     fromSlug: text("from_slug").notNull(),
     toSlug: text("to_slug").notNull(),
     createdAt: timestamps.createdAt,

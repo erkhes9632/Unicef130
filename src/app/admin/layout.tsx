@@ -4,7 +4,8 @@ import { RootDocument, rootIcons, rootViewport } from "@/components/layout/root-
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Админ хэсэг", template: "%s | Админ" },
+  title: { default: "UNICEF 130 — Админ", template: "%s | UNICEF 130" },
+  appleWebApp: { title: "UNICEF 130" },
   robots: { index: false, follow: false },
   icons: rootIcons,
 };

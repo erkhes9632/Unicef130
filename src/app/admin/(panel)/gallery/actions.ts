@@ -9,6 +9,7 @@ import { actionError, fd, validationError, type ActionState } from "@/lib/admin/
 import { logActivity } from "@/lib/admin/activity";
 import { revalidatePublic } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
+import { recordSlugRename } from "@/lib/data/redirects";
 import { deleteMediaUrls, isOwnMediaUrl } from "@/lib/media/server";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { albumImagesSchema, albumInputSchema } from "@/lib/validation/admin";
@@ -43,12 +44,19 @@ export async function saveAlbum(
       return rows.length > 0;
     });
     if (id) {
+      const [prev] = await db
+        .select({ slug: albums.slug })
+        .from(albums)
+        .where(eq(albums.id, id))
+        .limit(1);
       const res = await db
         .update(albums)
         .set({ ...input, slug })
         .where(eq(albums.id, id))
         .returning({ id: albums.id });
       if (!res.length) return { ok: false, message: "Цомог олдсонгүй." };
+      // The old address keeps working: /gallery/<old> → 308 → /gallery/<new> (mn and en).
+      if (prev?.slug) await recordSlugRename("albums", prev.slug, slug);
       await logActivity(user, "album.update", {
         type: "album",
         id,
@@ -66,7 +74,7 @@ export async function saveAlbum(
         summary: `«${input.title}» цомог нэмэв`,
       });
     }
-    revalidatePublic();
+    revalidatePublic("albums");
   } catch (err) {
     return actionError(err);
   }
@@ -92,7 +100,7 @@ export async function deleteAlbum(id: string): Promise<ActionState> {
       id,
       summary: `«${row.title}» цомгийг устгав`,
     });
-    revalidatePublic();
+    revalidatePublic("albums");
     return { ok: true, message: "Цомог устгагдлаа." };
   } catch (err) {
     return actionError(err);
@@ -130,7 +138,7 @@ export async function addAlbumImages(albumId: string, input: unknown): Promise<A
       id: albumId,
       summary: `«${album.title}» цомогт ${parsed.data.length} зураг нэмэв`,
     });
-    revalidatePublic();
+    revalidatePublic("albums");
     return { ok: true, message: `${parsed.data.length} зураг нэмэгдлээ.` };
   } catch (err) {
     return actionError(err);
@@ -149,7 +157,7 @@ export async function deleteAlbumImage(imageId: string): Promise<ActionState> {
       .set({ coverUrl: null })
       .where(and(eq(albums.id, img.albumId), eq(albums.coverUrl, img.thumbUrl)));
     await deleteMediaUrls([img.url, img.thumbUrl]);
-    revalidatePublic();
+    revalidatePublic("albums");
     return { ok: true, message: "Зураг устгагдлаа." };
   } catch (err) {
     return actionError(err);
@@ -183,7 +191,7 @@ export async function moveAlbumImage(
       db.update(images).set({ sortOrder: neighbor.sortOrder }).where(eq(images.id, img.id)),
       db.update(images).set({ sortOrder: img.sortOrder }).where(eq(images.id, neighbor.id)),
     ]);
-    revalidatePublic();
+    revalidatePublic("albums");
     return { ok: true };
   } catch (err) {
     return actionError(err);
@@ -205,7 +213,7 @@ export async function updateImageAlt(
       .update(images)
       .set(parsed.lang === "en" ? { altEn: parsed.alt || null } : { alt: parsed.alt })
       .where(eq(images.id, imageId));
-    revalidatePublic();
+    revalidatePublic("albums");
     return { ok: true, message: "Тайлбар хадгалагдлаа." };
   } catch (err) {
     return actionError(err);
@@ -223,7 +231,7 @@ export async function setAlbumCover(albumId: string, imageId: string): Promise<A
       .limit(1);
     if (!img) return { ok: false, message: "Зураг олдсонгүй." };
     await db.update(albums).set({ coverUrl: img.thumbUrl }).where(eq(albums.id, albumId));
-    revalidatePublic();
+    revalidatePublic("albums");
     return { ok: true, message: "Нүүр зураг солигдлоо." };
   } catch (err) {
     return actionError(err);

@@ -151,7 +151,7 @@ export async function saveAboutPage(_prev: ActionState, data: FormData): Promise
       type: "settings",
       summary: "«Бидний тухай» хуудсыг шинэчлэв",
     });
-    revalidatePublic();
+    revalidatePublic("about");
     return { ok: true, message: "Хадгалагдлаа." };
   } catch (err) {
     return actionError(err);
@@ -179,7 +179,7 @@ export async function saveSupportPage(_prev: ActionState, data: FormData): Promi
       type: "settings",
       summary: "«Дэмжих» хуудсыг шинэчлэв",
     });
-    revalidatePublic();
+    revalidatePublic("support");
     return { ok: true, message: "Хадгалагдлаа." };
   } catch (err) {
     return actionError(err);

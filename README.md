@@ -158,6 +158,17 @@ Admins can't demote, ban or delete themselves, and the last admin can't be remov
 
 Shortcuts: `Ctrl/⌘ + K` to search, `Ctrl/⌘ + S` to save.
 
+**Audit log.** Every admin change is still recorded in the `activity_log` table (who, what, when;
+ids instead of applicants' names) as a security record, but it isn't shown in the admin. A
+developer can read it read-only, e.g. the last 50 entries:
+
+```bash
+bunx wrangler d1 execute DB --remote --command "SELECT datetime(created_at/1000,'unixepoch') AS at, user_id, action, summary FROM activity_log ORDER BY created_at DESC LIMIT 50"
+```
+
+**Renaming:** news, events and albums keep their old address after a rename (`slug_redirects`,
+308 in mn and en). Once published, «Хаяг (URL)» is locked; «Хаяг өөрчлөх» unlocks it.
+
 ## Yearly report
 
 The club's annual report (`private/report-<year>.docx`, never committed) is the source of the
@@ -234,16 +245,24 @@ more than that, so visitors should only ever get cached pages.
   OpenNext cache (R2 + a per-data-centre copy). `worker.ts` answers repeat visits from the
   Cache API before OpenNext even loads (about 1–2 ms of CPU). Images under `/media/` come straight
   from R2 with a one-year `immutable` cache header.
-- **Freshness:** pages refresh in the background every hour, and right after any admin save
+- **Freshness:** pages refresh in the background every hour, and right after an admin save
   (`revalidateTag(..., "max")`: visitors get the cached page while a Durable Object re-renders it,
-  with retries). The data-centre copy lives two minutes.
+  with retries). An edit marks only the sections that show it (`revalidatePublic("albums")` →
+  home, gallery, events, news; see `src/lib/admin/revalidate.ts`); site settings, FAQ and
+  enrollment mark every page. In production a re-render costs 40–280 ms of CPU, so the queue
+  runs one at a time (`NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION=1`). The data-centre copy lives two
+  minutes and only fresh (`HIT`) pages are copied.
+- **Host header:** every request the Worker passes to the app carries a Host (`withHost` in
+  `worker.ts`); OpenNext puts it into the background re-render message, and without it the
+  Durable Object failed and stale pages never refreshed.
 - **After a deploy** the cache is empty: `bun run deploy` runs `bun run cache:warm`, which visits
-  every page from the sitemap one at a time, reads each response to the end, and retries a 5xx
-  once. Pages that still fail are listed, but the script exits 0 (`--strict` makes it exit 1).
-- **Unknown URLs:** `worker.ts` answers them with one shared, cached 404 page per language
-  (`/page-not-found`, status 404) — a path no route can match, or a news/event/album address
-  whose slug isn't in D1 (`src/lib/not-found-route.ts`). A random URL costs a cache lookup, not
-  a render. A new public page section must be added to `PAGE_SEGMENTS` (a test checks it).
+  every page from the sitemap one at a time, a second apart, reads each response to the end,
+  and retries a 5xx once after 8 s. Pages that still fail are listed, but the script exits 0 (`--strict` makes it exit 1).
+- **Unknown URLs:** `worker.ts` answers them with a static HTML file per language
+  (`public/errors/404.html`, `404-en.html`, status 404) — a path no route can match, or a
+  news/event/album address whose slug (or old slug) isn't in D1 (`src/lib/not-found-route.ts`).
+  No database, no sign-in code, no rendering: a 404 can't fail. The files are generated from
+  `messages/*.json` and the theme colours with `bun run brand:404` (a test checks they match). A new public page section must be added to `PAGE_SEGMENTS` (a test checks it).
 - **Admin pages** are rendered per request (about 18–23 ms CPU locally whatever the list size;
   lists are 25 rows, counts are SQL `count()`), the statistics come as small JSON (~5 ms).
 - **Cold start:** `worker.ts` loads the Next.js server, every route module and the proxy when the

@@ -1,16 +1,10 @@
 "use client";
 
 import { useId, useState } from "react";
+import { countTicks } from "@/lib/stats/ticks";
 import { useWidth } from "./use-width";
 
 export type LineSeries = { name: string; color: string; values: number[] };
-
-/** Round up to a readable axis maximum (1, 2, 5 × 10^n). */
-function niceMax(v: number) {
-  if (v <= 0) return 1;
-  const p = 10 ** Math.floor(Math.log10(v));
-  return ([1, 2, 5, 10].find((m) => m * p >= v) ?? 10) * p;
-}
 
 /**
  * Line chart with up to a few series (the first one is also shaded). Keyboard: focus the chart
@@ -41,10 +35,10 @@ export function LineChart({
   const pad = { l: 44, r: 12, t: 12, b: 26 };
   const w = width - pad.l - pad.r;
   const h = height - pad.t - pad.b;
-  const max = niceMax(Math.max(0, ...series.flatMap((s) => s.values)));
+  // Counts: whole-number steps (0, 1, 2 … or 0, 2, 4 …), never "3, 5" or fractions.
+  const { max, ticks } = countTicks(Math.max(0, ...series.flatMap((s) => s.values)));
   const x = (i: number) => pad.l + (n <= 1 ? w / 2 : (i / (n - 1)) * w);
   const y = (v: number) => pad.t + h - (v / max) * h;
-  const ticks = [0, max / 2, max];
   const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(w / 70))));
 
   const move = (e: React.KeyboardEvent) => {

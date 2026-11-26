@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Section } from "@/components/common/section";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
@@ -9,8 +9,9 @@ import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { getEventById } from "@/lib/data/events";
 import { getAlbumBySlug } from "@/lib/data/gallery";
+import { findSlugRedirect } from "@/lib/data/redirects";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
-import { pageMetadata } from "@/lib/seo";
+import { localizedPath, pageMetadata } from "@/lib/seo";
 
 /** Rendered on the first visit, then served from the cache (ISR; see app/[locale]/layout.tsx). */
 export function generateStaticParams() {
@@ -37,7 +38,12 @@ export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery
   const locale = await resolveLocale(params);
   const { album: slug } = await params;
   const album = await getAlbumBySlug(locale, slug);
-  if (!album) notFound();
+  if (!album) {
+    // Renamed album: the old address moves permanently to the new one (like news and events).
+    const to = await findSlugRedirect("albums", slug);
+    if (to) permanentRedirect(localizedPath(locale, `/gallery/${to}`));
+    notFound();
+  }
   const t = await getTranslations("Gallery");
   const event = album.eventId ? await getEventById(locale, album.eventId) : null;
 

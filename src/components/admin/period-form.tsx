@@ -79,7 +79,7 @@ export function PeriodForm({
             <AdminField label="Нэр" htmlFor="name" required hint="Жишээ: 2026–2027 намрын элсэлт">
               <Input id="name" name="name" defaultValue={initial?.name} required maxLength={120} />
             </AdminField>
-            <AdminField label="Name (English)" htmlFor="nameEn">
+            <AdminField label="Нэр (англи)" htmlFor="nameEn">
               <Input
                 id="nameEn"
                 name="nameEn"
@@ -113,7 +113,7 @@ export function PeriodForm({
                 defaultValue={initial?.introText}
               />
             </AdminField>
-            <AdminField label="Intro (English)" htmlFor="introTextEn">
+            <AdminField label="Танилцуулга (англи)" htmlFor="introTextEn">
               <Textarea
                 id="introTextEn"
                 name="introTextEn"
@@ -135,7 +135,7 @@ export function PeriodForm({
                 defaultValue={initial?.closedMessage}
               />
             </AdminField>
-            <AdminField label="Closed message (English)" htmlFor="closedMessageEn">
+            <AdminField label="Хаалттай үеийн мэдэгдэл (англи)" htmlFor="closedMessageEn">
               <Textarea
                 id="closedMessageEn"
                 name="closedMessageEn"
@@ -214,7 +214,7 @@ export function PeriodForm({
                     onChange={(ev) => update({ label: ev.target.value })}
                   />
                 </AdminField>
-                <AdminField label="Question (English)" htmlFor={`q-labelEn-${i}`}>
+                <AdminField label="Асуулт (англи)" htmlFor={`q-labelEn-${i}`}>
                   <Input
                     id={`q-labelEn-${i}`}
                     value={q.labelEn}

@@ -5,7 +5,7 @@ import { siteConfig } from "@/config/site";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: siteConfig.name,
-    short_name: "UNICEF клуб 130",
+    short_name: "UNICEF 130",
     lang: "mn",
     start_url: "/",
     display: "browser",

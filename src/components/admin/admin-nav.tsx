@@ -13,7 +13,6 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Newspaper,
-  ScrollText,
   Settings,
   UserCog,
   Users,
@@ -45,7 +44,6 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/faq", label: "Түгээмэл асуулт", icon: HelpCircle },
   { href: "/admin/settings", label: "Сайтын тохиргоо", icon: Settings, group: "other" },
   { href: "/admin/users", label: "Хэрэглэгчид", icon: UserCog, group: "other" },
-  { href: "/admin/audit", label: "Үйлдлийн түүх", icon: ScrollText, group: "other" },
 ];
 
 /** Admin menu (only admins reach the panel; every page checks the role on the server). */

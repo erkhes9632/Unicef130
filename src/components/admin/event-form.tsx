@@ -17,6 +17,7 @@ import {
 } from "./form";
 import { ImageField } from "./image-field";
 import { RichTextEditor } from "./rich-text-editor";
+import { SdgPicker } from "./sdg-picker";
 import { SlugField } from "./slug-field";
 
 type EventFormValues = {
@@ -83,7 +84,13 @@ export function EventForm({
             hint="Хоосон орхивол нэрнээс автоматаар үүсгэнэ."
             errors={e.slug}
           >
-            <SlugField id="slug" name="slug" defaultValue={initial?.slug} sourceId="title" />
+            <SlugField
+              id="slug"
+              name="slug"
+              defaultValue={initial?.slug}
+              sourceId="title"
+              locked={!!initial?.slug && !!initial?.published}
+            />
           </AdminField>
           <AdminField label="Товч тайлбар" htmlFor="summary" required errors={e.summary}>
             <Textarea
@@ -113,8 +120,11 @@ export function EventForm({
             />
           </AdminField>
         </FormSection>
-        <FormSection title="English (заавал биш)">
-          <AdminField label="Title" htmlFor="titleEn" errors={e.titleEn}>
+        <FormSection
+          title="Англи хувилбар (заавал биш)"
+          description="Хоосон бол англи хувилбарт монгол текст харагдана."
+        >
+          <AdminField label="Нэр (англи)" htmlFor="titleEn" errors={e.titleEn}>
             <Input
               id="titleEn"
               name="titleEn"
@@ -122,7 +132,7 @@ export function EventForm({
               maxLength={200}
             />
           </AdminField>
-          <AdminField label="Summary" htmlFor="summaryEn" errors={e.summaryEn}>
+          <AdminField label="Товч тайлбар (англи)" htmlFor="summaryEn" errors={e.summaryEn}>
             <Textarea
               id="summaryEn"
               name="summaryEn"
@@ -131,7 +141,7 @@ export function EventForm({
               maxLength={400}
             />
           </AdminField>
-          <AdminField label="Location" htmlFor="locationEn" errors={e.locationEn}>
+          <AdminField label="Байршил (англи)" htmlFor="locationEn" errors={e.locationEn}>
             <Input
               id="locationEn"
               name="locationEn"
@@ -139,11 +149,11 @@ export function EventForm({
               maxLength={200}
             />
           </AdminField>
-          <AdminField label="Details" htmlFor="contentEn" errors={e.contentEn}>
+          <AdminField label="Дэлгэрэнгүй (англи)" htmlFor="contentEn" errors={e.contentEn}>
             <RichTextEditor
               id="contentEn"
               name="contentEn"
-              label="Details (English)"
+              label="Дэлгэрэнгүй (англи)"
               defaultValue={initial?.contentEn}
             />
           </AdminField>
@@ -271,7 +281,7 @@ export function EventForm({
               maxLength={40}
             />
           </AdminField>
-          <AdminField label="In person (English)" htmlFor="reachInPersonEn">
+          <AdminField label="Биечлэн хүрсэн (англи)" htmlFor="reachInPersonEn">
             <Input
               id="reachInPersonEn"
               name="reachInPersonEn"
@@ -317,14 +327,17 @@ export function EventForm({
               defaultValue={initial?.beneficiaries.join(", ") ?? ""}
             />
           </AdminField>
-          <AdminField
-            label="Тогтвортой хөгжлийн зорилго (дугаар)"
-            htmlFor="sdgs"
-            hint="Аль зорилгод хамаарах вэ: дугаарыг таслалаар (жишээ: 1, 10). 1–17."
-            errors={e.sdgs}
-          >
-            <Input id="sdgs" name="sdgs" defaultValue={initial?.sdgs.join(", ") ?? ""} />
-          </AdminField>
+          <div className="space-y-2">
+            <p id="sdgs-label" className="text-sm font-semibold">
+              Тогтвортой хөгжлийн зорилго
+            </p>
+            <SdgPicker name="sdgs" defaultValue={initial?.sdgs} labelledBy="sdgs-label" />
+            {e.sdgs?.map((m) => (
+              <p key={m} className="text-sm text-destructive">
+                {m}
+              </p>
+            ))}
+          </div>
           <AdminField
             label="Админы тэмдэглэл"
             htmlFor="adminNote"

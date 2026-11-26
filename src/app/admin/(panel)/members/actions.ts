@@ -96,7 +96,7 @@ export async function saveMember(
         summary: `Гишүүн #${shortId(row!.id)} нэмэв`,
       });
     }
-    refreshPublicPages(NAME_PAGES);
+    refreshPublicPages("members", NAME_PAGES);
   } catch (err) {
     return actionError(err);
   }
@@ -118,7 +118,7 @@ export async function deleteMember(id: string): Promise<ActionState> {
       id,
       summary: `Гишүүн #${shortId(id)} устгав`,
     });
-    revalidatePublic();
+    revalidatePublic("members");
     return { ok: true, message: "Гишүүн устгагдлаа." };
   } catch (err) {
     return actionError(err);
@@ -172,7 +172,7 @@ export async function setMembersPublic(
           ? `Гишүүн #${shortId(res[0]!.id)} — нэрийг ${show ? "нийтэд харуулав (зөвшөөрөлтэй)" : "нийтээс нуув"}`
           : `${res.length} гишүүнийг ${show ? "нийтэд харуулав (зөвшөөрөлтэй)" : "нийтээс нуув"}`,
     });
-    refreshPublicPages(NAME_PAGES);
+    refreshPublicPages("members", NAME_PAGES);
     return {
       ok: true,
       message: show
@@ -216,7 +216,7 @@ export async function moveMember(id: string, direction: "up" | "down"): Promise<
       id,
       summary: `Гишүүн #${shortId(id)} — дарааллыг ${direction === "up" ? "дээшлүүлэв" : "доошлуулав"}`,
     });
-    refreshPublicPages(NAME_PAGES);
+    refreshPublicPages("members", NAME_PAGES);
     return { ok: true };
   } catch (err) {
     return actionError(err);

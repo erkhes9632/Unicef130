@@ -131,7 +131,7 @@ export async function saveEvent(
         summary: `«${input.title}» арга хэмжээ нэмэв`,
       });
     }
-    revalidatePublic();
+    revalidatePublic("events");
   } catch (err) {
     return actionError(err);
   }
@@ -153,7 +153,7 @@ export async function deleteEvent(id: string): Promise<ActionState> {
       id,
       summary: `«${row.title}» арга хэмжээг устгав`,
     });
-    revalidatePublic();
+    revalidatePublic("events");
     return { ok: true, message: "Арга хэмжээ устгагдлаа." };
   } catch (err) {
     return actionError(err);

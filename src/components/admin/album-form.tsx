@@ -69,7 +69,13 @@ export function AlbumForm({
           </AdminField>
         </div>
         <AdminField label="Хаяг (URL)" htmlFor="slug" errors={e.slug}>
-          <SlugField id="slug" name="slug" defaultValue={initial?.slug} sourceId="title" />
+          <SlugField
+            id="slug"
+            name="slug"
+            defaultValue={initial?.slug}
+            sourceId="title"
+            locked={!!initial?.slug && !!initial?.published}
+          />
         </AdminField>
         <AdminField label="Тайлбар" htmlFor="description" errors={e.description}>
           <Textarea
@@ -81,7 +87,7 @@ export function AlbumForm({
           />
         </AdminField>
         <div className="grid gap-4 md:grid-cols-2">
-          <AdminField label="Title (English)" htmlFor="titleEn" errors={e.titleEn}>
+          <AdminField label="Нэр (англи)" htmlFor="titleEn" errors={e.titleEn}>
             <Input
               id="titleEn"
               name="titleEn"
@@ -89,11 +95,7 @@ export function AlbumForm({
               maxLength={200}
             />
           </AdminField>
-          <AdminField
-            label="Description (English)"
-            htmlFor="descriptionEn"
-            errors={e.descriptionEn}
-          >
+          <AdminField label="Тайлбар (англи)" htmlFor="descriptionEn" errors={e.descriptionEn}>
             <Input
               id="descriptionEn"
               name="descriptionEn"

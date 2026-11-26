@@ -171,7 +171,7 @@ export function AboutPageForm({
                   onChange={(e) => update({ title: e.target.value })}
                 />
               </AdminField>
-              <AdminField label="Title (English)" htmlFor={`value-titleEn-${i}`}>
+              <AdminField label="Гарчиг (англи)" htmlFor={`value-titleEn-${i}`}>
                 <Input
                   id={`value-titleEn-${i}`}
                   value={v.titleEn}
@@ -187,7 +187,7 @@ export function AboutPageForm({
                   onChange={(e) => update({ body: e.target.value })}
                 />
               </AdminField>
-              <AdminField label="Description (English)" htmlFor={`value-bodyEn-${i}`}>
+              <AdminField label="Тайлбар (англи)" htmlFor={`value-bodyEn-${i}`}>
                 <Input
                   id={`value-bodyEn-${i}`}
                   value={v.bodyEn}

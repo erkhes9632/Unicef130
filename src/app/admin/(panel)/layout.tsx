@@ -39,7 +39,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
           >
             <BrandLogo variant="mark" locale="mn" alt="" height={40} />
             <span className="flex flex-col leading-tight">
-              <span className="font-heading font-extrabold">Клуб 130</span>
+              <span className="font-heading font-extrabold">UNICEF 130</span>
               <span className="text-xs text-muted-foreground">Админ</span>
             </span>
           </Link>
@@ -64,7 +64,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
           {/* Sidebar collapsed (below lg): the mark only. */}
           <Link
             href="/admin"
-            aria-label="Клуб 130 — Админ"
+            aria-label="UNICEF 130 — Админ"
             className="flex shrink-0 rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 lg:hidden"
           >
             <BrandLogo variant="mark" locale="mn" alt="" height={40} />

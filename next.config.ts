@@ -44,6 +44,8 @@ const nextConfig: NextConfig = {
       { source: "/admin/stats", destination: "/admin", permanent: true },
       // Messages from the old contact form are no longer shown (the table is kept for now).
       { source: "/admin/messages", destination: "/admin", permanent: true },
+      // The audit log is still written (security record) but no longer shown in the admin.
+      { source: "/admin/audit", destination: "/admin", permanent: true },
       // No contact page any more: e-mail and Instagram are in the footer (id="contact").
       { source: "/contact", destination: "/#contact", permanent: true },
       { source: "/en/contact", destination: "/en#contact", permanent: true },

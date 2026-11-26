@@ -35,6 +35,17 @@ Production: **https://130foreverychild.site** (Cloudflare Workers, гараар 
   (бөглөөгүй бол).
 - ☐ Google Search Console-д `https://130foreverychild.site/sitemap.xml` (заавал биш).
 
+## Найдвартай байдлын засварын deploy (2026-11-26, 2-р удаа)
+
+1. ☐ Нөөц: `bunx wrangler d1 export DB --remote --output private/backups/before-fix-$(date +%F-%H%M).sql`
+2. ☐ Migration шаардлагагүй (шинэ migration алга): `bunx wrangler d1 migrations list DB --remote`
+   хоосон байх ёстой.
+3. ☐ `bun run deploy` (build → deploy → `cache:warm`, хуудас хооронд 1 сек).
+4. ☐ Цомгийн хуучин хаяг: `bunx wrangler d1 execute DB --remote --file private/sql/2026-11-26-album-redirect.sql`
+   → `/gallery/mod-tarikh-ajillagaa-2026` 308 болохыг шалгах.
+5. ☐ `bunx wrangler tail --format pretty --status error` 2 минут: `TypeError ... 'includes'`,
+   `revalidation ... failed` гарах ёсгүй.
+
 ## Contact/профайл хувилбарын deploy (2026-11-26)
 
 1. ☐ Нөөц: `bunx wrangler d1 export DB --remote --output private/backups/before-profile-$(date +%F-%H%M).sql`

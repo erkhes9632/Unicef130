@@ -60,7 +60,7 @@ export function FaqForm({
             required
           />
         </AdminField>
-        <AdminField label="Question (English)" htmlFor={`${uid}-questionEn`} errors={e.questionEn}>
+        <AdminField label="Асуулт (англи)" htmlFor={`${uid}-questionEn`} errors={e.questionEn}>
           <Input
             id={`${uid}-questionEn`}
             name="questionEn"

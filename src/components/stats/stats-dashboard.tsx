@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useUrlQuery } from "@/hooks/use-url-query";
 import { formatDate, formatNumber } from "@/lib/dates/format";
 import { changePct, parsePeriod, PERIODS, type PeriodKey } from "@/lib/stats/period";
+import { fromFirstNonZero } from "@/lib/stats/ticks";
 import type { Count, StatsResponse } from "@/lib/stats/types";
 import { cn } from "@/lib/utils";
 
@@ -96,7 +97,8 @@ function Kpi({
   trend,
 }: {
   label: string;
-  value: string;
+  /** null = the source isn't connected (Web Analytics). */
+  value: string | null;
   hint: string;
   cur?: number;
   prev?: number;
@@ -105,7 +107,12 @@ function Kpi({
   return (
     <li className="flex flex-col gap-1 rounded-2xl bg-card p-4 ring-1 ring-border">
       <p className="text-sm font-semibold text-muted-foreground">{label}</p>
-      <p className="font-heading text-3xl font-extrabold tabular-nums">{value}</p>
+      {value === null ? (
+        // Web Analytics not set up yet: one calm word, the notice below says the rest.
+        <p className="py-2 text-sm font-semibold text-muted-foreground">Холбогдоогүй</p>
+      ) : (
+        <p className="font-heading text-3xl font-extrabold tabular-nums">{value}</p>
+      )}
       {cur !== undefined && prev !== undefined && <Change cur={cur} prev={prev} />}
       {trend && <Sparkline values={trend} className="mt-1 h-7 w-full" />}
       <p className="text-xs text-muted-foreground">{hint}</p>
@@ -202,6 +209,9 @@ export function StatsDashboard() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 10);
 
+  // Sign-ups from the first one on (weeks of flat zero before it say nothing).
+  const growth = c ? fromFirstNonZero(c.users.growth) : [];
+
   const funnel = c
     ? (() => {
         const s = c.applications.byStatus;
@@ -297,7 +307,7 @@ export function StatsDashboard() {
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi
               label="Зочид"
-              value={t ? fmt(t.totals.visits) : "—"}
+              value={t ? fmt(t.totals.visits) : null}
               hint="Сайтад хэдэн удаа зочилсон бэ."
               cur={t?.totals.visits}
               prev={t?.prevTotals.visits}
@@ -305,7 +315,7 @@ export function StatsDashboard() {
             />
             <Kpi
               label="Үзсэн хуудас"
-              value={t ? fmt(t.totals.views) : "—"}
+              value={t ? fmt(t.totals.views) : null}
               hint="Нийт хэдэн хуудас нээгдсэн бэ."
               cur={t?.totals.views}
               prev={t?.prevTotals.views}
@@ -313,7 +323,7 @@ export function StatsDashboard() {
             />
             <Kpi
               label="Нэг зочилтод ногдох хуудас"
-              value={t && t.totals.visits ? fmt1(t.totals.views / t.totals.visits) : "—"}
+              value={t ? (t.totals.visits ? fmt1(t.totals.views / t.totals.visits) : "0") : null}
               hint="Нэг удаа орохдоо дунджаар хэдэн хуудас үздэг вэ."
               cur={t && t.totals.visits ? t.totals.views / t.totals.visits : undefined}
               prev={t && t.prevTotals.visits ? t.prevTotals.views / t.prevTotals.visits : undefined}
@@ -534,7 +544,7 @@ export function StatsDashboard() {
             c
               ? {
                   columns: ["Огноо", "Бүртгэлтэй хүн"],
-                  rows: c.users.growth.map((u) => [longKey(u.key), fmt(u.value)]),
+                  rows: growth.map((u) => [longKey(u.key), fmt(u.value)]),
                 }
               : undefined
           }
@@ -543,13 +553,13 @@ export function StatsDashboard() {
             <>
               <LineChart
                 label="Сайтын бүртгэлийн өсөлт"
-                labels={c.users.growth.map((d) => shortKey(d.key))}
-                longLabels={c.users.growth.map((d) => longKey(d.key))}
+                labels={growth.map((d) => shortKey(d.key))}
+                longLabels={growth.map((d) => longKey(d.key))}
                 series={[
                   {
                     name: "Бүртгэлтэй хүн",
                     color: "var(--chart-1)",
-                    values: c.users.growth.map((d) => d.value),
+                    values: growth.map((d) => d.value),
                   },
                 ]}
                 format={fmt}

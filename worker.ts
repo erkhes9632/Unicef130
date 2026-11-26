@@ -39,6 +39,19 @@ const startupContext = {
 } as unknown as ExecutionContext;
 
 const origin = startupEnv.SITE_URL || "http://localhost";
+
+/**
+ * Every request the app sees carries a Host header. Requests built inside the Worker (startup,
+ * a page refresh through WORKER_SELF_REFERENCE) have none, and OpenNext puts the Host into the
+ * background re-render message: without it the Durable Object failed with
+ * "Cannot read properties of undefined (reading 'includes')" and stale pages never refreshed.
+ */
+function withHost(request: Request): Request {
+  if (request.headers.get("host")) return request;
+  const copy = new Request(request);
+  copy.headers.set("host", new URL(request.url).host);
+  return copy;
+}
 await runWithCloudflareRequestContext(
   new Request(origin),
   startupEnv,
@@ -55,7 +68,11 @@ globalThis.setTimeout = ((callback: () => void) => {
   return 0;
 }) as unknown as typeof setTimeout;
 try {
-  const warm = await handler.fetch(new Request(`${origin}/admin`), startupEnv, startupContext);
+  const warm = await handler.fetch(
+    withHost(new Request(`${origin}/admin`)),
+    startupEnv,
+    startupContext,
+  );
   await warm.body?.cancel();
 } catch {
   // ignored, see above
@@ -66,14 +83,12 @@ try {
 /** Whether a detail page's slug (or an old slug that redirects) exists. Errors: let the app decide. */
 async function slugExists(db: D1Database, route: Extract<RouteCheck, { kind: "slug" }>) {
   try {
-    const redirect =
-      route.table === "albums"
-        ? ""
-        : " UNION ALL SELECT 1 FROM slug_redirects WHERE kind = ?2 AND from_slug = ?1";
-    const stmt = db.prepare(`SELECT 1 FROM ${route.table} WHERE slug = ?1${redirect} LIMIT 1`);
-    const row = await (
-      route.table === "albums" ? stmt.bind(route.slug) : stmt.bind(route.slug, route.table)
-    ).first();
+    const row = await db
+      .prepare(
+        `SELECT 1 FROM ${route.table} WHERE slug = ?1 UNION ALL SELECT 1 FROM slug_redirects WHERE kind = ?2 AND from_slug = ?1 LIMIT 1`,
+      )
+      .bind(route.slug, route.table)
+      .first();
     return row !== null;
   } catch {
     return true;
@@ -81,29 +96,18 @@ async function slugExists(db: D1Database, route: Extract<RouteCheck, { kind: "sl
 }
 
 /**
- * The shared 404 page of a locale: rendered once (ISR) and kept in the data-centre cache, so an
- * unknown URL costs a cache lookup instead of a full render.
+ * Unknown URLs: the static 404 page of the locale (public/errors, built by
+ * scripts/build-404.ts) with status 404. A file read — no database, no sign-in code, no
+ * rendering — so it can never fail or use CPU.
  */
-async function sharedNotFound(
-  request: Request,
-  locale: "mn" | "en",
-  env: CloudflareEnv,
-  ctx: ExecutionContext,
-  cache: Cache,
-) {
-  const key = new Request(new URL(notFoundPath(locale), request.url), { method: "GET" });
-  let page = await cache.match(key);
-  if (!page) {
-    page = await finishEvenIfCancelled(ctx, app.fetch(key, env, ctx));
-    if (page.headers.get("x-opennext-cache") === "HIT" && !page.headers.has("set-cookie")) {
-      const copy = new Response(page.clone().body, page);
-      copy.headers.set("cache-control", `public, max-age=${EDGE_TTL}`);
-      ctx.waitUntil(cache.put(key, copy));
-    }
-  }
-  const headers = new Headers(page.headers);
+async function staticNotFound(request: Request, locale: "mn" | "en", env: CloudflareEnv) {
+  const file = env.ASSETS
+    ? await env.ASSETS.fetch(new URL(notFoundPath(locale), request.url))
+    : new Response("404", { status: 404 });
+  const headers = new Headers(file.headers);
+  headers.set("content-type", "text/html; charset=utf-8");
   headers.set("cache-control", "public, max-age=0, must-revalidate");
-  return new Response(request.method === "HEAD" ? null : page.body, { status: 404, headers });
+  return new Response(request.method === "HEAD" ? null : file.body, { status: 404, headers });
 }
 
 export default {
@@ -124,21 +128,21 @@ export default {
       request.method === "GET" || request.method === "HEAD"
         ? checkRoute(url.pathname)
         : { kind: "app" };
-    if (route.kind === "missing") return sharedNotFound(request, route.locale, env, ctx, cache);
+    if (route.kind === "missing") return staticNotFound(request, route.locale, env);
     const missingSlug = async () => route.kind === "slug" && !(await slugExists(env.DB, route));
 
     if (!edgeCacheable(request)) {
       if (route.kind === "slug" && (await missingSlug()))
-        return sharedNotFound(request, route.locale, env, ctx, cache);
-      return finishEvenIfCancelled(ctx, app.fetch(request, env, ctx));
+        return staticNotFound(request, route.locale, env);
+      return finishEvenIfCancelled(ctx, app.fetch(withHost(request), env, ctx));
     }
     const key = new Request(request.url, { method: "GET" });
     const hit = await cache.match(key);
     if (hit) return fromEdgeCopy(hit);
     // Only checked when the page is not in the data-centre cache (existing pages usually are).
     if (route.kind === "slug" && (await missingSlug()))
-      return sharedNotFound(request, route.locale, env, ctx, cache);
-    const response = await finishEvenIfCancelled(ctx, app.fetch(request, env, ctx));
+      return staticNotFound(request, route.locale, env);
+    const response = await finishEvenIfCancelled(ctx, app.fetch(withHost(request), env, ctx));
     const copy = toEdgeCopy(response, EDGE_TTL);
     if (copy) ctx.waitUntil(cache.put(key, copy));
     return response;

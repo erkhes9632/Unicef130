@@ -135,3 +135,27 @@ describe("dashboard to-dos", () => {
     expect(todoItems({ ...base, recruitmentClosesAt: NOW + 30 * 86_400_000 }, NOW)).toEqual([]);
   });
 });
+
+describe("chart axes and the sign-up line", () => {
+  test("whole-number steps of 1, 2, 5 × 10^n, at most 6 lines", async () => {
+    const { countTicks } = await import("@/lib/stats/ticks");
+    expect(countTicks(3).ticks).toEqual([0, 1, 2, 3]);
+    expect(countTicks(5).ticks).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(countTicks(7).ticks).toEqual([0, 2, 4, 6, 8]);
+    expect(countTicks(0).ticks).toEqual([0, 1]);
+    expect(countTicks(734).ticks).toEqual([0, 200, 400, 600, 800]);
+    for (const v of [1, 3, 9, 13, 58, 101173]) {
+      const { ticks, max } = countTicks(v);
+      expect(ticks.length).toBeLessThanOrEqual(6);
+      expect(ticks.every(Number.isInteger)).toBe(true);
+      expect(max).toBeGreaterThanOrEqual(v);
+    }
+  });
+  test("the growth line starts at the first sign-up", async () => {
+    const { fromFirstNonZero } = await import("@/lib/stats/ticks");
+    const p = (value: number) => ({ key: String(value), value });
+    expect(fromFirstNonZero([p(0), p(0), p(1), p(3)]).map((x) => x.value)).toEqual([1, 3]);
+    expect(fromFirstNonZero([p(2), p(3)]).map((x) => x.value)).toEqual([2, 3]);
+    expect(fromFirstNonZero([p(0), p(0)])).toHaveLength(2);
+  });
+});
