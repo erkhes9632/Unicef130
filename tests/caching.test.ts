@@ -5,7 +5,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { edgeCacheable, edgeKey, toEdgeCopy } from "@/lib/edge-cache";
+import { edgeCacheable, toEdgeCopy } from "@/lib/edge-cache";
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((f) => {
@@ -141,27 +141,21 @@ describe("cold start stays out of requests", () => {
     const wrapped = worker.match(/finishEvenIfCancelled\(ctx, app\.fetch\(/g) ?? [];
     expect(wrapped.length).toBe(calls.length);
   });
-  test("cache:warm reads every response to the end", () => {
-    const warm = readFileSync("scripts/warm-cache.ts", "utf8");
-    expect(warm).toContain("arrayBuffer()");
-    expect(warm).not.toContain("body?.cancel()");
+  test("cache:warm and smoke read every response to the end", () => {
+    const check = readFileSync("scripts/lib/site-check.ts", "utf8");
+    expect(check).toContain("await response.text()");
+    for (const f of ["scripts/warm-cache.ts", "scripts/smoke.ts", "scripts/lib/site-check.ts"])
+      expect(readFileSync(f, "utf8")).not.toContain("body?.cancel()");
+    expect(readFileSync("scripts/warm-cache.ts", "utf8")).toContain("visit(base, path, headers)");
   });
 });
 
-describe("data-centre copy key", () => {
-  test("a new deploy never reads the previous deploy's copies", () => {
-    const a = edgeKey("https://example.org/news?year=2025-2026", "v1").url;
-    const b = edgeKey("https://example.org/news?year=2025-2026", "v2").url;
-    expect(a).not.toBe(b);
-    expect(new URL(a).searchParams.get("year")).toBe("2025-2026");
-    expect(edgeKey("https://example.org/", undefined).url).toContain("__deploy=dev");
-  });
-  test("worker.ts and the instant refresh use the same key", () => {
-    expect(readFileSync("worker.ts", "utf8")).toContain(
-      "edgeKey(request.url, env.CF_VERSION_METADATA?.id)",
-    );
-    expect(readFileSync("src/lib/admin/revalidate.ts", "utf8")).toContain(
-      "edgeKey(url, env.CF_VERSION_METADATA?.id)",
-    );
+describe("release pre-warm", () => {
+  test("a request pinned to another version never reads or stores a data-centre copy", () => {
+    const pinned = new Request("https://example.org/news", {
+      headers: { "cloudflare-workers-version-overrides": 'unicef-club-130="abc"' },
+    });
+    expect(edgeCacheable(pinned)).toBe(false);
+    expect(edgeCacheable(new Request("https://example.org/news"))).toBe(true);
   });
 });

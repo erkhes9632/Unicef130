@@ -13,7 +13,7 @@
     "check": "bun run lint && bun run typecheck && bun run format:check && bun run knip && bun run test",
     "cf:build": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy && bun run cache:warm",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy && bun run cache:warm && bun run smoke",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:generate": "drizzle-kit generate",
@@ -31,7 +31,9 @@
     "test": "bun test --isolate",
     "test:e2e": "playwright test",
     "knip": "knip",
-    "cache:warm": "bun scripts/warm-cache.ts"
+    "cache:warm": "bun scripts/warm-cache.ts",
+    "smoke": "bun scripts/smoke.ts",
+    "release": "bun scripts/release.ts"
   },
   "dependencies": {
     "@clerk/localizations": "4.24.8",

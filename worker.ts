@@ -22,7 +22,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { runWithCloudflareRequestContext } from "open-next-init";
 import handler from "open-next-worker";
 import * as schema from "./src/db/schema";
-import { edgeCacheable, edgeKey, EDGE_TTL, fromEdgeCopy, toEdgeCopy } from "./src/lib/edge-cache";
+import { edgeCacheable, EDGE_TTL, fromEdgeCopy, toEdgeCopy } from "./src/lib/edge-cache";
 import { finishEvenIfCancelled } from "./src/lib/finish-request";
 import { logger } from "./src/lib/logger";
 import { serveMedia } from "./src/lib/media/serve";
@@ -136,7 +136,7 @@ export default {
         return staticNotFound(request, route.locale, env);
       return finishEvenIfCancelled(ctx, app.fetch(withHost(request), env, ctx));
     }
-    const key = edgeKey(request.url, env.CF_VERSION_METADATA?.id);
+    const key = new Request(request.url, { method: "GET" });
     const hit = await cache.match(key);
     if (hit) return fromEdgeCopy(hit);
     // Only checked when the page is not in the data-centre cache (existing pages usually are).

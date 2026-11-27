@@ -2,7 +2,6 @@ import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { revalidateTag } from "next/cache";
 import { after } from "next/server";
-import { edgeKey } from "@/lib/edge-cache";
 import { logger } from "@/lib/logger";
 import { getSiteUrl } from "@/lib/seo";
 
@@ -70,7 +69,7 @@ export function refreshPublicPages(content: EditedContent, paths: string[]) {
       const cache = (caches as unknown as { default: Cache }).default;
       for (const path of paths)
         for (const url of [`${origin}${path}`, `${origin}/en${path === "/" ? "" : path}`]) {
-          await cache.delete(edgeKey(url, env.CF_VERSION_METADATA?.id));
+          await cache.delete(new Request(url));
           const res = await env.WORKER_SELF_REFERENCE?.fetch(url, {
             // The background re-render message needs the host (see worker.ts → withHost).
             headers: { host: new URL(url).host },

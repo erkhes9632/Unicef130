@@ -77,12 +77,32 @@ Deploys are done by hand. There's no CI. Check you're logged in to the right Clo
 git pull && bun install
 bun run check && bun run cf:build
 bunx wrangler d1 migrations list DB --remote   # anything pending?
-bun run deploy                                 # build + deploy + cache:warm
+bun run release                                # safe release, see below
 ```
 
-If there's a new migration, back up first, then run `bun run db:migrate:remote` before deploying. If a migration drops a column or table, ship the code that stops using it first, and only run the migration after that.
+If there's a new migration, back up first, then run `bun run db:migrate:remote` before releasing. If a migration drops a column or table, ship the code that stops using it first, and only run the migration after that.
 
-Every deploy starts with an empty page cache; `bun run deploy` warms it straight away (see "Performance & caching").
+**`bun run release`** never lets visitors see a version that hasn't passed its checks:
+
+1. builds and uploads a new version (not live) and adds it at **0 %** next to the live one;
+2. `cache:warm --version <new>` fills the new version's page cache, page by page, using the
+   `Cloudflare-Workers-Version-Overrides` header (only these requests reach it);
+3. `smoke --version <new>` requests every public page (mn + en), `/sign-in` and `/join` twice;
+4. only then gives the new version **100 %**, and runs `bun run smoke` against the live site.
+
+If step 2 or 3 fails, the new version is removed again and the live one keeps 100 % — the
+first failing address, its status, ray id and response body are printed. If the live smoke
+test fails after the switch, it prints the rollback command
+(`bunx wrangler versions deploy <previous>@100% --yes`, or `bunx wrangler rollback`).
+`bun run release -- --dry-run` shows the commands without running them.
+
+`bun run deploy` (build → deploy → `cache:warm` → `smoke`) still exists for emergencies: it
+switches all traffic first and only then checks, so a failure there means rolling back.
+
+Why: a new version starts with an empty page cache, and a burst of first renders on the Free
+plan (each 60–210 ms of CPU) can get isolates stopped (Error 1102) and leave them answering 500
+for the pages they were rendering (2026-11-27, version 70bc22ea). Warming before the switch means
+visitors only ever get cached pages.
 
 **Production resources**
 

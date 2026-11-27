@@ -15,8 +15,9 @@ There is no CI deploy. Details and commands: [README.md](./README.md#deploying).
    `bunx wrangler d1 export DB --remote --output private/backups/before-deploy-$(date +%F-%H%M).sql`
 6. `bunx wrangler d1 migrations list DB --remote` — if anything is pending, run
    `bun run db:migrate:remote` now (right before the deploy, not hours earlier).
-7. `bun run deploy` (build → deploy → `cache:warm`). If the warm-up lists pages that still fail,
-   run `bun run cache:warm` once more.
+7. `bun run release`: uploads the new version, pre-warms and smoke-tests it at 0 % (visitors stay
+   on the live version), then makes it live and smoke-tests the live site. On a failure before
+   the switch nothing goes live; after the switch it prints the rollback command.
 8. `bunx wrangler tail --format pretty --status error` for 2 minutes: no errors.
 9. Open the home page, `/en`, `/members`, `/join`, `/sign-in` and `/admin` (as an admin).
 
