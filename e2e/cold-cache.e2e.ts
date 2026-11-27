@@ -31,8 +31,8 @@ function wrangler(args: string[]) {
   if (run.status !== 0) throw new Error(`wrangler ${args[0]} failed:\n${run.stderr}`);
 }
 
-test.beforeAll(async () => {
-  test.setTimeout(180_000);
+/** A fresh Worker on :8790 with a copy of the local data, an empty page cache and stale tags. */
+async function startColdWorker() {
   if (!existsSync(".open-next/worker.js") || !existsSync(".next/BUILD_ID"))
     throw new Error("No Worker build: run `bun run preview` or `bun run cf:build` first.");
   dir = mkdtempSync(join(tmpdir(), "cold-cache-"));
@@ -67,22 +67,38 @@ test.beforeAll(async () => {
     worker!.stderr!.on("data", onData);
     worker!.on("exit", (code) => reject(new Error(`Worker exited (${code}):\n${log}`)));
   });
-});
+}
 
-test.afterAll(() => {
-  worker?.kill();
+async function stopWorker() {
+  if (worker && worker.exitCode === null) {
+    const exited = new Promise((r) => worker!.once("exit", r));
+    worker.kill();
+    await exited;
+  }
+  worker = undefined;
   if (dir) rmSync(dir, { recursive: true, force: true });
-});
+  dir = "";
+}
 
-test("first request after a cache purge: 200 for every public page (mn + en)", async () => {
-  test.setTimeout(300_000);
+test.describe.configure({ mode: "serial" });
+test.beforeEach(async () => {
+  test.setTimeout(400_000);
+  await startColdWorker();
+});
+test.afterEach(stopWorker);
+
+async function publicPaths() {
   const sitemap = await (await fetch(`${BASE}/sitemap.xml`)).text();
-  const paths = [
+  return [
     ...new Set([
       ...[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]!).pathname),
       ...EXTRA,
     ]),
   ];
+}
+
+test("first request after a cache purge: 200 for every public page (mn + en)", async () => {
+  const paths = await publicPaths();
   expect(paths.length).toBeGreaterThan(20);
   expect(paths.some((p) => p.startsWith("/en"))).toBe(true);
 
@@ -105,4 +121,21 @@ test("first request after a cache purge: 200 for every public page (mn + en)", a
   // Every page answered on its first request, and none came from a cache that should be empty.
   expect(results.filter((r) => r.status !== 200)).toEqual([]);
   expect(results.filter((r) => r.cache === "HIT")).toEqual([]);
+});
+
+test("300 requests in bursts of 20 on a cold Worker: no response >= 500", async () => {
+  const paths = await publicPaths();
+  const urls = Array.from({ length: 300 }, (_, i) => paths[i % paths.length]!);
+  const failed: string[] = [];
+  for (let i = 0; i < urls.length; i += 20) {
+    const statuses = await Promise.all(
+      urls.slice(i, i + 20).map(async (path) => {
+        const response = await fetch(`${BASE}${path}`, { redirect: "manual" });
+        await response.arrayBuffer();
+        return { path, status: response.status };
+      }),
+    );
+    failed.push(...statuses.filter((r) => r.status >= 500).map((r) => `${r.status} ${r.path}`));
+  }
+  expect(failed).toEqual([]);
 });

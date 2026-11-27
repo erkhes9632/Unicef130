@@ -2,6 +2,7 @@ import { and, count, desc, eq, gte, lt, type SQL } from "drizzle-orm";
 import { Images, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import { ConfirmAction } from "@/components/admin/confirm-action";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -98,9 +99,11 @@ export default async function AdminGalleryPage({ searchParams }: PageProps<"/adm
         emptyText="Ийм цомог олдсонгүй."
       >
         {rows.length === 0 ? (
-          <p className="rounded-2xl bg-card p-8 text-center text-muted-foreground ring-1 ring-border">
-            Цомог хараахан нэмэгдээгүй байна.
-          </p>
+          <AdminEmpty
+            title="Цомог хараахан нэмэгдээгүй байна."
+            hint="Цомог үүсгээд зургаа оруулна; нийтэлсний дараа «Зургийн цомог» хуудсанд гарна."
+            action={{ href: "/admin/gallery/new", label: "Шинэ цомог" }}
+          />
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {rows.map((a) => (
@@ -114,7 +117,14 @@ export default async function AdminGalleryPage({ searchParams }: PageProps<"/adm
                 >
                   {a.coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail
-                    <img src={a.coverUrl} alt="" className="size-full object-cover" />
+                    <img
+                      src={a.coverUrl}
+                      alt=""
+                      width={480}
+                      height={360}
+                      loading="lazy"
+                      className="size-full object-cover"
+                    />
                   ) : (
                     <span className="flex size-full items-center justify-center text-muted-foreground">
                       <Images className="size-8" />
@@ -125,7 +135,7 @@ export default async function AdminGalleryPage({ searchParams }: PageProps<"/adm
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/admin/gallery/${a.id}`}
-                      className="line-clamp-1 font-semibold hover:text-brand-cyan-strong"
+                      className="line-clamp-1 font-semibold hover:text-brand-cyan-strong pointer-coarse:py-2.5"
                     >
                       {a.title}
                     </Link>

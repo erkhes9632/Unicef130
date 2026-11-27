@@ -1,6 +1,7 @@
 import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { Pager } from "@/components/admin/pager";
@@ -123,9 +124,10 @@ export default async function AdminUsersPage({ searchParams }: PageProps<"/admin
         emptyText="Ийм хэрэглэгч олдсонгүй."
       >
         {rows.length === 0 ? (
-          <p className="rounded-2xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-            Хэрэглэгч хараахан алга.
-          </p>
+          <AdminEmpty
+            title="Хэрэглэгч хараахан алга."
+            hint="Хүн сайтад нэвтэрсний дараа энд гарна; дараа нь эрх (гишүүн, админ) өгнө."
+          />
         ) : (
           <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-border">
             {rows.map((r) => {

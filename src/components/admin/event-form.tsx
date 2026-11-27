@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
+import { schoolYearOf } from "@/lib/school-year";
 import type { RichTextDoc } from "@/lib/types";
 import {
   AdminField,
@@ -13,12 +14,16 @@ import {
   FormSection,
   keepValuesOnSubmit,
   NativeSelect,
+  StickyActions,
   SubmitButton,
 } from "./form";
 import { ImageField } from "./image-field";
 import { RichTextEditor } from "./rich-text-editor";
 import { SdgPicker } from "./sdg-picker";
 import { SlugField } from "./slug-field";
+
+/** Placeholder: the school year of the day the page was opened. */
+const EXAMPLE_YEAR = schoolYearOf(Date.now());
 
 type EventFormValues = {
   title: string;
@@ -53,16 +58,11 @@ type EventFormValues = {
 export function EventForm({
   action,
   initial,
-  saved,
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial?: EventFormValues;
-  saved?: boolean;
 }) {
-  const [state, formAction] = useActionState(
-    action,
-    saved ? { ok: true, message: "Хадгалагдлаа." } : {},
-  );
+  const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
 
   return (
@@ -192,7 +192,6 @@ export function EventForm({
             />
             <Label htmlFor="published">Сайт дээр нийтлэх</Label>
           </div>
-          <SubmitButton className="w-full" />
         </FormSection>
         <FormSection
           title="Сайн дурын бүртгэл"
@@ -265,7 +264,7 @@ export function EventForm({
               id="schoolYear"
               name="schoolYear"
               defaultValue={initial?.schoolYear ?? ""}
-              placeholder="2025-2026"
+              placeholder={EXAMPLE_YEAR}
             />
           </AdminField>
           <AdminField
@@ -354,6 +353,9 @@ export function EventForm({
           </AdminField>
         </FormSection>
       </div>
+      <StickyActions className="lg:col-span-2">
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

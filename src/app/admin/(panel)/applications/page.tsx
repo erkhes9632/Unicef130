@@ -2,6 +2,7 @@ import { count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { Ban, Download, Mail, Phone, UserCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import {
   ApplicationNotesForm,
   ApplicationStatusSelect,
@@ -259,11 +260,11 @@ export default async function AdminApplicationsPage({
                 href={href({ status: t.value, page: "" })}
                 aria-current={filters.status === t.value ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold ring-1 ring-border hover:bg-muted",
+                  "inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold ring-1 ring-border hover:bg-muted pointer-coarse:h-11",
                   filters.status === t.value && "bg-brand-cyan text-brand-ink ring-brand-cyan",
                 )}
               >
-                {t.label} <span className="text-xs opacity-70">{t.n}</span>
+                {t.label} <span className="text-xs">{t.n}</span>
               </Link>
             </li>
           ))}
@@ -317,9 +318,11 @@ export default async function AdminApplicationsPage({
         emptyText="Энэ шүүлтүүрт тохирох өргөдөл алга."
       >
         {rows.length === 0 ? (
-          <p className="rounded-2xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-            Өргөдөл хараахан ирээгүй байна.
-          </p>
+          <AdminEmpty
+            title="Өргөдөл хараахан ирээгүй байна."
+            hint="Элсэлт нээлттэй үед сурагчид «Гишүүн болох» хуудаснаас өргөдөл илгээнэ."
+            action={{ href: "/admin/recruitment", label: "Элсэлт рүү" }}
+          />
         ) : (
           <ApplicationsList
             key={`${page}-${filters.status}-${matched}`}

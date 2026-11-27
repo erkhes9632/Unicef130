@@ -117,7 +117,7 @@ export default async function EventDetailPage({ params }: PageProps<"/[locale]/e
           )}
           <h1 className="text-3xl leading-tight font-extrabold sm:text-5xl">{e.title}</h1>
           <p className="text-lg text-muted-foreground">{e.summary}</p>
-          <div className="@container aspect-[16/9] overflow-hidden rounded-[2rem]">
+          <div className="@container aspect-[16/9] overflow-hidden rounded-3xl">
             <CoverImage
               src={e.coverUrl}
               date={e.startsAt}

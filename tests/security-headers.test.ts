@@ -48,6 +48,8 @@ describe("Content-Security-Policy", () => {
     expect(clerk["script-src"]).toContain("https://clerk.example.mn");
     expect(clerk["connect-src"]).toContain("https://clerk.example.mn");
     expect(clerk["connect-src"]).toContain("https://*.protect.clerk.com:*");
+    // The bot-protection loader is a script from cdn.protect.clerk.com.
+    expect(clerk["script-src"]).toContain("https://*.protect.clerk.com");
     expect(clerk["frame-src"]).toContain("https://*.protect.clerk.com");
     // Clerk's sign-up bot protection runs Cloudflare's challenge (account areas only).
     expect(clerk["script-src"]).toContain("https://challenges.cloudflare.com");

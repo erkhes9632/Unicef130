@@ -71,6 +71,8 @@ export function ImageField({
           <img
             src={url}
             alt=""
+            width={320}
+            height={240}
             className={fit === "contain" ? "size-full object-contain" : "size-full object-cover"}
           />
         ) : (

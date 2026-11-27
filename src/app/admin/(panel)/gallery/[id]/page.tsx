@@ -22,13 +22,9 @@ import {
 
 export const metadata: Metadata = { title: "Цомог засах" };
 
-export default async function EditAlbumPage({
-  params,
-  searchParams,
-}: PageProps<"/admin/gallery/[id]">) {
+export default async function EditAlbumPage({ params }: PageProps<"/admin/gallery/[id]">) {
   await requireAdmin();
   const { id } = await params;
-  const sp = await searchParams;
   const db = await getDb();
   const [album] = await db.select().from(albums).where(eq(albums.id, id)).limit(1);
   if (!album) notFound();
@@ -65,7 +61,6 @@ export default async function EditAlbumPage({
           action={saveAlbum.bind(null, album.id)}
           initial={album}
           events={await listEventOptions()}
-          saved={sp.saved === "1"}
         />
         <GalleryManager
           albumTitle={album.title}

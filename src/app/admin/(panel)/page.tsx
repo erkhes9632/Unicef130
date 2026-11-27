@@ -115,29 +115,6 @@ export default async function AdminDashboard() {
         ) : null}
 
         <section
-          aria-labelledby="year-title"
-          className="rounded-2xl bg-card p-5 ring-1 ring-border"
-        >
-          <h2 id="year-title" className="mb-3 font-bold">
-            {yearLabel} хичээлийн жил{" "}
-            <span className="font-normal text-muted-foreground">(одоогийн)</span>
-          </h2>
-          <ul className="grid grid-cols-3 gap-3">
-            {yearTiles.map((tile) => (
-              <li key={tile.label}>
-                <Link href={tile.href} className="block rounded-xl bg-muted/60 p-3 hover:bg-muted">
-                  <span className="block font-heading text-2xl font-extrabold">
-                    {formatNumber(tile.value)}
-                  </span>
-                  <span className="text-sm">{tile.label}</span>
-                  <span className="block text-xs text-muted-foreground">{yearLabel}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section
           aria-labelledby="todo-title"
           className="rounded-2xl bg-card p-5 ring-1 ring-border"
         >
@@ -165,6 +142,49 @@ export default async function AdminDashboard() {
           )}
         </section>
 
+        {/* Only while there are new applications (the dashboard stays short). */}
+        {latestApplications.length > 0 && (
+          <section
+            aria-labelledby="new-apps"
+            className="rounded-2xl bg-card p-5 ring-1 ring-border"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 id="new-apps" className="font-bold">
+                Шинэ өргөдлүүд
+              </h2>
+              <Link
+                href="/admin/applications"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-cyan-strong hover:underline"
+              >
+                Бүгд
+              </Link>
+            </div>
+            {
+              <ul className="divide-y text-sm">
+                {latestApplications.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <Link
+                      href={`/admin/applications?q=${encodeURIComponent(a.fullName)}`}
+                      className="font-semibold hover:underline"
+                    >
+                      {a.fullName}
+                    </Link>
+                    <span className="flex items-center gap-2">
+                      {a.className && <Badge variant="secondary">{a.className}</Badge>}
+                      <time
+                        className="text-xs text-muted-foreground"
+                        dateTime={new Date(a.createdAt).toISOString()}
+                      >
+                        {formatDate("mn", a.createdAt, "long")}
+                      </time>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            }
+          </section>
+        )}
+
         <nav aria-label="Шуурхай үйлдэл">
           <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {quickActions.map(({ href, label, icon: Icon }) => (
@@ -173,7 +193,7 @@ export default async function AdminDashboard() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="h-auto w-full justify-start gap-3 py-4 text-base"
+                  className="h-auto min-h-14 w-full justify-start gap-3 py-3 text-left text-base whitespace-normal"
                 >
                   <Link href={href}>
                     <Icon className="size-5 text-brand-cyan-strong" aria-hidden="true" />
@@ -185,43 +205,27 @@ export default async function AdminDashboard() {
           </ul>
         </nav>
 
-        <section aria-labelledby="new-apps" className="rounded-2xl bg-card p-5 ring-1 ring-border">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 id="new-apps" className="font-bold">
-              Шинэ өргөдлүүд
-            </h2>
-            <Link
-              href="/admin/applications"
-              className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-cyan-strong hover:underline"
-            >
-              Бүгд
-            </Link>
-          </div>
-          {latestApplications.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Шинэ өргөдөл алга.</p>
-          ) : (
-            <ul className="divide-y text-sm">
-              {latestApplications.map((a) => (
-                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <Link
-                    href={`/admin/applications?q=${encodeURIComponent(a.fullName)}`}
-                    className="font-semibold hover:underline"
-                  >
-                    {a.fullName}
-                  </Link>
-                  <span className="flex items-center gap-2">
-                    {a.className && <Badge variant="secondary">{a.className}</Badge>}
-                    <time
-                      className="text-xs text-muted-foreground"
-                      dateTime={new Date(a.createdAt).toISOString()}
-                    >
-                      {formatDate("mn", a.createdAt, "long")}
-                    </time>
+        <section
+          aria-labelledby="year-title"
+          className="rounded-2xl bg-card p-5 ring-1 ring-border"
+        >
+          <h2 id="year-title" className="mb-3 font-bold">
+            {yearLabel} хичээлийн жил{" "}
+            <span className="font-normal text-muted-foreground">(одоогийн)</span>
+          </h2>
+          <ul className="grid grid-cols-3 gap-3">
+            {yearTiles.map((tile) => (
+              <li key={tile.label}>
+                <Link href={tile.href} className="block rounded-xl bg-muted/60 p-3 hover:bg-muted">
+                  <span className="block font-heading text-2xl font-extrabold">
+                    {formatNumber(tile.value)}
                   </span>
-                </li>
-              ))}
-            </ul>
-          )}
+                  <span className="text-sm">{tile.label}</span>
+                  <span className="block text-xs text-muted-foreground">{yearLabel}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <StatsDashboard />

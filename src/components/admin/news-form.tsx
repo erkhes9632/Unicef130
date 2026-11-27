@@ -12,6 +12,7 @@ import {
   FormSection,
   keepValuesOnSubmit,
   NativeSelect,
+  StickyActions,
   SubmitButton,
 } from "./form";
 import { ImageField } from "./image-field";
@@ -43,19 +44,14 @@ type NewsFormValues = {
 export function NewsForm({
   action,
   initial,
-  saved,
   albums = [],
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial?: NewsFormValues;
-  saved?: boolean;
   /** Albums that can be shown under the post. */
   albums?: { id: string; title: string }[];
 }) {
-  const [state, formAction] = useActionState(
-    action,
-    saved ? { ok: true, message: "Хадгалагдлаа." } : {},
-  );
+  const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
 
   return (
@@ -175,7 +171,6 @@ export function NewsForm({
             />
             Онцлох мэдээ (нүүр хуудсанд эхэнд)
           </label>
-          <SubmitButton className="w-full" />
         </FormSection>
         <FormSection title="Зургийн цомог">
           <AdminField
@@ -268,6 +263,9 @@ export function NewsForm({
           ))}
         </FormSection>
       </div>
+      <StickyActions className="lg:col-span-2">
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

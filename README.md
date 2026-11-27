@@ -152,7 +152,9 @@ Admins can't demote, ban or delete themselves, and the last admin can't be remov
 - **Lists:** every admin list has the same filter bar: results update while typing (300 ms, from 2 letters), selects apply at once, filters stay in the address, 25 rows per page.
 - **Events:** mark attendance. Marking someone as present adds their volunteer hours.
 - **Content:** news, gallery, FAQ, about page and site settings. Sections left empty are simply hidden. If an English field is empty, the Mongolian text is shown instead.
-- **Dashboard (Хяналтын самбар):** a line that says whether the site is fine, a "Хийх зүйлс" box (new applications, enrollment closing soon, no published FAQ, accounts without a name), quick actions, the newest applications, then the statistics (see "Analytics").
+- **Menu:** grouped as Агуулга (news, events, gallery, About, support page, FAQ), Гишүүд (members, volunteer hours, enrollment, applications), Тайлан (yearly results) and Бусад (site settings, users). On phones the menu is a drawer and lists turn into cards.
+- **Dashboard (Хяналтын самбар):** greeting, one status line, "Хийх зүйлс" (with the newest applications when there are any), quick actions, this school year's numbers, then the statistics with their own period selector ("Хугацаа:"; see "Analytics").
+- **Forms:** required fields are marked, confusing fields have help text, long forms keep the save button in a sticky bar, every save shows a toast, and leaving with unsaved changes asks first.
 - **Members:** organised by school year (year switcher, opens on the current year; «Удирдлага» then «Гишүүд»; past years editable, marked «Өмнөх жилийн мэдээлэл»). Names are hidden by default. «Нийтэд харуулах» (per year) asks the admin to confirm a parent's or guardian's consent (stored with the time and the admin) and refreshes the public pages within seconds. The bin removes a person from that year only; «Бүрмөсөн устгах» is on the edit page.
 - **Шинэ хичээлийн жил эхлүүлэх** (dashboard, Сайтын тохиргоо, Гишүүд): choose the new year's leaders (existing or new people), optionally copy members (nobody by default), confirm. Nothing is deleted.
 - **Support page:** Admin → «Дэмжих хуудас» edits the `/support` text; the contact e-mail and Instagram are in Сайтын тохиргоо.
@@ -234,8 +236,21 @@ in the browser; visitor numbers are cached for 10 minutes. "CSV татах" down
 4. `bunx wrangler secret put CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`,
    `CF_WEB_ANALYTICS_SITE_TAG`, then deploy.
 
-Without these secrets (or if the API fails) the page says the visitor numbers aren't connected and
-everything else still works. Locally, leave them empty in `.dev.vars`.
+Without these secrets (or if the API fails) the visitor tiles and charts are hidden and one small
+line says they aren't connected; everything else still works. Locally, leave them empty in
+`.dev.vars`.
+
+## Google Sheets (optional)
+
+New applications can also be copied to a Google Sheet. Without these secrets the sync is skipped
+and applications are stored in D1 only.
+
+1. Google Cloud → new project → enable the **Google Sheets API** → service account → key (JSON).
+2. Create the sheet, share it with the service account's e-mail as **Editor**, add a tab
+   `Applications`.
+3. `bunx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+   (the JSON's `private_key`) and `GOOGLE_SHEET_ID`. Delete the JSON file afterwards.
+4. Admin → Өргөдлүүд shows «Sheets-д илгээх»; `/privacy` mentions the sheet automatically.
 
 ## Performance & caching
 
@@ -278,6 +293,11 @@ more than that, so visitors should only ever get cached pages.
   proxy runs only there and decides per request; `/join` for signed-out visitors (the same view
   for everyone) and the `/sign-in` shell (Clerk runs in the browser) are cached. The data-centre
   copy never stores account areas or responses with cookies (`tests/caching.test.ts`).
+- **JavaScript on public pages:** about 213 kB gzip (React + Next.js runtime ≈ 150 kB, next-intl
+  ≈ 12 kB, the rest is the header, footer and page components). No toast library, menu library,
+  Clerk or chart code on public routes; the mobile drawer and the signed-in account menu load
+  only when used (`tests/design.test.ts` guards this). Account areas add Clerk (/join, /sign-in:
+  about 360–410 kB gzip).
 - To measure: `bunx wrangler tail` shows `cpuTime` per request; locally, start
   `bunx wrangler dev --inspector-port 9230` and profile with Chrome DevTools.
 
@@ -322,9 +342,11 @@ The look is warm and friendly: an off-white and cream light theme, a warm charco
   - `StatTile`, `PartnerChip`, `InfoNote`, `EmptyState`, `UntranslatedBadge`;
   - `CoverImage` (shows a pillar-tinted card with a date stamp until a photo is uploaded), `HeroCollage`;
   - `Button` (44 px tall; variants include `warm`), `ErrorSummary` for forms, `StickyActions` for long admin forms.
-- **Motion.** Sections fade in once per page view (`.reveal`, `.reveal-group`, `.grow-x`, `.draw-line`, driven by `components/layout/reveal-observer.tsx`). Cards lift slightly on hover (`hover-lift`, transform only), and numbers count up once. Small chips use `tap-target` for a 44 × 44 px hit area. Nothing is hidden without JavaScript, and all motion is off when the device asks for reduced motion.
+- **Scales.** Spacing: Tailwind's 4 px steps; sections use `.section-y` (56 px phones, 72 px tablets, 96 px desktops; two plain sections in a row share one gap). Radius: `lg` controls, `xl` small tiles, `2xl` admin cards and list items, `3xl` public cards and panels, `full` pills. Shadows: `shadow-soft` (resting) and `shadow-lift` (hover, menus). No one-off values.
+- **Type.** Headings balance their lines and never break inside a word; body text is 16 px on phones; paragraphs stay under 72 characters per line.
+- **Motion.** Sections play a short entrance once, when they start entering the screen (`.reveal`; cards in a row, `.reveal-group`, only fade so a row stays aligned; `.grow-x`, `.draw-line`), driven by `components/layout/reveal-observer.tsx`. Nothing is hidden before that, so full-page screenshots, print and fast jumps never show gaps; numbers keep their real value until they count up. Cards lift slightly on hover (`hover-lift`, transform only), and numbers count up once. Small chips use `tap-target` for a 44 × 44 px hit area. Nothing is hidden without JavaScript, and all motion is off when the device asks for reduced motion.
 - **Languages.** Every string lives in both `messages/mn.json` and `messages/en.json` (a test checks that they match). On English pages, news or events without an English version are shown in Mongolian with an "Available in Mongolian" badge.
-- **Header.** The desktop menu appears from 1280 px wide; below that there's a drawer. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
+- **Header.** The desktop menu appears from 1280 px wide (its groups are small disclosure menus); below that there's a drawer (focus stays inside, the page doesn't scroll, Escape and any navigation close it; language and theme are inside). The drawer and the signed-in account menu load only when needed. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
 
 ## School years
 

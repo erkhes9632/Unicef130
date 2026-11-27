@@ -117,7 +117,10 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
           Бичлэгүүд ({displayYear(year)})
         </h2>
         {entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Энэ жилд бичлэг алга.</p>
+          <p className="text-sm text-muted-foreground">
+            Энэ жилд бичлэг алга. Дээрээс гишүүдээ сонгоод «Цаг нэмэх» эсвэл арга хэмжээний ирцийг
+            тэмдэглэнэ.
+          </p>
         ) : (
           <ul className="divide-y overflow-hidden rounded-2xl bg-card text-sm ring-1 ring-border">
             {entries.map((e) => (

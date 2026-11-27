@@ -10,6 +10,7 @@ import { Sparkline } from "@/components/charts/sparkline";
 import { Button } from "@/components/ui/button";
 import { useUrlQuery } from "@/hooks/use-url-query";
 import { formatDate, formatNumber } from "@/lib/dates/format";
+import { displayYear } from "@/lib/school-year";
 import { changePct, parsePeriod, PERIODS, type PeriodKey } from "@/lib/stats/period";
 import { fromFirstNonZero } from "@/lib/stats/ticks";
 import type { Count, StatsResponse } from "@/lib/stats/types";
@@ -270,9 +271,16 @@ export function StatsDashboard() {
         </p>
       )}
 
-      {/* 2. Period */}
+      {/* Period: applies to the tiles and charts below only. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Хугацаа" className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-labelledby="period-label"
+          className="flex flex-wrap items-center gap-2"
+        >
+          <span id="period-label" className="mr-1 text-sm font-semibold">
+            Хугацаа:
+          </span>
           {PERIODS.map((p) => (
             <Button
               key={p}
@@ -299,35 +307,43 @@ export function StatsDashboard() {
         </h2>
         {loading ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 8 }, (_, i) => (
+            {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="h-36 rounded-2xl bg-muted motion-safe:animate-pulse" />
             ))}
           </div>
         ) : c ? (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi
-              label="Зочид"
-              value={t ? fmt(t.totals.visits) : null}
-              hint="Сайтад хэдэн удаа зочилсон бэ."
-              cur={t?.totals.visits}
-              prev={t?.prevTotals.visits}
-              trend={t?.series.map((d) => d.visits)}
-            />
-            <Kpi
-              label="Үзсэн хуудас"
-              value={t ? fmt(t.totals.views) : null}
-              hint="Нийт хэдэн хуудас нээгдсэн бэ."
-              cur={t?.totals.views}
-              prev={t?.prevTotals.views}
-              trend={t?.series.map((d) => d.views)}
-            />
-            <Kpi
-              label="Нэг зочилтод ногдох хуудас"
-              value={t ? (t.totals.visits ? fmt1(t.totals.views / t.totals.visits) : "0") : null}
-              hint="Нэг удаа орохдоо дунджаар хэдэн хуудас үздэг вэ."
-              cur={t && t.totals.visits ? t.totals.views / t.totals.visits : undefined}
-              prev={t && t.prevTotals.visits ? t.prevTotals.views / t.prevTotals.visits : undefined}
-            />
+            {t && (
+              <>
+                <Kpi
+                  label="Зочид"
+                  value={t ? fmt(t.totals.visits) : null}
+                  hint="Сайтад хэдэн удаа зочилсон бэ."
+                  cur={t?.totals.visits}
+                  prev={t?.prevTotals.visits}
+                  trend={t?.series.map((d) => d.visits)}
+                />
+                <Kpi
+                  label="Үзсэн хуудас"
+                  value={t ? fmt(t.totals.views) : null}
+                  hint="Нийт хэдэн хуудас нээгдсэн бэ."
+                  cur={t?.totals.views}
+                  prev={t?.prevTotals.views}
+                  trend={t?.series.map((d) => d.views)}
+                />
+                <Kpi
+                  label="Нэг зочилтод ногдох хуудас"
+                  value={
+                    t ? (t.totals.visits ? fmt1(t.totals.views / t.totals.visits) : "0") : null
+                  }
+                  hint="Нэг удаа орохдоо дунджаар хэдэн хуудас үздэг вэ."
+                  cur={t && t.totals.visits ? t.totals.views / t.totals.visits : undefined}
+                  prev={
+                    t && t.prevTotals.visits ? t.prevTotals.views / t.prevTotals.visits : undefined
+                  }
+                />
+              </>
+            )}
             <Kpi
               label="Шинэ хэрэглэгч"
               value={fmt(c.users.inPeriod)}
@@ -340,7 +356,7 @@ export function StatsDashboard() {
               value={c.members.report ? fmt(c.members.report.active) : "—"}
               hint={
                 c.members.report
-                  ? `${c.members.report.schoolYear.replace("-", "–")} оны тайлангаас (нийт элссэн ${fmt(c.members.report.joined)}). Сайтад харагдах тоо.`
+                  ? `${displayYear(c.members.report.schoolYear)} оны тайлангаас (нийт элссэн ${fmt(c.members.report.joined)}). Сайтад харагдах тоо.`
                   : "«Жилийн үр дүн» хэсэгт тайлангийн тоог оруулна."
               }
             />
@@ -372,8 +388,8 @@ export function StatsDashboard() {
       </section>
 
       {noTraffic && (
-        <p className="rounded-2xl bg-muted/50 p-5 text-center text-muted-foreground">
-          Зочдын тоо одоогоор холбогдоогүй байна.
+        <p className="text-sm text-muted-foreground">
+          Зочдын статистик холбогдоогүй (Cloudflare Web Analytics) — холбогдвол энд харагдана.
         </p>
       )}
 
@@ -571,7 +587,7 @@ export function StatsDashboard() {
                 {c.members.report && (
                   <>
                     {" "}
-                    Эхлэл: {c.members.report.schoolYear.replace("-", "–")} тайлангаас{" "}
+                    Эхлэл: {displayYear(c.members.report.schoolYear)} тайлангаас{" "}
                     {fmt(c.members.report.active)} идэвхтэй гишүүн (сайтын бүртгэл биш).
                   </>
                 )}
@@ -615,7 +631,7 @@ export function StatsDashboard() {
               ? {
                   columns: ["Хичээлийн жил", "Тайлангаас", "Сайтад бүртгэсэн", "Нийт"],
                   rows: c.hours.byYear.map((y) => [
-                    y.schoolYear.replace("-", "–"),
+                    displayYear(y.schoolYear),
                     fmt(y.report),
                     fmt(y.logged),
                     fmt(y.report + y.logged),
@@ -628,7 +644,7 @@ export function StatsDashboard() {
             <>
               <BarChart
                 items={c.hours.byYear.map((y) => ({
-                  label: y.schoolYear.replace("-", "–"),
+                  label: displayYear(y.schoolYear),
                   value: y.report + y.logged,
                   parts: [
                     { name: "Тайлангаас", value: y.report, color: "var(--chart-3)" },

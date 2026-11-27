@@ -25,6 +25,11 @@
       "service": "unicef-club-130",
     },
   ],
+  // The deployment's version id: part of the data-centre page-copy key (src/lib/edge-cache.ts),
+  // so a copy made by the previous deploy (pointing at its /_next/static files) is never served.
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA",
+  },
   // Production resources (APAC). Local dev/preview uses Miniflare emulation (.wrangler/state).
   "d1_databases": [
     {

@@ -48,6 +48,7 @@ export function FaqForm({
     <form
       action={formAction}
       onSubmit={keepValuesOnSubmit(formAction)}
+      data-guard
       className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-border"
     >
       <div className="grid gap-3 lg:grid-cols-2">
@@ -123,9 +124,11 @@ export function FaqForm({
           </>
         )}
         {remove && <ConfirmAction action={remove} description="Энэ асуултыг устгах уу?" />}
-        <SubmitButton className="h-8 px-3 text-xs">{initial ? "Хадгалах" : "Нэмэх"}</SubmitButton>
+        <SubmitButton className="h-8 px-3 text-xs pointer-coarse:h-11">
+          {initial ? "Хадгалах" : "Нэмэх"}
+        </SubmitButton>
       </div>
-      <FormAlert state={state} />
+      <FormAlert state={state} toast={false} />
     </form>
   );
 }

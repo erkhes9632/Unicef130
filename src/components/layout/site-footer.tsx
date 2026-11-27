@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { SocialIcon } from "@/components/brand/social-icon";
 import { SocialLinks } from "@/components/brand/social-links";
-import { CopyButton } from "@/components/contact/copy-button";
+import { CopyButton } from "@/components/common/copy-button";
 import { mainNav } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
@@ -30,7 +30,7 @@ export async function SiteFooter() {
   const icon = "size-4 text-brand-cyan-strong";
   // One row per channel: icon column + text column on one grid, links as large as the text.
   const contactLink =
-    "inline-flex min-h-11 items-center break-all text-brand-cyan-strong underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm sm:min-h-0";
+    "inline-flex min-h-11 items-center break-all text-brand-cyan-strong underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm";
 
   return (
     <footer className="relative mt-auto overflow-hidden border-t bg-surface-2 print:hidden">
@@ -117,7 +117,7 @@ export async function SiteFooter() {
                     value={info.email}
                     label={t("Footer.copyEmail")}
                     copied={t("Footer.copied")}
-                    className="-my-2 size-9"
+                    className="-my-1"
                   />
                 </span>
               </li>

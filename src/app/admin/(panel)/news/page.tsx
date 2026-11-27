@@ -2,6 +2,7 @@ import { and, count, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import { ConfirmAction } from "@/components/admin/confirm-action";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -96,9 +97,11 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
         emptyText="Ийм мэдээ олдсонгүй."
       >
         {rows.length === 0 ? (
-          <p className="rounded-2xl bg-card p-8 text-center text-muted-foreground ring-1 ring-border">
-            Мэдээ хараахан нэмэгдээгүй байна.
-          </p>
+          <AdminEmpty
+            title="Мэдээ хараахан нэмэгдээгүй байна."
+            hint="Эхний мэдээгээ бичээд «Нийтлэх» дарна."
+            action={{ href: "/admin/news/new", label: "Шинэ мэдээ" }}
+          />
         ) : (
           <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-border">
             {rows.map((r) => (
@@ -106,7 +109,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/admin/news/${r.id}`}
-                    className="line-clamp-1 font-semibold hover:text-brand-cyan-strong"
+                    className="line-clamp-1 font-semibold hover:text-brand-cyan-strong pointer-coarse:py-2.5"
                   >
                     {r.title}
                   </Link>

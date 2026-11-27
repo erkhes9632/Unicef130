@@ -21,7 +21,7 @@ export function ApplicationStatusSelect({
     <span className="inline-flex items-center gap-2">
       <NativeSelect
         aria-label="Төлөв"
-        className="h-8 w-auto"
+        className="h-8 w-auto pointer-coarse:h-11"
         defaultValue={value}
         disabled={pending}
         onChange={(e) =>
@@ -62,7 +62,9 @@ export function ApplicationNotesForm({
         aria-label="Тэмдэглэл"
       />
       <div className="flex items-center gap-2">
-        <SubmitButton className="h-8 px-3 text-xs">Тэмдэглэл хадгалах</SubmitButton>
+        <SubmitButton className="h-8 px-3 text-xs pointer-coarse:h-11">
+          Тэмдэглэл хадгалах
+        </SubmitButton>
         <FormAlert state={state} />
       </div>
     </form>
@@ -109,7 +111,9 @@ export function DecisionMessageForm({
         aria-label="Өргөдөл гаргагчид харагдах мессеж"
       />
       <div className="flex items-center gap-2">
-        <SubmitButton className="h-8 px-3 text-xs">Мессеж хадгалах</SubmitButton>
+        <SubmitButton className="h-8 px-3 text-xs pointer-coarse:h-11">
+          Мессеж хадгалах
+        </SubmitButton>
         <FormAlert state={state} />
       </div>
     </form>

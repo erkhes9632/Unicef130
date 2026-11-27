@@ -69,8 +69,18 @@ function renderNode(node: RichTextNode): ReactNode {
       const src = safeImageSrc(node.attrs?.src);
       if (!src) return null;
       const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
-      // eslint-disable-next-line @next/next/no-img-element -- user content image from R2
-      return <img src={src} alt={alt} loading="lazy" className="w-full rounded-2xl" />;
+      return (
+        // eslint-disable-next-line @next/next/no-img-element -- R2 image, pre-sized on upload
+        <img
+          src={src}
+          alt={alt}
+          width={1600}
+          height={1000}
+          loading="lazy"
+          decoding="async"
+          className="h-auto w-full rounded-2xl"
+        />
+      );
     }
     case "text":
       return renderText(node);

@@ -1,10 +1,12 @@
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AdminForbidden } from "@/components/admin/admin-forbidden";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { CommandPalette } from "@/components/admin/command-palette";
+import { SavedToast } from "@/components/admin/saved-toast";
 import { ThemeToggleAdmin } from "@/components/admin/theme-toggle-admin";
 import { UnsavedChangesGuard } from "@/components/admin/unsaved-changes-guard";
 import { AccountMenu } from "@/components/auth/account-menu";
@@ -35,7 +37,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
         <div className="border-b p-4">
           <Link
             href="/admin"
-            className="flex items-center gap-3 rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex min-h-11 items-center gap-3 rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <BrandLogo variant="mark" locale="mn" alt="" height={40} />
             <span className="flex flex-col leading-tight">
@@ -51,7 +53,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
           <Link
             href="/"
             target="_blank"
-            className="inline-flex items-center gap-1 hover:text-foreground"
+            className="inline-flex min-h-11 items-center gap-1 hover:text-foreground"
           >
             Сайт руу очих <ExternalLink className="size-3" />
           </Link>
@@ -65,12 +67,15 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
           <Link
             href="/admin"
             aria-label="UNICEF 130 — Админ"
-            className="flex shrink-0 rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 lg:hidden"
+            className="flex min-h-11 shrink-0 items-center rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 lg:hidden"
           >
             <BrandLogo variant="mark" locale="mn" alt="" height={40} />
           </Link>
           <CommandPalette />
           <UnsavedChangesGuard />
+          <Suspense>
+            <SavedToast />
+          </Suspense>
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden text-right text-xs sm:block">
               <p className="font-semibold">{user.name || user.email}</p>

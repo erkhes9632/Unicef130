@@ -43,7 +43,7 @@ export function AttendanceControls({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           inputMode="decimal"
-          className="h-8 w-20"
+          className="h-8 w-20 pointer-coarse:h-11"
           aria-label="Цаг"
           disabled={!canLogHours}
         />

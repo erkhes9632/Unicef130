@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import type { ActionState } from "@/lib/admin/action-state";
 import { memberGroupLabel } from "@/lib/admin/labels";
+import { displayYear } from "@/lib/school-year";
 import { ConfirmAction } from "./confirm-action";
 
 type AdminMemberRow = {
@@ -87,7 +88,7 @@ export function MembersBulkList({
   remove: (id: string) => Promise<ActionState>;
   move: (id: string, direction: "up" | "down") => Promise<ActionState>;
 }) {
-  const yearLabel = year.replace("-", "–");
+  const yearLabel = displayYear(year);
   const editHref = (id: string) => `/admin/members/${id}?year=${year}`;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
@@ -178,7 +179,7 @@ export function MembersBulkList({
                 {m.volunteerHours !== null && (
                   <span>
                     · {m.volunteerHours} цаг
-                    {m.hoursYear && m.hoursYear !== year && ` (${m.hoursYear.replace("-", "–")})`}
+                    {m.hoursYear && m.hoursYear !== year && ` (${displayYear(m.hoursYear)})`}
                   </span>
                 )}
                 {m.photoUrl && (

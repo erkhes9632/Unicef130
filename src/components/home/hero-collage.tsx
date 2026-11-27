@@ -64,7 +64,7 @@ export function HeroCollage({
             <figure
               key={i}
               className={cn(
-                "relative overflow-hidden rounded-[1.75rem] bg-card p-1.5 shadow-lift ring-1 ring-border motion-safe:transition-transform motion-safe:duration-500 motion-safe:hover:rotate-0",
+                "relative overflow-hidden rounded-2xl bg-card p-1.5 shadow-lift ring-1 ring-border motion-safe:transition-transform motion-safe:duration-500 motion-safe:hover:rotate-0",
                 frame,
               )}
             >
@@ -74,15 +74,17 @@ export function HeroCollage({
                   src={photo.src}
                   {...responsiveSrc(photo.src, "(min-width: 1024px) 22vw, 45vw")}
                   alt={photo.alt}
+                  width={100}
+                  height={100}
                   fetchPriority={i === 0 ? "high" : undefined}
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
-                  className="size-full rounded-[1.4rem] object-cover dark:brightness-[.92]"
+                  className="size-full rounded-xl object-cover dark:brightness-[.92]"
                 />
               ) : (
                 <div
                   className={cn(
-                    "relative flex size-full flex-col justify-between overflow-hidden rounded-[1.4rem] p-4 sm:p-5",
+                    "relative flex size-full flex-col justify-between overflow-hidden rounded-xl p-4 sm:p-5",
                     tile.tone,
                   )}
                 >

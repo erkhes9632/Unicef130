@@ -1,85 +1,68 @@
-# PRODUCTION_REPORT — Сайтын одоогийн байдал
+# Production report
 
-**Огноо:** 2026-11-25 (кэш, статистик, лого — локалд бэлэн, deploy хийгдээгүй) · **Сайт:** https://130foreverychild.site · Deploy: гараар (`bun run deploy`)
+**Site:** https://130foreverychild.site · **Hosting:** Cloudflare Workers, Free plan · **Deploys:** by
+hand (`bun run deploy`, see `DEPLOY_CHECKLIST.md`) · **State of:** 2026-11-27 (final release round)
 
-## 1. Хураангуй
+## Summary
 
-- Сайт ажиллаж байна: нийтийн 14 хуудас (mn + en) 200, буруу хаяг 404, `/admin` ба `/me`
-  нэвтрээгүй үед нэвтрэх хуудас руу. `wrangler tail` дээр алдаа 0.
-- Нэвтрэлт: Clerk production (Google + и-мэйл код). Эрх: `admin` / `member` / эрхгүй.
-- Production D1 бүх migration-тай (0000–0008), жишээ/тест хэрэглэгч, зохиомол контент байхгүй.
-- Workers **Free** план (хүсэлт бүрт 10 ms CPU): нийтийн хуудсууд кэшээс өгөгдөнө (≈1–5 ms) — §5.
-  Үргэлж Free план дээр үлдэнэ.
+- Public site in Mongolian and English, light and dark: home, about, impact, news, events,
+  gallery, members, FAQ, support, search, privacy. Unknown addresses get a static 404.
+- Sign-in with Clerk (Google or an e-mail code). Roles: admin, member, or none (applicant).
+- Enrollment, applications, a member area (`/me`: volunteer hours, event sign-ups, certificate),
+  and an admin panel for content, members by school year, hours, enrollment, users and settings.
+- Everything runs on the Free plan: public pages are served from cache (about 1–5 ms of CPU);
+  only account areas render per request.
 
-## 2. Юу ажилладаг вэ
+## Services and configuration (names only)
 
-| Хэсэг            | Төлөв | Тайлбар                                                                                                                               |
-| ---------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Нийтийн сайт     | ✅    | Нүүр, Бидний тухай, Үр дүн (SDG, цагийн хэлхээс), Мэдээ, Арга хэмжээ (.ics), Гишүүд, Цомог, FAQ, Холбоо барих, Дэмжих, Хайлт, Нууцлал |
-| Нэвтрэлт         | ✅    | `/sign-in` (нэг дэлгэц), `/sign-out`; Clerk зөвхөн бүртгэлийн хэсгүүдэд ачаалагдана                                                   |
-| Элсэлт           | ✅    | Нэвтэрч өргөдөл гаргана; нэг бүртгэл — нэг элсэлтэд нэг өргөдөл; төлөв `/join` дээр                                                   |
-| Гишүүний хэсэг   | ✅    | `/me`: сайн дурын цаг, арга хэмжээнд бүртгүүлэх (хүлээлгийн жагсаалттай), гэрчилгээ, бүртгэл устгах                                   |
-| Админ хэсэг      | ✅    | Контент, элсэлт, өргөдөл, хэрэглэгчид, сайн дурын цаг/ирц, тохиргоо, үйлдлийн түүх; хяналтын самбар = статистик                       |
-| Админ руу хүрэх  | ✅    | Header-т «Админ» товч (гар утсанд цэсэнд), нэвтрэхэд админ → `/admin`; эрхгүй бол тайлбар хуудас                                      |
-| Өдөр бүрийн cron | ✅    | 03:30 УБ: хугацаа дууссан тэнцээгүй өргөдөл, хуучин rate-limit мөр устгана                                                            |
-| Google Sheets    | ➖    | Тохируулаагүй (заавал биш); өргөдөл D1-д хадгалагдана                                                                                 |
+| Service    | Setup                                                                                                                                                                                                                 |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare | Worker `unicef-club-130` on the custom domain, D1 `unicef-club-130-db`, R2 `unicef-club-130-media` and `unicef-club-130-opennext-cache`, a Durable Object for background page refreshes, daily cron 03:30 Ulaanbaatar |
+| Clerk      | Production instance, Google OAuth with the club's own credentials, `role` claim in the session token, webhook `/api/webhooks/clerk`, bot protection on sign-up                                                        |
+| Vars       | `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `GOOGLE_SHEET_TAB`                                                                                                                                                   |
+| Secrets    | `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`; optional `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG`, `GOOGLE_SERVICE_ACCOUNT_*`, `GOOGLE_SHEET_ID`                                    |
 
-## 3. Тохируулсан үйлчилгээ (зөвхөн нэр)
+## Security and privacy
 
-| Үйлчилгээ  | Тохиргоо                                                                                                                                                                                                                   |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare | Worker `unicef-club-130`, custom domain, D1 `unicef-club-130-db`, R2 `unicef-club-130-media`, `unicef-club-130-opennext-cache` (Turnstile widget — устгана)                                                                |
-| Clerk      | Production instance; Google OAuth (өөрийн credential); session token `role` claim; webhook `/api/webhooks/clerk`                                                                                                           |
-| vars       | `SITE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `GOOGLE_SHEET_TAB`                                                                                                                                                        |
-| Secret     | `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET` (`TURNSTILE_SECRET_KEY` — deploy-ийн дараа устгана); (заавал биш) `CF_ANALYTICS_API_TOKEN`, `CF_ACCOUNT_ID`, `CF_WEB_ANALYTICS_SITE_TAG` · устгах: `BETTER_AUTH_SECRET` |
+- Roles are checked on the server for every page, action and route (static tests enforce it);
+  the proxy only checks that account areas have a session.
+- Clerk webhooks are verified (signature + 5-minute window). An admin can't remove, ban or
+  delete themselves or the last admin.
+- Headers: CSP (own origin, Cloudflare Web Analytics; Clerk and its bot protection only in
+  account areas), HSTS, `X-Frame-Options: DENY`, `nosniff`, Referrer- and Permissions-Policy.
+- Uploads: admins only, JPG/PNG/WebP checked by content, 5 MB, metadata (EXIF/GPS/XMP) removed in
+  the browser and again on the server.
+- Students: names are public only per school year with recorded parental consent; individual
+  hours are never public; logs and the audit trail use ids; rejected applications are deleted
+  90 days after enrollment closes; a deleted account keeps only anonymous hour totals.
 
-## 4. Аюулгүй байдал ба хувийн мэдээлэл
+## Quality (local Worker build with a copy of production data)
 
-- Эрх: proxy (`src/proxy.ts`) зөвхөн бүртгэлийн хэсгүүдэд ажиллаж нэвтэрсэн эсэхийг шалгана; хуудас, Server Action, route бүр эрхийг
-  сервер дээр D1-ээс (шаардлагатай үед Clerk-ээс засаж) шалгана — статик тест үүнийг баталгаажуулна.
-- Webhook: Svix гарын үсэг + хугацааны шалгалт (5 минутаас хуучин мессеж татгалзана); ижил
-  мессеж дахин ирвэл аюулгүй (upsert / давтан устгал хор хөнөөлгүй).
-- Админ өөрийгөө, сүүлчийн админыг хасах/идэвхгүй болгох/устгах боломжгүй.
-- Header: CSP (өөрийн домэйн + Cloudflare Web Analytics; Clerk болон түүний bot хамгаалалт зөвхөн
-  бүртгэлийн хэсэгт). Кэшлэгдсэн хуудас хүн бүрт ижил тул nonce биш `'unsafe-inline'` — хэрэглэгчийн
-  агуулга HTML-ээр хэзээ ч render хийгддэггүй. HSTS, `X-Frame-Options: DENY`, `nosniff`,
-  Referrer/Permissions-Policy.
-- Upload: зөвхөн админ, JPG/PNG/WebP (magic byte), 5 MB; хөтөч дахин encode хийж, сервер мөн
-  EXIF/GPS/XMP-ийг арилгана; R2 түлхүүр санамсаргүй (UUID); устгасан зураг R2-оос устна.
-- CSV экспорт formula injection-оос хамгаалагдсан; rate limit `cf-connecting-ip`-ийн HMAC hash-аар.
-- Хүүхдийн мэдээлэл: гишүүний нэр зөвшөөрөлтэй үед л нийтэд; хувь хүний цаг хэзээ ч нийтэд
-  гарахгүй; үйлдлийн түүх, логт нэрийн оронд ID; тэнцээгүй өргөдөл 90 хоногийн дараа устна;
-  бүртгэл устгахад хувийн мэдээлэл устаж цаг нэргүй үлдэнэ. Дэлгэрэнгүй: `/privacy`.
+| Check         | Result                                                                                                                                                                                                                                        |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Device matrix | 12 widths (320–1920) × light/dark × mn/en, 46 pages incl. admin and signed-in states (1,608 loads): 0 × 5xx, 0 horizontal scroll, 0 clipped or overlapping text on public pages, 0 images without size, 0 layout shifts > 0.1, 0 broken links |
+| Accessibility | axe: no serious/critical issues outside Clerk's own development badge                                                                                                                                                                         |
+| Cold cache    | every public page 200 on its first request; 300 requests in bursts of 20: 0 × 5xx                                                                                                                                                             |
+| Content       | every number, date, title, partner and SDG of the 2025–2026 report matches the pages (mn + en)                                                                                                                                                |
+| Lighthouse    | mobile: home 100, news 85 (first photo on slow 4G), article 100, album 89, members 100, join 97, admin 99 · desktop 100 everywhere · accessibility 100 everywhere                                                                             |
 
-## 5. Гүйцэтгэл ба хязгаар
+## Known limits
 
-| Хэмжүүр                           | Өмнө (production, 2026-11-21)        | Одоо (локал workerd)                   |
-| --------------------------------- | ------------------------------------ | -------------------------------------- |
-| Нийтийн хуудасны CPU              | 30–110 ms (3/64 `exceededCpu` → 503) | кэшээс 0–1.7 ms, OpenNext кэш 3–4.5 ms |
-| `/join` (нэвтрээгүй), `/sign-in`  | 31–247 ms                            | 4–8 ms (кэш)                           |
-| TTFB (кэштэй хуудас)              | 150–370 ms                           | p50 2 ms, p99 7 ms                     |
-| 200 дараалсан хүсэлт              | —                                    | 200 × 200, 5xx 0                       |
-| Lighthouse mobile (home / impact) | 92–99                                | 100 / 100 (Accessibility, BP, SEO 100) |
+1. Admin 2FA isn't enforced by code (depends on the Clerk plan); Admin → Хэрэглэгчид flags
+   admins without 2FA.
+2. No e-mail alert for new applications: check Admin → Өргөдлүүд.
+3. With Google Sheets on, deleting an application doesn't delete its sheet row.
+4. Images uploaded but never saved stay in R2 (small).
+5. Report photos: the 960 px versions are 80–210 kB; on a slow mobile connection the first news
+   photo is the slowest part of the page. Re-encoding them at a lower quality would need a new
+   upload to R2 (developer task).
+6. Every public page ships the React/Next.js runtime and next-intl (about 210 kB gzip of JS).
+7. The build warns "middleware → proxy": `middleware.ts` (edge) is kept on purpose for OpenNext.
 
-Нийтийн хуудас ISR (R2 + Cache API + Durable Object queue); `worker.ts` давтан хүсэлтийг
-OpenNext ачаалахаас өмнө Cache API-аас өгнө. Админ засвар хийхэд хуудсууд ард нь шинэчлэгдэнэ.
-Deploy бүрийн дараа `cache:warm`. Дэлгэрэнгүй: README → «Performance & caching».
+## Waiting on the club
 
-## 6. Мэдэгдэж буй хязгаарлалт
-
-1. Админы 2FA-г код албадахгүй (Clerk-ийн планаас хамаарна); Хэрэглэгчид хэсэг 2FA-гүй админыг
-   тэмдэглэнэ.
-2. Шинэ өргөдлийн тухай админд и-мэйл мэдэгдэл очихгүй — Админ → Өргөдлүүд-ийг шалгана.
-3. Google Sheets асаавал өргөдөл устгахад Sheet-ийн мөр устахгүй (гараар устгана).
-4. Upload хийгээд хадгалаагүй зураг R2-д үлдэнэ (бага зай).
-5. Build-ийн «middleware → proxy» анхааруулга: OpenNext-д зориуд `middleware.ts` (edge).
-
-## 7. Клубээс шийдвэр/мэдээлэл хүлээж буй зүйл
-
-1. **Удирдлагын нэр нийтэд:** тайлангаас оруулахад удирдлагын 5 хүний (4 сурагч ахлагч + зөвлөх
-   багш) нэр нийтэд харагдахаар оруулсан. Эцэг эх/асран хамгаалагчийн зөвшөөрөл авсан эсэхийг
-   баталгаажуулна; үгүй бол Админ → Гишүүд → «Нэрийг нийтэд харуулах»-г унтраана.
-2. **Идэвхтэй гишүүдийн нэр** нийтэд харуулах зөвшөөрөл (одоогоор бүгд нуугдмал).
-3. Тайлангийн **5 нэрийн бичиглэл** (`private/members-review.md`).
-4. 2025–2026 тайланд дутуу **12 дахь (боловсролын) үйл ажиллагаа**.
-5. Лого, үйл ажиллагааны зураг, холбоо барих мэдээлэл, сошиал хаягууд (Админ → Сайтын тохиргоо).
+1. Start the 2026–2027 school year in the admin (leaders, members).
+2. Parental consent before any student's name is shown (per year, Admin → Гишүүд).
+3. Five name spellings in the report member list (`private/members-review.md`).
+4. The 12th (education) activity that is counted in the 2025–2026 totals but not described.
+5. Photos, logos and social accounts as they become available (Admin → Сайтын тохиргоо).

@@ -41,7 +41,15 @@ export async function MemberCard({
           <span aria-hidden="true">{initials(member.role || "•")}</span>
         ) : member.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- R2 photo shown with consent
-          <img src={member.photoUrl} alt="" loading="lazy" className="size-full object-cover" />
+          <img
+            src={member.photoUrl}
+            alt=""
+            width={192}
+            height={192}
+            loading="lazy"
+            decoding="async"
+            className="size-full object-cover"
+          />
         ) : (
           <span aria-hidden="true">{initials(member.name)}</span>
         )}

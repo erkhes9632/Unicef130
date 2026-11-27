@@ -7,8 +7,10 @@ const surfaces = {
 } as const;
 
 /**
- * Page section with the standard vertical rhythm. `surface` alternates the background so
- * consecutive sections don't run together: base (page), tint (cream / charcoal band), card.
+ * Page section with the standard vertical rhythm (`.section-y` in globals.css: 56 px phones,
+ * 72 px tablets, 96 px desktops). `surface` alternates the background so consecutive sections
+ * don't run together: base (page), tint (cream / charcoal band), card. Two base sections in a
+ * row share one gap instead of doubling it.
  */
 export function Section({
   className,
@@ -17,7 +19,11 @@ export function Section({
   ...props
 }: React.ComponentProps<"section"> & { surface?: keyof typeof surfaces }) {
   return (
-    <section className={cn("py-[clamp(3rem,8vw,6rem)]", surfaces[surface], className)} {...props}>
+    <section
+      data-surface={surface}
+      className={cn("section-y", surfaces[surface], className)}
+      {...props}
+    >
       <div className="container-page">{children}</div>
     </section>
   );

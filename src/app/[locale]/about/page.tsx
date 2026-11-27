@@ -166,7 +166,9 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
                     <Icon className="size-7" aria-hidden="true" />
                   </span>
                   <h3 className="text-lg font-bold">{v.title}</h3>
-                  {v.body && <p className="mt-1 text-sm text-muted-foreground">{v.body}</p>}
+                  {v.body && (
+                    <p className="mt-1 text-base text-muted-foreground sm:text-sm">{v.body}</p>
+                  )}
                 </li>
               );
             })}
@@ -181,7 +183,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
             {columns.map((col) => (
               <div key={col.key} className={cn("flex flex-col rounded-3xl p-6 sm:p-8", col.tone)}>
                 <h3 className="text-2xl font-extrabold">{col.title}</h3>
-                <p className="mt-2 mb-4 text-sm text-muted-foreground">{col.body}</p>
+                <p className="mt-2 mb-4 text-base text-muted-foreground sm:text-sm">{col.body}</p>
                 <ul className="flex-1 space-y-3">
                   {col.items.map((item) => (
                     <li key={item.id} className="flex gap-3">

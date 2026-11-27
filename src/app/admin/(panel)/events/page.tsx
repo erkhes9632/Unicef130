@@ -2,6 +2,7 @@ import { and, count, desc, eq, gte, lt, type SQL } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import { ConfirmAction } from "@/components/admin/confirm-action";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -110,9 +111,11 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
         emptyText="Ийм арга хэмжээ олдсонгүй."
       >
         {rows.length === 0 ? (
-          <p className="rounded-2xl bg-card p-8 text-center text-muted-foreground ring-1 ring-border">
-            Арга хэмжээ хараахан нэмэгдээгүй байна.
-          </p>
+          <AdminEmpty
+            title="Арга хэмжээ хараахан нэмэгдээгүй байна."
+            hint="Удахгүй болох арга хэмжээгээ нэмбэл сайтын хуанлид гарна."
+            action={{ href: "/admin/events/new", label: "Шинэ арга хэмжээ" }}
+          />
         ) : (
           <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-border">
             {rows.map((r) => (
@@ -120,7 +123,7 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/admin/events/${r.id}`}
-                    className="line-clamp-1 font-semibold hover:text-brand-cyan-strong"
+                    className="line-clamp-1 font-semibold hover:text-brand-cyan-strong pointer-coarse:py-2.5"
                   >
                     {r.title}
                   </Link>

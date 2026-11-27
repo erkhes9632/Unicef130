@@ -31,7 +31,9 @@ export function EmptyState({
         </span>
       )}
       <h2 className="text-lg font-bold">{title}</h2>
-      {description && <p className="max-w-md text-sm text-muted-foreground">{description}</p>}
+      {description && (
+        <p className="max-w-md text-base text-muted-foreground sm:text-sm">{description}</p>
+      )}
       {children}
     </div>
   );

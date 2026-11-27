@@ -1,8 +1,9 @@
 "use client";
 
 import { AlertCircle, CheckCircle2, Loader2, Save } from "lucide-react";
-import { startTransition } from "react";
+import { startTransition, useEffect } from "react";
 import { useFormStatus } from "react-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ActionState } from "@/lib/admin/action-state";
@@ -73,15 +74,42 @@ export function SubmitButton({
 }
 
 /** Bottom bar that stays in view while a long form scrolls (Save is always one tap away). */
-export function StickyActions({ children }: { children: React.ReactNode }) {
+export function StickyActions({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t bg-background px-4 py-3 sm:-mx-6 sm:px-6 md:bg-background/90 md:backdrop-blur lg:-mx-8 lg:px-8">
+    <div
+      className={cn(
+        "sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t bg-background px-4 py-3 sm:-mx-6 sm:px-6 md:bg-background/90 md:backdrop-blur lg:-mx-8 lg:px-8",
+        className,
+      )}
+    >
       {children}
     </div>
   );
 }
 
-export function FormAlert({ state }: { state: ActionState }) {
+/**
+ * The result of a save: a toast (seen wherever the admin has scrolled to) plus the same text
+ * at the top of the form (kept for screen readers and for errors with field details).
+ */
+export function FormAlert({
+  state,
+  toast: withToast = true,
+}: {
+  state: ActionState;
+  /** Off where the form shows its own toast (e.g. a form that remounts after saving). */
+  toast?: boolean;
+}) {
+  useEffect(() => {
+    if (!state.message || !withToast) return;
+    if (state.ok) toast.success(state.message);
+    else toast.error(state.message);
+  }, [state, withToast]);
   if (!state.message) return null;
   return (
     <p
@@ -122,7 +150,7 @@ export function NativeSelect({ className, ...props }: React.ComponentProps<"sele
   return (
     <select
       className={cn(
-        "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30",
+        "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 pointer-coarse:h-11",
         className,
       )}
       {...props}

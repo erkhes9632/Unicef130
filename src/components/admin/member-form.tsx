@@ -5,12 +5,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionState } from "@/lib/admin/action-state";
+import { displayYear } from "@/lib/school-year";
 import {
   AdminField,
   FormAlert,
   FormSection,
   keepValuesOnSubmit,
   NativeSelect,
+  StickyActions,
   SubmitButton,
 } from "./form";
 import { ImageField } from "./image-field";
@@ -47,7 +49,7 @@ export function MemberForm({
   /** Existing team names, offered as suggestions. */
   teams?: string[];
 }) {
-  const yearLabel = year.replace("-", "–");
+  const yearLabel = displayYear(year);
   const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
   const wasPublic = initial?.showPublicly ?? false;
@@ -141,7 +143,7 @@ export function MemberForm({
           <AdminField
             label="Сайн дурын цаг"
             htmlFor="volunteerHours"
-            hint={`Тайлангаас оруулсан цаг (${(initial?.schoolYear ?? year).replace("-", "–")}). Зөвхөн админд харагдана; бусад цаг «Сайн дурын цаг» хэсгээс жил бүрээр нэмэгдэнэ.`}
+            hint={`Тайлангаас оруулсан цаг (${displayYear(initial?.schoolYear ?? year)}). Зөвхөн админд харагдана; бусад цаг «Сайн дурын цаг» хэсгээс жил бүрээр нэмэгдэнэ.`}
             errors={e.volunteerHours}
           >
             <Input
@@ -233,8 +235,10 @@ export function MemberForm({
             </Label>
           </div>
         </FormSection>
-        <SubmitButton className="w-full" />
       </div>
+      <StickyActions className="lg:col-span-2">
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

@@ -55,7 +55,12 @@ export function SdgPicker({
                   aria-hidden="true"
                   className="flex size-7 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-extrabold"
                   style={{
-                    backgroundColor: on ? "rgb(255 255 255 / 0.25)" : sdg.color,
+                    // A darker chip under white digits, a lighter one under dark digits (contrast).
+                    backgroundColor: on
+                      ? sdg.text === "light"
+                        ? "rgb(0 0 0 / 0.22)"
+                        : "rgb(255 255 255 / 0.4)"
+                      : sdg.color,
                     color: on ? "inherit" : INK[sdg.text],
                   }}
                 >

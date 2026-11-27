@@ -182,15 +182,18 @@ export function RichTextEditor({
             aria-pressed={active ?? false}
             onClick={run}
             className={cn(
-              "flex size-8 items-center justify-center rounded-lg text-foreground/70 hover:bg-background hover:text-foreground",
-              active && "bg-background text-foreground shadow-sm ring-1 ring-border",
+              "flex size-11 items-center justify-center rounded-lg text-foreground/70 hover:bg-background hover:text-foreground",
+              active && "bg-background text-foreground shadow-soft ring-1 ring-border",
             )}
           >
             <Icon className="size-4" />
           </button>
         ))}
       </div>
-      <EditorContent editor={editor} />
+      {/* The editor mounts in the browser: its height is reserved so the form doesn't jump. */}
+      <div className="min-h-56">
+        <EditorContent editor={editor} />
+      </div>
       <input type="hidden" name={name} value={json} />
     </div>
   );

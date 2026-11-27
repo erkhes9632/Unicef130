@@ -2,6 +2,7 @@ import { count, desc } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import { ConfirmAction } from "@/components/admin/confirm-action";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +12,15 @@ import { applications, recruitmentPeriods } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/dates/format";
 import { applicationStatusLabels, countedStatuses, periodPhase } from "@/lib/recruitment/logic";
+import { displayYear } from "@/lib/school-year";
 import { deletePeriod } from "./actions";
 
 export const metadata: Metadata = { title: "Элсэлт" };
 
 const phaseLabel = { upcoming: "Удахгүй нээгдэнэ", open: "Нээлттэй", closed: "Хаагдсан" } as const;
 
-export default async function RecruitmentPage({ searchParams }: PageProps<"/admin/recruitment">) {
+export default async function RecruitmentPage() {
   await requireAdmin();
-  const sp = await searchParams;
   const db = await getDb();
   const [periods, counts] = await Promise.all([
     db.select().from(recruitmentPeriods).orderBy(desc(recruitmentPeriods.opensAt)),
@@ -43,15 +44,12 @@ export default async function RecruitmentPage({ searchParams }: PageProps<"/admi
           </Button>
         }
       />
-      {sp.saved === "1" && (
-        <p role="status" className="mb-4 rounded-xl bg-brand-green-soft p-3 text-sm font-medium">
-          Хадгалагдлаа.
-        </p>
-      )}
       {periods.length === 0 ? (
-        <p className="rounded-2xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-          Одоогоор элсэлт зарлаагүй байна — «Гишүүн болох» хуудас «Элсэлт хаалттай» гэж харагдана.
-        </p>
+        <AdminEmpty
+          title="Одоогоор элсэлт зарлаагүй байна."
+          hint="«Гишүүн болох» хуудас «Элсэлт хаалттай» гэж харагдана. Элсэлт зарлавал өргөдөл авч эхэлнэ."
+          action={{ href: "/admin/recruitment/new", label: "Элсэлт зарлах" }}
+        />
       ) : (
         <ul className="space-y-3">
           {periods.map((p) => {
@@ -73,7 +71,7 @@ export default async function RecruitmentPage({ searchParams }: PageProps<"/admi
                       </Badge>
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {when(p.opensAt)} — {when(p.closesAt)} · {p.schoolYear.replace("-", "–")}
+                      {when(p.opensAt)} — {when(p.closesAt)} · {displayYear(p.schoolYear)}
                     </p>
                     <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground">

@@ -47,7 +47,13 @@ export default async function NewsPreviewPage({ params }: PageProps<"/admin/news
         <h1 className="font-heading text-3xl font-extrabold sm:text-4xl">{row.title}</h1>
         {row.excerpt && <p className="text-lg text-muted-foreground">{row.excerpt}</p>}
         {row.coverUrl && (
-          <img src={row.coverUrl} alt="" className="aspect-video w-full rounded-2xl object-cover" />
+          <img
+            src={row.coverUrl}
+            alt=""
+            width={1600}
+            height={900}
+            className="aspect-video w-full rounded-2xl object-cover"
+          />
         )}
         <RichText doc={row.content} />
       </article>

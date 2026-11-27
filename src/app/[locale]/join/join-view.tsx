@@ -68,14 +68,14 @@ async function StatusCard({ app, locale }: { app: MyApplication; locale: Locale 
   return (
     <section
       aria-labelledby="my-status"
-      className="flex flex-col items-start space-y-5 rounded-[2rem] bg-card p-6 shadow-soft ring-1 ring-border sm:p-8"
+      className="flex flex-col items-start space-y-5 rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border sm:p-8"
     >
       <div className="flex items-start gap-4">
         <span className={cn("flex size-14 shrink-0 items-center justify-center rounded-2xl", tone)}>
           <Icon className="size-7" aria-hidden="true" />
         </span>
         <div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground sm:text-sm">
             {periodName ? `${periodName} · ` : ""}
             {t("submittedOn", { date: formatDate(locale, app.createdAt, "long") })}
           </p>
@@ -145,7 +145,7 @@ function Notice({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-5 rounded-[2rem] bg-card p-6 text-center shadow-soft ring-1 ring-border sm:p-10">
+    <div className="flex flex-col items-center gap-5 rounded-3xl bg-card p-6 text-center shadow-soft ring-1 ring-border sm:p-10">
       {logo ?? (
         <span
           className={cn("flex size-16 items-center justify-center rounded-3xl", noticeTones[tone])}
@@ -312,7 +312,7 @@ export async function JoinView({ locale, signedIn }: { locale: Locale; signedIn:
   } else if (view === "form" && open) {
     const name = me.name.trim();
     main = (
-      <div className="rounded-[2rem] bg-card p-5 shadow-soft ring-1 ring-border sm:p-8">
+      <div className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border sm:p-8">
         <JoinForm
           helpOptions={settings.helpOptions.map((o) => ({
             key: o.key,
@@ -358,7 +358,7 @@ export async function JoinView({ locale, signedIn }: { locale: Locale; signedIn:
         title={heroTitle}
         description={heroDescription}
       />
-      <div className="container-page grid gap-8 py-10 sm:py-14 lg:grid-cols-[1fr_22rem]">
+      <div className="container-page grid grid-cols-[minmax(0,1fr)] gap-8 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div>{main}</div>
         {aside}
       </div>

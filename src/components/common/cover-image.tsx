@@ -84,6 +84,10 @@ export function CoverImage({
         src={src}
         {...responsiveSrc(src, sizes)}
         alt={alt}
+        // Aspect ratio only (16:10; the box sets the real size). Small numbers on purpose: a
+        // large intrinsic width would widen narrow grids on 320 px phones.
+        width={160}
+        height={100}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : undefined}
         decoding="async"

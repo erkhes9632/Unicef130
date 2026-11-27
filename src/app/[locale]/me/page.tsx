@@ -52,7 +52,7 @@ export default async function MePage({ params }: PageProps<"/[locale]/me">) {
           {page.member && (
             <section
               aria-labelledby="me-hours"
-              className="space-y-4 rounded-[2rem] bg-card p-6 ring-1 ring-border"
+              className="space-y-4 rounded-3xl bg-card p-6 ring-1 ring-border"
             >
               <h2 id="me-hours" className="flex items-center gap-2 text-xl font-extrabold">
                 <Clock className="size-5 text-brand-cyan-strong" aria-hidden="true" />
@@ -142,7 +142,7 @@ export default async function MePage({ params }: PageProps<"/[locale]/me">) {
 
           <section
             aria-labelledby="me-events"
-            className="space-y-4 rounded-[2rem] bg-card p-6 ring-1 ring-border"
+            className="space-y-4 rounded-3xl bg-card p-6 ring-1 ring-border"
           >
             <h2 id="me-events" className="flex items-center gap-2 text-xl font-extrabold">
               <CalendarDays className="size-5 text-brand-purple-strong" aria-hidden="true" />

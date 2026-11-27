@@ -50,7 +50,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
       : [[], [], { albums: [], faqs: [], about: null }];
   const total =
     news.length + events.length + other.albums.length + other.faqs.length + (other.about ? 1 : 0);
-  const card = "block rounded-2xl bg-card p-5 ring-1 ring-border hover:shadow-md";
+  const card = "block rounded-2xl bg-card p-5 ring-1 ring-border hover:shadow-lift";
 
   return (
     <>
@@ -107,7 +107,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                 <h2 id="search-events" className="mb-4 text-2xl font-extrabold">
                   {t("events")}
                 </h2>
-                <div className="reveal-group grid gap-4 lg:grid-cols-2">
+                <div className="reveal-group grid gap-4 md:grid-cols-2">
                   {events.map((e) => (
                     <EventCard key={e.id} item={e} showYear />
                   ))}

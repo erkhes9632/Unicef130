@@ -106,7 +106,7 @@ export function EventsBrowser({
     setQuery(next);
   };
   const cardGrid = (list: EventMeta[]) => (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2">
       {list.map((e) => (
         <div key={e.id} className="contents">
           {cards[e.id]}

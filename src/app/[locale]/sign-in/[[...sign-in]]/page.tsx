@@ -30,12 +30,15 @@ export default async function SignInPage({
     <div className="container-page flex flex-1 flex-col items-center gap-6 py-10 sm:py-16">
       <BrandLockup variant="stacked" height={140} />
       {clerkPublishableKey() ? (
-        <SignIn
-          routing="path"
-          path={path}
-          withSignUp
-          fallbackRedirectUrl={`${AFTER_SIGN_IN_PATH}?locale=${locale}`}
-        />
+        // The card is drawn by clerk-js after load: its height is reserved (no layout shift).
+        <div className="flex min-h-[30rem] w-full justify-center">
+          <SignIn
+            routing="path"
+            path={path}
+            withSignUp
+            fallbackRedirectUrl={`${AFTER_SIGN_IN_PATH}?locale=${locale}`}
+          />
+        </div>
       ) : (
         <>
           {/* The Clerk card brings its own heading; without Clerk the page needs one. */}

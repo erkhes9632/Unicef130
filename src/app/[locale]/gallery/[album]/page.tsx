@@ -57,7 +57,7 @@ export default async function AlbumPage({ params }: PageProps<"/[locale]/gallery
       <header className="mb-8 max-w-3xl space-y-3">
         <h1 className="text-3xl font-extrabold sm:text-5xl">{album.title}</h1>
         <p className="text-lg text-muted-foreground">{album.description}</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground sm:text-sm">
           <time dateTime={album.date}>{formatDate(locale, fromIsoDate(album.date), "long")}</time> ·{" "}
           {t("photos", { count: album.imageCount })}
           {event && (

@@ -92,3 +92,44 @@ describe("colour tokens only", () => {
     }
   });
 });
+
+describe("public pages stay light", () => {
+  // Everything every public page loads: the root shell, header, footer and their pieces.
+  const shared = [
+    "src/components/layout/root-document.tsx",
+    ...walk("src/components/layout").filter((f) => !f.endsWith("mobile-nav-drawer.tsx")),
+    "src/components/auth/header-account-client.tsx",
+    "src/components/common/copy-button.tsx",
+    "src/components/news/share-buttons.tsx",
+  ];
+  test("no toast library, menu library or drawer in the shared public code", () => {
+    // Type-only imports are erased at build time and are fine.
+    const bad = shared.filter((f) =>
+      readFileSync(f, "utf8")
+        .split("\n")
+        .some(
+          (line) =>
+            !line.startsWith("import type") &&
+            /from "sonner"|ui\/sonner"|ui\/dropdown-menu"|ui\/sheet"|from "\.\/account-dropdown"/.test(
+              line,
+            ),
+        ),
+    );
+    expect(bad).toEqual([]);
+  });
+  test("the drawer and the account menu are loaded on demand", () => {
+    expect(readFileSync("src/components/layout/mobile-nav.tsx", "utf8")).toContain(
+      'import("./mobile-nav-drawer")',
+    );
+    expect(readFileSync("src/components/auth/header-account-client.tsx", "utf8")).toContain(
+      'import("./account-dropdown")',
+    );
+  });
+  test("sections share one rhythm (no one-off vertical padding on Section)", () => {
+    expect(readFileSync("src/components/common/section.tsx", "utf8")).toContain("section-y");
+    const oneOff = FILES.filter((f) =>
+      /rounded-\[(?:2rem|1\.4rem|1\.75rem)\]/.test(readFileSync(f, "utf8")),
+    );
+    expect(oneOff).toEqual([]);
+  });
+});

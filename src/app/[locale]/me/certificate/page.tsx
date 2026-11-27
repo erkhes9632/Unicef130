@@ -45,7 +45,7 @@ export default async function CertificatePage({
       <div className="container-page py-16 text-center">
         <h1 className="mb-3 text-3xl font-extrabold">{t("heading")}</h1>
         <p className="text-muted-foreground">{t("nothing")}</p>
-        <Link href="/me" className="mt-4 inline-block font-semibold underline">
+        <Link href="/me" className="mt-4 inline-flex min-h-11 items-center font-semibold underline">
           {t("back")}
         </Link>
       </div>

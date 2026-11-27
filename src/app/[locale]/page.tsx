@@ -257,7 +257,9 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                   className="size-4 -translate-x-1 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:opacity-100"
                 />
               </h3>
-              <p className="text-sm text-muted-foreground">{t(`About.directions.${key}`)}</p>
+              <p className="text-base text-muted-foreground sm:text-sm">
+                {t(`About.directions.${key}`)}
+              </p>
             </li>
           ))}
         </ul>
@@ -266,7 +268,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       {/* Impact report teaser (only when yearly numbers exist) */}
       {impact?.total && (
         <section className="container-page pb-14 sm:pb-20">
-          <div className="reveal relative isolate grid gap-8 overflow-hidden rounded-[2rem] bg-brand-green-soft p-6 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="reveal relative isolate grid gap-8 overflow-hidden rounded-3xl bg-brand-green-soft p-6 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
             <div
               aria-hidden="true"
               className="absolute -top-20 -right-16 -z-10 size-72 rounded-full border-[2.5rem] border-brand-green/10"
@@ -345,7 +347,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
               </Button>
             }
           />
-          <div className="reveal-group grid gap-4 lg:grid-cols-3">
+          <div className="reveal-group grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {events.map((e) => (
               <EventCard key={e.id} item={e} />
             ))}
@@ -378,7 +380,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                   <img
                     src={img.thumbUrl}
                     alt={img.alt}
+                    width={120}
+                    height={90}
+                    sizes="(min-width: 640px) 33vw, 50vw"
                     loading="lazy"
+                    decoding="async"
                     className={cn(
                       "w-full object-cover transition-transform duration-500 group-hover:scale-105",
                       i === 0 && bigFirst ? "h-full min-h-48" : "aspect-[4/3]",
@@ -452,7 +458,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
       {/* CTA — warm tinted band with two soft shapes. */}
       <section className="container-page pb-16 sm:pb-24">
-        <div className="reveal relative isolate overflow-hidden rounded-[2rem] bg-brand-gold-soft px-6 py-12 text-center ring-1 ring-border sm:px-12 sm:py-20">
+        <div className="reveal relative isolate overflow-hidden rounded-3xl bg-brand-gold-soft px-6 py-12 text-center ring-1 ring-border sm:px-12 sm:py-20">
           <ColorRibbon className="absolute top-6 left-1/2 -translate-x-1/2" />
           <div
             aria-hidden="true"

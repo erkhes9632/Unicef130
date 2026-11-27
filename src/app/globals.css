@@ -236,6 +236,9 @@
   h3,
   h4 {
     @apply font-heading tracking-tight text-balance;
+    /* Long Mongolian words wrap between words, never mid-word (sizes are fluid instead). */
+    overflow-wrap: normal;
+    hyphens: manual;
   }
   a {
     text-underline-offset: 0.2em;
@@ -256,6 +259,14 @@
   li,
   dd {
     text-wrap: pretty;
+  }
+  /* Comfortable reading: no paragraph wider than 72 characters (centred ones stay centred). */
+  p {
+    max-inline-size: 72ch;
+  }
+  :where(.text-center) p,
+  p.text-center {
+    margin-inline: auto;
   }
   @media (forced-colors: active) {
     :focus-visible {
@@ -310,34 +321,6 @@
   }
 }
 
-/* Gentle floating motion for decorative shapes (disabled by reduced-motion above). */
-@keyframes float-soft {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-10px) rotate(3deg);
-  }
-}
-@utility animate-float-soft {
-  animation: float-soft 9s ease-in-out infinite;
-}
-
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@utility animate-fade-up {
-  animation: fade-up 0.6s ease-out both;
-}
-
 /* ==========================================================================
    MOTION — CSS first. Every rule below is off under prefers-reduced-motion.
    ========================================================================== */
@@ -345,60 +328,58 @@
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Faint dot grid for hero backgrounds (masked to fade out at the edges). */
-@utility bg-dot-grid {
-  background-image: radial-gradient(
-    color-mix(in oklab, var(--foreground) 14%, transparent) 1px,
-    transparent 1.2px
-  );
-  background-size: 22px 22px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 30%, transparent 75%);
-}
-
 /*
- * Reveal on scroll — plays ONCE per page view. `components/layout/reveal-observer.tsx` marks
- * elements already on screen as shown, then sets `html[data-reveal]` and adds `data-in` to the
- * rest as they scroll into view. Without JavaScript (no `data-reveal`) or with reduced motion
- * nothing is hidden. Only opacity and transform animate.
- * `.reveal` = one element · `.reveal-group` = each child, staggered 60 ms · `.grow-x` = bar
- * grows to its value · `.draw-line` = vertical line draws from the top.
+ * Reveal on scroll — plays ONCE, at the moment an element starts entering the screen.
+ * `components/layout/reveal-observer.tsx` sets `data-play` then. Nothing is ever hidden before
+ * that: content off screen is simply there (full-page screenshots, print, search engines, a jump
+ * to the footer all see everything), and elements already on screen at load never animate.
+ * Only opacity and transform animate; all of it is off under prefers-reduced-motion.
+ * `.reveal` = one element (fade + 14 px rise) · `.reveal-group` = each child fades in, 60 ms
+ * apart, without moving (a row of cards stays aligned) · `.grow-x` = a bar grows to its value ·
+ * `.draw-line` = a vertical line draws from the top.
  */
 :root {
   --dur-1: 150ms;
   --dur-2: 250ms;
   --dur-3: 520ms;
 }
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes reveal-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes reveal-draw {
+  from {
+    transform: scaleY(0);
+  }
+}
 @layer components {
   @media screen and (prefers-reduced-motion: no-preference) {
-    html[data-reveal]
-      :is(
-        .reveal:not([data-done]),
-        .reveal-group:not([data-done]) > *,
-        .grow-x:not([data-done]),
-        .draw-line:not([data-done])
-      ) {
-      transition:
-        opacity var(--dur-3) var(--ease-out-soft),
-        transform var(--dur-3) var(--ease-out-soft);
-      transition-delay: calc(var(--reveal-i, 0) * 60ms);
+    .reveal[data-play] {
+      animation: reveal-rise var(--dur-3) var(--ease-out-soft) backwards;
     }
-    html[data-reveal] :is(.reveal:not([data-in]), .reveal-group:not([data-in]) > *) {
-      opacity: 0;
-      transform: translateY(14px);
+    .reveal-group[data-play] > * {
+      animation: reveal-fade var(--dur-3) var(--ease-out-soft) backwards;
+      animation-delay: calc(var(--reveal-i, 0) * 60ms);
     }
-    html[data-reveal] .grow-x {
+    .grow-x[data-play] {
       transform-origin: left;
-      transition-duration: 800ms;
+      animation: reveal-grow-x 800ms var(--ease-out-soft) backwards;
     }
-    html[data-reveal] .grow-x:not([data-in]) {
-      transform: scaleX(0);
-    }
-    html[data-reveal] .draw-line {
+    .draw-line[data-play] {
       transform-origin: top;
-      transition-duration: 1200ms;
-    }
-    html[data-reveal] .draw-line:not([data-in]) {
-      transform: scaleY(0);
+      animation: reveal-draw 1200ms var(--ease-out-soft) backwards;
     }
     .reveal-group > :nth-child(2) {
       --reveal-i: 1;
@@ -412,6 +393,30 @@
     .reveal-group > :nth-child(n + 5) {
       --reveal-i: 4;
     }
+  }
+}
+
+/*
+ * SECTION RHYTHM — one vertical spacing for every public section (Section component):
+ * phones 3.5rem · tablets (≥768) 4.5rem · desktops (≥1024) 6rem. Two plain sections in a row
+ * share one gap.
+ */
+@layer components {
+  .section-y {
+    padding-block: 3.5rem;
+  }
+  @media (width >= 48rem) {
+    .section-y {
+      padding-block: 4.5rem;
+    }
+  }
+  @media (width >= 64rem) {
+    .section-y {
+      padding-block: 6rem;
+    }
+  }
+  .section-y[data-surface="base"] + .section-y[data-surface="base"] {
+    padding-top: 0;
   }
 }
 
@@ -453,7 +458,7 @@
   }
 }
 @utility animate-rise-in {
-  animation: rise-in 0.8s var(--ease-out-soft) both;
+  animation: rise-in 0.8s var(--ease-out-soft) backwards;
 }
 
 /* Hand-drawn ribbon under a highlighted word: draws once on load. */

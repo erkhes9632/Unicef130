@@ -1,10 +1,24 @@
 "use client";
 
-import { LogIn } from "lucide-react";
+import { LogIn, UserRound } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { AccountDropdown, type AccountLink } from "./account-dropdown";
+import type { AccountLink } from "./account-dropdown";
 import { useHeaderSession } from "./use-header-session";
+
+/** The menu library is fetched only for signed-in visitors (most visitors never need it). */
+const AccountDropdown = dynamic(() => import("./account-dropdown").then((m) => m.AccountDropdown), {
+  ssr: false,
+  loading: () => (
+    <span
+      aria-hidden="true"
+      className="ml-1 inline-flex size-11 items-center justify-center rounded-full bg-brand-cyan-soft text-brand-cyan-strong"
+    >
+      <UserRound className="size-5" />
+    </span>
+  ),
+});
 
 type Labels = {
   signIn: string;

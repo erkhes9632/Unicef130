@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { SocialIcon } from "@/components/brand/social-icon";
 import { SocialLinks } from "@/components/brand/social-links";
+import { CopyButton } from "@/components/common/copy-button";
 import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
-import { CopyButton } from "@/components/contact/copy-button";
 import { Button } from "@/components/ui/button";
 import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
@@ -48,7 +48,8 @@ const ways = [
   },
 ] as const;
 
-const card = "group relative flex gap-4 rounded-3xl bg-card p-6 ring-1 ring-border hover:shadow-lg";
+const card =
+  "group relative flex gap-4 rounded-3xl bg-card p-6 ring-1 ring-border hover:shadow-lift";
 const iconBox = "flex size-14 shrink-0 items-center justify-center rounded-2xl";
 
 export default async function SupportPage({ params }: PageProps<"/[locale]/support">) {
@@ -91,7 +92,7 @@ export default async function SupportPage({ params }: PageProps<"/[locale]/suppo
                     </Link>
                   )}
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">{way(key).body}</p>
+                <p className="mt-1 text-base text-muted-foreground sm:text-sm">{way(key).body}</p>
               </div>
             </li>
           ))}
@@ -104,7 +105,9 @@ export default async function SupportPage({ params }: PageProps<"/[locale]/suppo
               <div className="space-y-3">
                 <div>
                   <h2 className="text-lg font-bold">{way("share").title}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{way("share").body}</p>
+                  <p className="mt-1 text-base text-muted-foreground sm:text-sm">
+                    {way("share").body}
+                  </p>
                 </div>
                 <SocialLinks socials={socials} variant="icons" />
               </div>
@@ -112,7 +115,7 @@ export default async function SupportPage({ params }: PageProps<"/[locale]/suppo
           )}
         </ul>
 
-        <div className="mt-10 grid gap-6 rounded-[2rem] bg-brand-gold-soft p-6 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="mt-10 grid gap-6 rounded-3xl bg-brand-gold-soft p-6 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="space-y-2">
             <h2 className="text-2xl font-extrabold">
               {pick(locale, support.donate.title, support.donate.titleEn)}

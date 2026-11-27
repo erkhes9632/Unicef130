@@ -74,10 +74,7 @@ export async function ProfileCard({
     <section
       id="profile"
       aria-labelledby="me-profile"
-      className={cn(
-        "scroll-mt-24 space-y-4 rounded-[2rem] bg-card p-6 ring-1 ring-border",
-        className,
-      )}
+      className={cn("scroll-mt-24 space-y-4 rounded-3xl bg-card p-6 ring-1 ring-border", className)}
     >
       <h2 id="me-profile" className="flex items-center gap-2 text-xl font-extrabold">
         <UserRound className="size-5 text-brand-cyan-strong" aria-hidden="true" />

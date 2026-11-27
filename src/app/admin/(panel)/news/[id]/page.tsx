@@ -15,13 +15,9 @@ import { saveNews } from "../actions";
 
 export const metadata: Metadata = { title: "Мэдээ засах" };
 
-export default async function EditNewsPage({
-  params,
-  searchParams,
-}: PageProps<"/admin/news/[id]">) {
+export default async function EditNewsPage({ params }: PageProps<"/admin/news/[id]">) {
   await requireAdmin();
   const { id } = await params;
-  const sp = await searchParams;
   const db = await getDb();
   const [row] = await db.select().from(news).where(eq(news.id, id)).limit(1);
   if (!row) notFound();
@@ -51,7 +47,6 @@ export default async function EditNewsPage({
       <NewsForm
         key={row.updatedAt.getTime()}
         action={saveNews.bind(null, row.id)}
-        saved={sp.saved === "1"}
         initial={{
           title: row.title,
           titleEn: row.titleEn,

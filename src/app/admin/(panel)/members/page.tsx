@@ -2,6 +2,7 @@ import { and, asc, count, eq, isNotNull, isNull, ne, sql, type SQL } from "drizz
 import { CalendarPlus, History, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminEmpty } from "@/components/admin/admin-empty";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { MembersBulkList } from "@/components/admin/members-bulk-list";
 import { AdminPageHeader } from "@/components/admin/page-header";
@@ -169,18 +170,13 @@ export default async function AdminMembersPage({ searchParams }: PageProps<"/adm
               >
                 {displayYear(y)}
                 {y === current && <span className="font-normal">(одоогийн)</span>}
-                <span className="text-xs font-normal opacity-80">· {countOf.get(y) ?? 0}</span>
+                <span className="text-xs font-normal">· {countOf.get(y) ?? 0}</span>
               </Link>
             </li>
           ))}
         </ul>
       </nav>
 
-      {sp.saved === "1" && (
-        <p role="status" className="mb-4 rounded-xl bg-brand-green-soft p-3 text-sm font-medium">
-          Хадгалагдлаа.
-        </p>
-      )}
       {past && (
         <p className="mb-4 flex items-start gap-2 rounded-xl bg-brand-gold-soft p-3 text-sm">
           <History className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -258,9 +254,10 @@ export default async function AdminMembersPage({ searchParams }: PageProps<"/adm
                     Удирдлага <span className="text-muted-foreground">({leaders.length})</span>
                   </h2>
                   {leaders.length === 0 ? (
-                    <p className="rounded-2xl border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
-                      Энэ жилд удирдлага нэмэгдээгүй байна.
-                    </p>
+                    <AdminEmpty
+                      title="Энэ жилд удирдлага нэмэгдээгүй байна."
+                      action={{ href: `/admin/members/new?year=${year}`, label: "Гишүүн нэмэх" }}
+                    />
                   ) : (
                     <MembersBulkList rows={leaderList} year={year} {...bulk} />
                   )}
@@ -272,9 +269,16 @@ export default async function AdminMembersPage({ searchParams }: PageProps<"/adm
                     Гишүүд <span className="text-muted-foreground">({n(memberTotal?.n)})</span>
                   </h2>
                   {rows.length === 0 ? (
-                    <p className="rounded-2xl border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
-                      {filtered ? "Ийм гишүүн олдсонгүй." : "Энэ жилд гишүүн нэмэгдээгүй байна."}
-                    </p>
+                    <AdminEmpty
+                      title={
+                        filtered ? "Ийм гишүүн олдсонгүй." : "Энэ жилд гишүүн нэмэгдээгүй байна."
+                      }
+                      hint={
+                        filtered
+                          ? undefined
+                          : "Элсэлтээр тэнцсэн хүн автоматаар нэмэгдэнэ, эсвэл гараар нэмнэ."
+                      }
+                    />
                   ) : (
                     <MembersBulkList rows={rows} year={year} {...bulk} />
                   )}

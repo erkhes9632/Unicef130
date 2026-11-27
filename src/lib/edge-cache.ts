@@ -5,6 +5,17 @@
  */
 export const EDGE_TTL = 120;
 
+/**
+ * Cache API key of a page copy. It carries the deployment's version id: right after a deploy
+ * the previous deploy's copies (whose HTML points at /_next/static files that no longer exist)
+ * are simply never looked up again, and expire on their own.
+ */
+export function edgeKey(url: string, version: string | undefined): Request {
+  const key = new URL(url);
+  key.searchParams.set("__deploy", version || "dev");
+  return new Request(key.toString(), { method: "GET" });
+}
+
 const NOT_A_PUBLIC_PAGE =
   /^\/(?:(?:en|mn)\/)?(?:me|join|sign-in|sign-out|search)(?:\/|$)|^\/(?:admin|api|auth|media|brand|_next|cdn-cgi)(?:\/|$)/;
 const ORIGINAL_CACHE_CONTROL = "x-origin-cache-control";

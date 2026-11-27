@@ -52,7 +52,7 @@ export async function EventCard({
             {item.title}
           </Link>
         </h3>
-        <p className="line-clamp-2 text-sm text-muted-foreground">{item.summary}</p>
+        <p className="line-clamp-2 text-base text-muted-foreground sm:text-sm">{item.summary}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {time && (
             <span className="inline-flex items-center gap-1">

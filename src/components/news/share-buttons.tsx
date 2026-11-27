@@ -1,9 +1,8 @@
 "use client";
 
-import { Link2, Share2 } from "lucide-react";
+import { Check, Link2, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useSyncExternalStore } from "react";
-import { toast } from "sonner";
+import { useState, useSyncExternalStore } from "react";
 import { SocialIcon } from "@/components/brand/social-icon";
 import { Button } from "@/components/ui/button";
 
@@ -16,10 +15,12 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
   const nativeShare = useSyncExternalStore(subscribe, canNativeShare, () => false);
   const fbHref = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
 
+  const [copied, setCopied] = useState(false);
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
-      toast.success(t("copied"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     } catch {
       window.prompt(t("copy"), url);
     }
@@ -34,14 +35,13 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
         </a>
       </Button>
       <Button variant="outline" onClick={copy}>
-        <Link2 /> {t("copy")}
+        {copied ? <Check /> : <Link2 />} {copied ? t("copied") : t("copy")}
       </Button>
+      <span role="status" className="sr-only">
+        {copied ? t("copied") : ""}
+      </span>
       {nativeShare && (
-        <Button
-          variant="outline"
-
-          onClick={() => navigator.share({ title, url }).catch(() => {})}
-        >
+        <Button variant="outline" onClick={() => navigator.share({ title, url }).catch(() => {})}>
           <Share2 /> {t("native")}
         </Button>
       )}

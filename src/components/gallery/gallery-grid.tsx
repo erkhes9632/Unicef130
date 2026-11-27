@@ -83,6 +83,8 @@ export function GalleryGrid({ images, title }: { images: GalleryImage[]; title: 
               <img
                 src={current.url}
                 alt={current.alt}
+                width={current.width || undefined}
+                height={current.height || undefined}
                 className="mx-auto max-h-[80vh] w-auto rounded-t-lg object-contain"
               />
               <figcaption className="flex items-center justify-between gap-3 px-4 py-3 text-sm">

@@ -223,7 +223,9 @@ export async function MembersView({ locale, requested }: { locale: Locale; reque
                 <Icon className="size-6" aria-hidden="true" />
               </span>
               <h3 className="mb-2 text-lg font-bold">{t(`News.categories.${key}`)}</h3>
-              <p className="text-sm text-muted-foreground">{t(`About.directions.${key}`)}</p>
+              <p className="text-base text-muted-foreground sm:text-sm">
+                {t(`About.directions.${key}`)}
+              </p>
             </li>
           ))}
         </ul>
@@ -281,7 +283,7 @@ export async function MembersView({ locale, requested }: { locale: Locale; reque
         </Section>
       ) : (
         <Section>
-          <div className="relative isolate flex flex-col items-center gap-4 overflow-hidden rounded-[2rem] bg-brand-green-soft p-8 text-center ring-1 ring-border sm:p-12">
+          <div className="relative isolate flex flex-col items-center gap-4 overflow-hidden rounded-3xl bg-brand-green-soft p-8 text-center ring-1 ring-border sm:p-12">
             <span
               aria-hidden="true"
               className="absolute -top-16 -right-12 -z-10 size-48 rounded-full bg-brand-sun/30"

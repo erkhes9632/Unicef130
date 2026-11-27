@@ -122,7 +122,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/[locale]/ne
         <div className="container-page mt-8 max-w-5xl">
           {/* Same view-transition name as the news card: the cover morphs card → article. */}
           <ViewTransition name={newsCoverTransition(item.id)} share="morph" default="none">
-            <div className="@container aspect-[16/9] overflow-hidden rounded-[2rem]">
+            <div className="@container aspect-[16/9] overflow-hidden rounded-3xl">
               <CoverImage
                 src={item.coverUrl}
                 date={item.publishedAt}

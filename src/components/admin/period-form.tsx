@@ -8,15 +8,20 @@ import { Textarea } from "@/components/ui/textarea";
 import type { RecruitmentQuestion } from "@/db/schema";
 import type { ActionState } from "@/lib/admin/action-state";
 import { buildClassList } from "@/lib/recruitment/logic";
+import { schoolYearOf } from "@/lib/school-year";
 import {
   AdminField,
   FormAlert,
   FormSection,
   keepValuesOnSubmit,
   NativeSelect,
+  StickyActions,
   SubmitButton,
 } from "./form";
 import { ListEditor } from "./list-editor";
+
+/** Placeholder: the school year of the day the page was opened. */
+const EXAMPLE_YEAR = schoolYearOf(Date.now());
 
 type PeriodFormValues = {
   name: string;
@@ -98,7 +103,7 @@ export function PeriodForm({
               id="schoolYear"
               name="schoolYear"
               defaultValue={initial?.schoolYear}
-              placeholder="2026-2027"
+              placeholder={EXAMPLE_YEAR}
               required
               className="max-w-40"
             />
@@ -313,7 +318,6 @@ export function PeriodForm({
             />
             Нээлттэй үед сайтын дээд талд «Элсэлт нээлттэй» зар харуулах
           </label>
-          <SubmitButton className="w-full" />
         </FormSection>
 
         <FormSection title="Багтаамж">
@@ -342,6 +346,9 @@ export function PeriodForm({
           </AdminField>
         </FormSection>
       </div>
+      <StickyActions className="lg:col-span-2">
+        <SubmitButton />
+      </StickyActions>
     </form>
   );
 }

@@ -66,7 +66,7 @@ export function ApplicationsList({
           <NativeSelect
             name="status"
             aria-label="Шинэ төлөв"
-            className="h-8 w-auto"
+            className="h-8 w-auto pointer-coarse:h-11"
             defaultValue=""
           >
             <option value="" disabled>

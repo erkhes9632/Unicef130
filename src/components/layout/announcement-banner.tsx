@@ -61,7 +61,8 @@ export async function AnnouncementBanner() {
   const tc = await getTranslations("Countdown");
   return (
     <aside aria-label={t("label")} className="bg-brand-cyan text-brand-ink print:hidden">
-      <p className={base}>
+      {/* The 44 px link sets the strip's height (no negative margins over the wrapped text). */}
+      <p className={base.replace("py-2", "py-0")}>
         <Megaphone className="size-4 shrink-0" aria-hidden="true" />
         <span className="sm:hidden">{t("recruitmentOpenShort")}</span>
         <span className="hidden sm:inline">
@@ -82,7 +83,7 @@ export async function AnnouncementBanner() {
         </span>
         <Link
           href="/join"
-          className="-my-3 inline-flex min-h-11 items-center gap-1 font-bold underline underline-offset-4"
+          className="inline-flex min-h-11 items-center gap-1 font-bold underline underline-offset-4"
         >
           {t("cta")} <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>

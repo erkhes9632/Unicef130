@@ -24,11 +24,15 @@
 .DS_Store
 *.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# logs, screenshots and scratch output (audits and SQL dumps belong in private/)
+*.log
+/*.png
+/*.jpg
+/*.webp
+/screenshots/
+/tmp/
+/*.sql
+*.tmp.sql
 
 # env files (can opt-in for committing if needed)
 .env*

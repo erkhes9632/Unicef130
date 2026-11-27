@@ -119,6 +119,8 @@ export function GalleryManager({
               <img
                 src={img.thumbUrl}
                 alt={img.alt}
+                width={480}
+                height={360}
                 className="aspect-[4/3] w-full rounded-lg object-cover"
                 loading="lazy"
               />
@@ -126,7 +128,7 @@ export function GalleryManager({
                 defaultValue={img.alt}
                 aria-label="Зургийн тайлбар (alt)"
                 maxLength={200}
-                className="h-8 text-xs"
+                className="h-8 text-xs pointer-coarse:h-11"
                 onBlur={(e) => {
                   if (e.target.value !== img.alt)
                     start(async () => notify(await updateAlt(img.id, e.target.value)));
@@ -138,7 +140,7 @@ export function GalleryManager({
                 placeholder="English alt"
                 lang="en"
                 maxLength={200}
-                className="h-8 text-xs"
+                className="h-8 text-xs pointer-coarse:h-11"
                 onBlur={(e) => {
                   if (e.target.value !== (img.altEn ?? ""))
                     start(async () => notify(await updateAlt(img.id, e.target.value, "en")));

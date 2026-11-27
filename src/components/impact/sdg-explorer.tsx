@@ -35,7 +35,10 @@ export function SdgExplorer({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-      <ul aria-label={labels.pick} className="grid grid-cols-6 gap-2 sm:gap-3 lg:grid-cols-6">
+      <ul
+        aria-label={labels.pick}
+        className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-2 sm:gap-3"
+      >
         {goals.map((g) => {
           const active = g.activities.length > 0;
           const isSelected = active && g.n === goal?.n;
@@ -49,10 +52,10 @@ export function SdgExplorer({
                   onClick={() => setSelected(g.n)}
                   style={{ backgroundColor: g.color }}
                   className={cn(
-                    "relative flex aspect-square w-full flex-col items-center justify-center rounded-xl font-heading font-extrabold shadow-sm transition-[scale] duration-200 hover:scale-105 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none sm:rounded-2xl",
+                    "relative flex aspect-square w-full flex-col items-center justify-center rounded-xl font-heading font-extrabold shadow-soft transition-[scale] duration-200 hover:scale-105 hover:shadow-lift focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:outline-none sm:rounded-2xl",
                     g.light ? "text-white" : "text-black",
                     isSelected &&
-                      "scale-105 shadow-lg ring-3 ring-foreground ring-offset-2 ring-offset-background",
+                      "scale-105 shadow-lift ring-3 ring-foreground ring-offset-2 ring-offset-background",
                   )}
                 >
                   <span className="text-[0.55rem] leading-none sm:text-xs">SDG</span>
@@ -109,7 +112,7 @@ export function SdgExplorer({
                 <li key={a.id}>
                   <Link
                     href={a.href}
-                    className="group -m-2 flex items-start gap-3 rounded-xl p-2 font-semibold hover:bg-muted"
+                    className="group -m-2 flex min-h-11 items-start gap-3 rounded-xl p-2 font-semibold hover:bg-muted"
                   >
                     <span
                       aria-hidden="true"

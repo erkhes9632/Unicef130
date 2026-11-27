@@ -88,9 +88,19 @@ export function HoursBoard({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl bg-card ring-1 ring-border">
-        <table className="w-full text-sm">
-          <thead className="border-b text-left text-xs text-muted-foreground">
+      {/* Phones: one card per member (no sideways scrolling); a table from `md`. */}
+      <label className="flex min-h-11 items-center gap-2 text-sm font-semibold md:hidden">
+        <input
+          type="checkbox"
+          className="size-5 accent-[var(--brand-cyan)]"
+          checked={all}
+          onChange={() => setSelected(all ? new Set() : new Set(rows.map((r) => r.id)))}
+        />
+        Бүгдийг сонгох
+      </label>
+      <div className="rounded-2xl bg-card ring-1 ring-border md:overflow-x-auto">
+        <table className="w-full text-sm max-md:block">
+          <thead className="border-b text-left text-xs text-muted-foreground max-md:hidden">
             <tr>
               <th className="p-3">
                 <input
@@ -108,10 +118,13 @@ export function HoursBoard({
               <th className="p-3 text-right">Нийт</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y max-md:block">
             {rows.map((r) => (
-              <tr key={r.id}>
-                <td className="p-3">
+              <tr
+                key={r.id}
+                className="max-md:grid max-md:grid-cols-[auto_1fr] max-md:items-center max-md:gap-x-3 max-md:gap-y-1 max-md:p-3"
+              >
+                <td className="p-3 max-md:row-span-3 max-md:p-0">
                   <input
                     type="checkbox"
                     aria-label={`Сонгох: ${r.name}`}
@@ -120,14 +133,19 @@ export function HoursBoard({
                     onChange={() => toggle(r.id)}
                   />
                 </td>
-                <td className="p-3">
+                <td className="p-3 max-md:p-0">
                   <span className="font-semibold">{r.name}</span>
                   {r.className && <span className="text-muted-foreground"> · {r.className}</span>}
                 </td>
-                <td className="p-3 text-muted-foreground">{r.team || "—"}</td>
-                <td className="p-3 text-right">{r.imported || "—"}</td>
-                <td className="p-3 text-right">{r.logged || "—"}</td>
-                <td className="p-3 text-right font-semibold">
+                <td className="p-3 text-muted-foreground max-md:p-0 max-md:text-xs">
+                  {r.team || "—"}
+                </td>
+                <td className="p-3 text-right max-md:hidden">{r.imported || "—"}</td>
+                <td className="p-3 text-right max-md:hidden">{r.logged || "—"}</td>
+                <td className="p-3 text-right font-semibold max-md:p-0 max-md:text-left">
+                  <span className="text-xs font-normal text-muted-foreground md:hidden">
+                    Тайлангаас {r.imported || 0} · бүртгэсэн {r.logged || 0} · нийт{" "}
+                  </span>
                   {r.total}
                   {r.active && (
                     <Badge className="ml-2" title={`≥ ${threshold} цаг`}>

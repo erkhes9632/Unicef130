@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/lib/admin/action-state";
+import { displayYear } from "@/lib/school-year";
 import {
   MAX_FEATURED_STATS,
   socialPlatforms,
@@ -517,6 +518,8 @@ export function SettingsForm({
           <AdminField
             label="Тэнцээгүй өргөдлийг устгах хугацаа (хоног)"
             htmlFor="membership.rejectedRetentionDays"
+            required
+            hint="7–730 хоног. Элсэлт хаагдсанаас хойш тоолно."
           >
             <Input
               id="membership.rejectedRetentionDays"
@@ -552,10 +555,10 @@ export function SettingsForm({
             defaultValue={initial.schoolYear.current}
             className="max-w-72"
           >
-            <option value="">Автоматаар ({schoolYear.auto.replace("-", "–")})</option>
+            <option value="">Автоматаар ({displayYear(schoolYear.auto)})</option>
             {schoolYear.options.map((y) => (
               <option key={y} value={y}>
-                {y.replace("-", "–")}
+                {displayYear(y)}
               </option>
             ))}
           </NativeSelect>

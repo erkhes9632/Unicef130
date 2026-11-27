@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { fontBody, fontDisplay } from "@/app/fonts";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 /**
  * The <html> shell shared by the two root layouts: app/[locale] (public site, cached HTML) and
- * app/admin. It reads no request data, so public pages stay static.
+ * app/admin. It reads no request data, so public pages stay static. The toast area lives in the
+ * account areas only (`ClerkShell`): public pages ship no toast code.
  */
 export function RootDocument({ lang, children }: { lang: "mn" | "en"; children: React.ReactNode }) {
   return (
@@ -16,14 +16,7 @@ export function RootDocument({ lang, children }: { lang: "mn" | "en"; children: 
       className={cn(fontDisplay.variable, fontBody.variable, "h-full antialiased")}
     >
       <body className="flex min-h-full flex-col overflow-x-clip">
-        <ThemeProvider>
-          {children}
-          <Toaster
-            richColors
-            position="top-center"
-            customAriaLabel={lang === "en" ? "Notifications" : "Мэдэгдлүүд"}
-          />
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

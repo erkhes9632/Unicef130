@@ -35,7 +35,8 @@ export function buildCsp({
         "'unsafe-inline'",
         "https://static.cloudflareinsights.com",
         ...clerk,
-        // Clerk's bot protection (sign-up) runs Cloudflare's challenge script.
+        // Clerk's bot protection: its loader (cdn.protect.clerk.com) and Cloudflare's challenge.
+        ...clerkProtect.slice(0, 1),
         ...(clerkFrontendApi ? ["https://challenges.cloudflare.com"] : []),
         // React Fast Refresh needs eval in development only.
         ...(dev ? ["'unsafe-eval'"] : []),

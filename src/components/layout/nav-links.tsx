@@ -1,16 +1,10 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { mainNav } from "@/config/site";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { NavDisclosure } from "./nav-disclosure";
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -77,27 +71,26 @@ export function NavLinks({ className, showFaq }: { className?: string; showFaq: 
         const active = items.some((k) => isActive(pathname, hrefOf(k)));
         return (
           <li key={entry.group}>
-            <DropdownMenu>
-              <DropdownMenuTrigger className={linkCls(active)}>
-                {t(entry.group)}
-                <ChevronDown className="size-3.5" aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {items.map((k) => {
-                  const href = hrefOf(k);
-                  return (
-                    <DropdownMenuItem key={k} asChild>
-                      <Link
-                        href={href}
-                        aria-current={isActive(pathname, href) ? "page" : undefined}
-                      >
-                        {t(k)}
-                      </Link>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <NavDisclosure label={t(entry.group)} className={linkCls(active)}>
+              {items.map((k) => {
+                const href = hrefOf(k);
+                const current = isActive(pathname, href);
+                return (
+                  <li key={k}>
+                    <Link
+                      href={href}
+                      aria-current={current ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold hover:bg-muted focus-visible:bg-muted",
+                        current && "text-brand-cyan-strong",
+                      )}
+                    >
+                      {t(k)}
+                    </Link>
+                  </li>
+                );
+              })}
+            </NavDisclosure>
           </li>
         );
       })}

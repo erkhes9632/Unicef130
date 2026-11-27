@@ -14,13 +14,9 @@ import { saveEvent } from "../actions";
 
 export const metadata: Metadata = { title: "Арга хэмжээ засах" };
 
-export default async function EditEventPage({
-  params,
-  searchParams,
-}: PageProps<"/admin/events/[id]">) {
+export default async function EditEventPage({ params }: PageProps<"/admin/events/[id]">) {
   await requireAdmin();
   const { id } = await params;
-  const sp = await searchParams;
   const db = await getDb();
   const [row] = await db.select().from(events).where(eq(events.id, id)).limit(1);
   if (!row) notFound();
@@ -50,7 +46,6 @@ export default async function EditEventPage({
       <EventForm
         key={row.updatedAt.getTime()}
         action={saveEvent.bind(null, row.id)}
-        saved={sp.saved === "1"}
         initial={{
           title: row.title,
           titleEn: row.titleEn,

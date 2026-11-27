@@ -5,7 +5,11 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ActionState } from "@/lib/admin/action-state";
+import { schoolYearOf } from "@/lib/school-year";
 import { FormAlert } from "./form";
+
+/** Placeholder: the school year of the day the page was opened. */
+const EXAMPLE_YEAR = schoolYearOf(Date.now());
 
 export function ImpactNewYear({
   action,
@@ -24,7 +28,7 @@ export function ImpactNewYear({
       <div className="flex flex-wrap items-end gap-2">
         <label className="space-y-1 text-sm font-semibold">
           <span>Шинэ хичээлийн жил</span>
-          <Input name="schoolYear" placeholder="2026-2027" className="w-40" required />
+          <Input name="schoolYear" placeholder={EXAMPLE_YEAR} className="w-40" required />
         </label>
         <Button type="submit" variant="outline">
           <Plus /> Нэмэх

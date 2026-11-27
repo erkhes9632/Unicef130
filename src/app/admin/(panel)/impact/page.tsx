@@ -9,6 +9,7 @@ import { getDb } from "@/db";
 import { impactDirections, impactStats } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { formatNumber } from "@/lib/dates/format";
+import { displayYear } from "@/lib/school-year";
 import { createImpactYear, deleteImpactYear, saveImpactYear } from "./actions";
 
 export const metadata: Metadata = { title: "Жилийн үр дүн" };
@@ -88,7 +89,7 @@ export default async function AdminImpactPage() {
               className="space-y-4 rounded-2xl bg-card p-4 ring-1 ring-border sm:p-6"
             >
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-bold">{year.replace("-", "–")}</h2>
+                <h2 className="text-lg font-bold">{displayYear(year)}</h2>
                 <ConfirmAction
                   action={deleteImpactYear.bind(null, year)}
                   description={`${year} оны бүх үр дүнгийн тоог устгах уу?`}

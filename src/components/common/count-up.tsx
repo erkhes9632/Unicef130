@@ -6,9 +6,10 @@ import { easeOutCubic, formatStat, parseStat } from "@/lib/motion/count-up";
 const DURATION_MS = 1400;
 
 /**
- * A stat that counts up the first time it scrolls into view. The server renders the final value,
- * so there is no flash: numbers already visible when the page loads stay as they are, and
- * screen readers always get the real value. Off under prefers-reduced-motion.
+ * A stat that counts up the first time it scrolls into view. The server renders the final value
+ * and it stays until the number reaches the screen: numbers already visible when the page loads
+ * stay as they are, nothing ever shows "0" off screen, and screen readers always get the real
+ * value. Off under prefers-reduced-motion.
  */
 export function CountUp({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -21,28 +22,26 @@ export function CountUp({ value }: { value: string }) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let raf = 0;
     let first = true;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry) return;
-        if (first) {
-          first = false;
-          if (entry.intersectionRatio > 0) return io.disconnect(); // already on screen: keep it
-          setDisplay(formatStat(parsed, 0)); // off screen: reset quietly, count up later
-          return;
-        }
-        if (entry.intersectionRatio < 0.5) return;
-        io.disconnect();
-        const start = performance.now();
-        const tick = (now: number) => {
-          const t = (now - start) / DURATION_MS;
-          setDisplay(formatStat(parsed, parsed.target * easeOutCubic(t)));
-          if (t < 1) raf = requestAnimationFrame(tick);
-          else setDisplay(value);
-        };
-        raf = requestAnimationFrame(tick);
-      },
-      { threshold: [0, 0.5] },
-    );
+    // The final value stays on the page until the number starts entering the screen (so a
+    // full-page screenshot, print or a jump never shows "0"); then it counts up from 0.
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry) return;
+      if (first) {
+        first = false;
+        if (entry.isIntersecting) return io.disconnect(); // already on screen: keep it
+        return;
+      }
+      if (!entry.isIntersecting) return;
+      io.disconnect();
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = (now - start) / DURATION_MS;
+        setDisplay(formatStat(parsed, parsed.target * easeOutCubic(t)));
+        if (t < 1) raf = requestAnimationFrame(tick);
+        else setDisplay(value);
+      };
+      raf = requestAnimationFrame(tick);
+    });
     io.observe(el);
     return () => {
       io.disconnect();

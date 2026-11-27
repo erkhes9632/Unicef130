@@ -31,19 +31,14 @@ type AlbumFormValues = {
 export function AlbumForm({
   action,
   initial,
-  saved,
   events = [],
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial?: AlbumFormValues;
-  saved?: boolean;
   /** Activities the album can belong to (newest first). */
   events?: { id: string; title: string }[];
 }) {
-  const [state, formAction] = useActionState(
-    action,
-    saved ? { ok: true, message: "Хадгалагдлаа." } : {},
-  );
+  const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
   return (
     <form

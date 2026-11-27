@@ -61,7 +61,7 @@ export async function NewsCard({
             {item.title}
           </Link>
         </h3>
-        <p className="line-clamp-3 text-sm text-muted-foreground">{item.excerpt}</p>
+        <p className="line-clamp-3 text-base text-muted-foreground sm:text-sm">{item.excerpt}</p>
       </div>
     </article>
   );
