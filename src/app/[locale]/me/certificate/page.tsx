@@ -8,7 +8,7 @@ import { requireMember } from "@/lib/auth/session";
 import { getClubNames } from "@/lib/branding";
 import { formatDate, formatNumber } from "@/lib/dates/format";
 import { getMyMemberPage } from "@/lib/members/data";
-import { schoolYearOf } from "@/lib/members/logic";
+import { schoolYearOf } from "@/lib/school-year";
 
 // Per visitor (session / query string): never cached, unlike the public pages.
 export const dynamic = "force-dynamic";

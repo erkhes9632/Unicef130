@@ -3,7 +3,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { Database } from "@/db";
 import { eventSignups, events, members, users, volunteerHours } from "@/db/schema";
 import { logActivity, shortId } from "@/lib/admin/activity";
-import { schoolYearOf } from "./logic";
+import { schoolYearOf } from "@/lib/school-year";
 
 // Admin helpers for attendance and the hours log. Not a "use server" module: callers (admin
 // Server Actions) check the role first and pass the acting admin.

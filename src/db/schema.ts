@@ -240,6 +240,45 @@ export const members = sqliteTable(
   ],
 );
 
+export const memberYearRoles = ["leadership", "member"] as const;
+export type MemberYearRole = (typeof memberYearRoles)[number];
+
+/**
+ * One person's membership in one school year: a member in 2025-2026 can lead in 2026-2027
+ * without a second person row. The team of a year, its order and who is listed publicly live
+ * here; the person (name, class, photo, account) stays in `members`, hours in `volunteer_hours`.
+ * `members.group/role/sort_order/show_publicly/school_year` are the pre-0012 values, kept until a
+ * later cleanup migration (`school_year` + `volunteer_hours` still hold the imported report total).
+ */
+export const memberYears = sqliteTable(
+  "member_years",
+  {
+    id: id(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    /** "2026-2027" */
+    schoolYear: text("school_year").notNull(),
+    /** «Удирдлага» | «Гишүүн» */
+    role: text("role", { enum: memberYearRoles }).notNull().default("member"),
+    /** Position shown publicly, e.g. "Ерөнхийлөгч" (leadership) or "Гишүүн". */
+    position: text("position").notNull().default(""),
+    positionEn: text("position_en"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    /** Minors: the name is listed for this year only after consent (admin-confirmed). */
+    showPublicly: integer("show_publicly", { mode: "boolean" }).notNull().default(false),
+    consentConfirmedAt: integer("consent_confirmed_at", { mode: "timestamp_ms" }),
+    consentConfirmedBy: text("consent_confirmed_by").references((): AnySQLiteColumn => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("member_years_member_year_idx").on(t.memberId, t.schoolYear),
+    index("member_years_year_idx").on(t.schoolYear, t.role, t.sortOrder),
+  ],
+);
+
 export const signupStatuses = [
   "registered",
   "waitlist",

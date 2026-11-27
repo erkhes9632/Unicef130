@@ -1,5 +1,6 @@
 import "@/lib/validation/zod-config";
 import { z } from "zod";
+import { isSchoolYear } from "@/lib/school-year";
 import {
   MAX_FEATURED_STATS,
   instagramHandle,
@@ -125,6 +126,10 @@ export const eventInputSchema = z
     error: "Бүртгэл хаагдах хугацаа арга хэмжээ эхлэхээс өмнө байна.",
   });
 
+/**
+ * Member form: the person (name, class, photo, team, e-mail, imported report hours) and their
+ * membership in one school year (group, position, «Нийтэд харуулах»).
+ */
 export const memberInputSchema = z.object({
   name: req(100),
   nameEn: opt(100),
@@ -132,19 +137,12 @@ export const memberInputSchema = z.object({
   roleEn: opt(100),
   className: z.string().trim().max(20, { error: "Хамгийн ихдээ 20 тэмдэгт." }),
   group: z.enum(["leadership", "member"]),
-  sortOrder: z.number().int().min(0).max(10_000),
   photoUrl: imageUrl,
   showPhoto: z.boolean(),
   active: z.boolean(),
   showPublicly: z.boolean(),
   volunteerHours: z.number().int().min(0).max(100_000).nullable(),
-  schoolYear: z
-    .string()
-    .trim()
-    .refine((v) => v === "" || /^\d{4}-\d{4}$/.test(v), {
-      error: "Хичээлийн жилийг 2026-2027 хэлбэрээр бичнэ.",
-    })
-    .transform((v) => v || null),
+  schoolYear: z.string().trim().refine(isSchoolYear, { error: "Хичээлийн жил буруу байна." }),
   team: z.string().trim().max(60, { error: "Хамгийн ихдээ 60 тэмдэгт." }),
   /** Admin-only: offers "link account to member" when this address signs in. */
   email: z
@@ -181,6 +179,14 @@ const imageUrlText = z
   );
 
 export const settingsInputSchema = z.object({
+  schoolYear: z.object({
+    current: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || isSchoolYear(v), {
+        error: "Хичээлийн жилийг жагсаалтаас сонгоно уу.",
+      }),
+  }),
   announcement: z.object({
     enabled: z.boolean(),
     text: text(200, "Зарлалын текст"),
@@ -353,4 +359,26 @@ export const supportInputSchema = z.object({
     share: supportPair("Мэдээлэл түгээх"),
   }),
   donate: supportPair("Мөнгөн хандив"),
+});
+
+/** «Шинэ хичээлийн жил эхлүүлэх» wizard payload. */
+export const startYearSchema = z.object({
+  year: z.string().refine(isSchoolYear, { error: "Хичээлийн жил буруу байна." }),
+  leaders: z
+    .array(
+      z.object({
+        memberId: z.string().min(1).max(64).nullable(),
+        name: z.string().trim().max(100, { error: "Хамгийн ихдээ 100 тэмдэгт." }),
+        className: z.string().trim().max(20, { error: "Хамгийн ихдээ 20 тэмдэгт." }),
+        position: req(100),
+        positionEn: z.string().trim().max(100),
+        showPublicly: z.boolean(),
+      }),
+    )
+    .max(30, { error: "Удирдлага хэт олон байна." })
+    .refine((list) => list.every((l) => l.memberId || l.name), {
+      error: "Шинэ хүний нэрийг бичнэ үү.",
+    }),
+  copyMemberIds: z.array(z.string().min(1).max(64)).max(1000),
+  consent: z.boolean(),
 });

@@ -53,6 +53,7 @@ export async function saveSettings(_prev: ActionState, data: FormData): Promise<
     const user = await assertAdmin();
     const year = fd.str(data, "club.foundedYear");
     const parsed = settingsInputSchema.safeParse({
+      schoolYear: { current: fd.str(data, "schoolYear.current") },
       announcement: {
         enabled: fd.bool(data, "announcement.enabled"),
         text: fd.str(data, "announcement.text"),

@@ -85,6 +85,13 @@
       "when": 1795608866716,
       "tag": "0011_profile_consent_report",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1795765106838,
+      "tag": "0012_member_years",
+      "breakpoints": true
     }
   ]
 }

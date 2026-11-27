@@ -22,7 +22,6 @@ type MemberFormValues = {
   roleEn: string | null;
   className: string;
   group: "leadership" | "member";
-  sortOrder: number;
   photoUrl: string | null;
   showPhoto: boolean;
   active: boolean;
@@ -38,13 +37,17 @@ type MemberFormValues = {
 export function MemberForm({
   action,
   initial,
+  year,
   teams = [],
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial?: MemberFormValues;
+  /** The school year whose role / position / «Нийтэд харуулах» this form edits. */
+  year: string;
   /** Existing team names, offered as suggestions. */
   teams?: string[];
 }) {
+  const yearLabel = year.replace("-", "–");
   const [state, formAction] = useActionState(action, {});
   const e = state.fieldErrors ?? {};
   const wasPublic = initial?.showPublicly ?? false;
@@ -58,7 +61,61 @@ export function MemberForm({
     >
       <div className="space-y-6">
         <FormAlert state={state} />
-        <FormSection title="Мэдээлэл">
+        <input type="hidden" name="schoolYear" value={year} />
+        <FormSection
+          title={`${yearLabel} хичээлийн жил`}
+          description="Энэ жилийн үүрэг, бүлэг, нийтэд харуулах эсэх. Бусад жилийн мэдээлэлд нөлөөлөхгүй."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <AdminField label="Бүлэг" htmlFor="group" errors={e.group}>
+              <NativeSelect id="group" name="group" defaultValue={initial?.group ?? "member"}>
+                <option value="leadership">Удирдлага</option>
+                <option value="member">Гишүүн</option>
+              </NativeSelect>
+            </AdminField>
+            <AdminField
+              label="Албан тушаал / үүрэг"
+              htmlFor="role"
+              required
+              errors={e.role}
+              hint="Жишээ: Ерөнхийлөгч, Гишүүн"
+            >
+              <Input
+                id="role"
+                name="role"
+                defaultValue={initial?.role ?? "Гишүүн"}
+                required
+                maxLength={100}
+              />
+            </AdminField>
+          </div>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="showPublicly"
+              name="showPublicly"
+              checked={showPublic}
+              onCheckedChange={(v) => setShowPublic(v === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="showPublicly" className="leading-snug">
+              Нэрийг нийтэд харуулах ({yearLabel})
+              <span className="block font-normal text-muted-foreground">
+                Удирдлага: «Бидний тухай» болон «Гишүүд» хуудасны удирдлагын хэсэгт. Гишүүн:
+                «Гишүүд» хуудасны тухайн жилийн гишүүдийн жагсаалтад.
+              </span>
+            </Label>
+          </div>
+          {showPublic && !wasPublic && (
+            <div className="flex items-start gap-2 rounded-xl bg-brand-gold-soft p-3">
+              <Checkbox id="consent" name="consent" className="mt-0.5" required />
+              <Label htmlFor="consent" className="leading-snug">
+                Энэ сурагчийн нэрийг сайтад нийтлэхэд эцэг эх / асран хамгаалагч зөвшөөрсөн.
+                {e.consent && <span className="block text-destructive">{e.consent[0]}</span>}
+              </Label>
+            </div>
+          )}
+        </FormSection>
+        <FormSection title="Хүний мэдээлэл">
           <div className="grid gap-4 sm:grid-cols-2">
             <AdminField label="Нэр" htmlFor="name" required errors={e.name} hint="Жишээ: Б. Анужин">
               <Input id="name" name="name" defaultValue={initial?.name} required maxLength={100} />
@@ -76,71 +133,15 @@ export function MemberForm({
                 maxLength={20}
               />
             </AdminField>
-            <AdminField label="Үүрэг" htmlFor="role" required errors={e.role}>
-              <Input
-                id="role"
-                name="role"
-                defaultValue={initial?.role ?? "Гишүүн"}
-                required
-                maxLength={100}
-              />
-            </AdminField>
-            <AdminField label="Бүлэг" htmlFor="group" errors={e.group}>
-              <NativeSelect id="group" name="group" defaultValue={initial?.group ?? "member"}>
-                <option value="leadership">Удирдлага</option>
-                <option value="member">Гишүүн</option>
-              </NativeSelect>
-            </AdminField>
           </div>
-          {/* Order is changed with ↑ / ↓ in the list; the number is kept as it is. */}
-          <input type="hidden" name="sortOrder" value={initial?.sortOrder ?? 100} />
           <div className="flex items-center gap-2">
             <Checkbox id="active" name="active" defaultChecked={initial?.active ?? true} />
-            <Label htmlFor="active">Идэвхтэй гишүүн</Label>
+            <Label htmlFor="active">Идэвхтэй (сайт дээрх жагсаалтад орно)</Label>
           </div>
-          <div className="flex items-start gap-2">
-            <Checkbox
-              id="showPublicly"
-              name="showPublicly"
-              checked={showPublic}
-              onCheckedChange={(v) => setShowPublic(v === true)}
-              className="mt-0.5"
-            />
-            <Label htmlFor="showPublicly" className="leading-snug">
-              Нэрийг нийтэд харуулах
-              <span className="block font-normal text-muted-foreground">
-                Удирдлага: «Бидний тухай» болон «Гишүүд» хуудасны «Удирдлага» хэсэгт. Гишүүн:
-                «Гишүүд» хуудасны «Манай гишүүд» жагсаалтад.
-              </span>
-            </Label>
-          </div>
-          {showPublic && !wasPublic && (
-            <div className="flex items-start gap-2 rounded-xl bg-brand-gold-soft p-3">
-              <Checkbox id="consent" name="consent" className="mt-0.5" required />
-              <Label htmlFor="consent" className="leading-snug">
-                Энэ сурагчийн нэрийг сайтад нийтлэхэд эцэг эх / асран хамгаалагч зөвшөөрсөн.
-                {e.consent && <span className="block text-destructive">{e.consent[0]}</span>}
-              </Label>
-            </div>
-          )}
-          <AdminField
-            label="Хичээлийн жил"
-            htmlFor="schoolYear"
-            hint="Удирдлагын хувьд заавал: сайт дээр хамгийн сүүлийн жилийн удирдлага харагдана (жишээ: 2026-2027)."
-            errors={e.schoolYear}
-          >
-            <Input
-              id="schoolYear"
-              name="schoolYear"
-              defaultValue={initial?.schoolYear ?? ""}
-              placeholder="2026-2027"
-              className="max-w-40"
-            />
-          </AdminField>
           <AdminField
             label="Сайн дурын цаг"
             htmlFor="volunteerHours"
-            hint="Зөвхөн админд харагдана; нийт цагийг тооцоход ашиглана. Сайт дээр хувь хүнийх харагдахгүй."
+            hint={`Тайлангаас оруулсан цаг (${(initial?.schoolYear ?? year).replace("-", "–")}). Зөвхөн админд харагдана; бусад цаг «Сайн дурын цаг» хэсгээс жил бүрээр нэмэгдэнэ.`}
             errors={e.volunteerHours}
           >
             <Input

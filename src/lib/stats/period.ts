@@ -3,6 +3,7 @@
  * Times are UTC ms; days and months are Ulaanbaatar dates (UTC+8).
  */
 import { UB_OFFSET_MS } from "@/lib/dates/ub-time";
+import { schoolYearOf, schoolYearRange } from "@/lib/school-year";
 
 export const PERIODS = ["24h", "7d", "30d", "90d", "year"] as const;
 export type PeriodKey = (typeof PERIODS)[number];
@@ -27,9 +28,7 @@ export function parsePeriod(value: unknown): PeriodKey {
 
 /** Start of the school year (1 September, Ulaanbaatar) that contains `now`. */
 export function schoolYearStart(now: number) {
-  const ub = new Date(now + UB_OFFSET_MS);
-  const y = ub.getUTCMonth() >= 8 ? ub.getUTCFullYear() : ub.getUTCFullYear() - 1;
-  return Date.UTC(y, 8, 1) - UB_OFFSET_MS;
+  return schoolYearRange(schoolYearOf(now)).from;
 }
 
 export function periodRange(key: PeriodKey, now: number): Period {

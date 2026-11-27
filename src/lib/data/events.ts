@@ -1,8 +1,22 @@
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+} from "drizzle-orm";
 import { getDb } from "@/db";
 import { eventSignups, events } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import { placeHolding, signupOpen } from "@/lib/members/logic";
+import { schoolYearSql } from "@/lib/school-year-sql";
 import { normalizeSdgs } from "@/lib/sdg";
 import { clubDirections, type ClubDirection, type RichTextDoc } from "@/lib/types";
 import { pick, untranslated } from "./localize";
@@ -31,12 +45,17 @@ export type EventItem = {
   endsAt: string | null;
   allDay: boolean;
   direction: ClubDirection | null;
+  /** Report field «Хичээлийн жил» as entered (impact timeline); may be empty. */
   schoolYear: string | null;
+  /** School year of the start date ("2025-2026", computed in SQL): grouping and labels. */
+  year: string;
   sdgs: number[];
   facts: ActivityFacts;
 };
 
-type Row = typeof events.$inferSelect;
+/** Every column + the school year of the start date (indexed `starts_at`). */
+const columns = { ...getTableColumns(events), year: schoolYearSql(events.startsAt) };
+type Row = typeof events.$inferSelect & { year: string };
 
 function toItem(locale: Locale, e: Row): EventItem {
   return {
@@ -55,6 +74,7 @@ function toItem(locale: Locale, e: Row): EventItem {
       ? (e.direction as ClubDirection)
       : null,
     schoolYear: e.schoolYear,
+    year: e.year,
     sdgs: normalizeSdgs(e.sdgs),
     facts: {
       inPerson: pick(locale, e.reachInPerson, e.reachInPersonEn) || null,
@@ -83,13 +103,13 @@ export async function listEvents(locale: Locale, scope: "upcoming" | "past", lim
   const rows =
     scope === "upcoming"
       ? await db
-          .select()
+          .select(columns)
           .from(events)
           .where(upcomingWhere(now))
           .orderBy(asc(events.startsAt))
           .limit(limit)
       : await db
-          .select()
+          .select(columns)
           .from(events)
           .where(pastWhere(now))
           .orderBy(desc(events.startsAt))
@@ -101,7 +121,7 @@ export async function listEvents(locale: Locale, scope: "upcoming" | "past", lim
 export async function listAllEvents(locale: Locale) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(events)
     .where(eq(events.published, true))
     .orderBy(desc(events.startsAt))
@@ -116,7 +136,7 @@ export async function getUpcomingEvents(locale: Locale, limit = 3) {
 export async function getEventBySlug(locale: Locale, slug: string) {
   const db = await getDb();
   const [row] = await db
-    .select()
+    .select(columns)
     .from(events)
     .where(and(eq(events.published, true), eq(events.slug, slug)))
     .limit(1);
@@ -127,7 +147,7 @@ export async function getEventBySlug(locale: Locale, slug: string) {
 export async function searchEvents(locale: Locale, query: string, limit = 20) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(events)
     .where(eq(events.published, true))
     .orderBy(desc(events.startsAt))
@@ -147,7 +167,7 @@ export async function searchEvents(locale: Locale, query: string, limit = 20) {
 export async function listYearActivities(locale: Locale, schoolYear: string) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(events)
     .where(and(eq(events.published, true), eq(events.schoolYear, schoolYear)))
     .orderBy(asc(events.startsAt));
@@ -157,7 +177,7 @@ export async function listYearActivities(locale: Locale, schoolYear: string) {
 export async function getEventById(locale: Locale, id: string) {
   const db = await getDb();
   const [row] = await db
-    .select()
+    .select(columns)
     .from(events)
     .where(and(eq(events.published, true), eq(events.id, id)))
     .limit(1);
@@ -168,7 +188,7 @@ export async function getEventById(locale: Locale, id: string) {
 export async function listDirectionActivities(locale: Locale) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(events)
     .where(and(eq(events.published, true), isNotNull(events.direction)))
     .orderBy(desc(events.startsAt));

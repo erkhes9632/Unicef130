@@ -1,7 +1,8 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { members } from "@/db/schema";
+import { impactStats, memberYears, members, volunteerHours } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
+import { isSchoolYear } from "@/lib/school-year";
 import { displayClassName, pick } from "./localize";
 
 export type MemberItem = {
@@ -13,73 +14,132 @@ export type MemberItem = {
   photoUrl: string | null;
 };
 
-type Row = typeof members.$inferSelect;
-
-function toItem(locale: Locale, m: Row): MemberItem {
-  return {
-    id: m.id,
-    name: pick(locale, m.name, m.nameEn),
-    role: pick(locale, m.role, m.roleEn),
-    className: displayClassName(locale, m.className),
-    photoUrl: m.showPhoto ? m.photoUrl : null,
-  };
-}
+/** One school year's team as the public site shows it (names only with consent). */
+export type YearTeam = {
+  year: string;
+  /** Leaders in their order; `name` is "" when the name is not public (role only). */
+  leaders: MemberItem[];
+  /** Members marked public for this year, sorted by name (a plain name list). */
+  members: { id: string; name: string }[];
+  /** Members of the year (official report figure when the year has one, else the roster). */
+  memberCount: number;
+  leaderCount: number;
+  /** Members whose names are not public (no consent for this year). */
+  hiddenCount: number;
+  /** Volunteer hours of the year: the report figure when there is one, else the logged sum. */
+  hours: number;
+};
 
 /**
- * Public member lists. Leadership is year-scoped: the latest school year that has leaders is shown
- * (or `leadershipYear` when given and valid). Leaders without a school year are used only when no
- * year-scoped leaders exist. A name (and photo, class) leaves the server only for rows an admin
- * marked «Нийтэд харуулах» after confirming parental consent (show_publicly); the others come
- * back with the role only (name "").
+ * Every school year that has a team, newest first. One query over `member_years` (indexed by
+ * year, role, order) joined with the person; grouping per year happens on the sorted rows.
+ * A name (and class, photo) leaves the server only for rows an admin marked «Нийтэд харуулах»
+ * for that year after confirming parental consent; other leaders come back with the role only.
  */
-export async function listMembers(
-  locale: Locale,
-  { leadershipYear }: { leadershipYear?: string } = {},
-) {
+export async function listTeamsByYear(locale: Locale): Promise<YearTeam[]> {
   const db = await getDb();
-  const rows = await db
-    .select()
-    .from(members)
-    // Minors' names are only listed after consent (show_publicly), never by default.
-    .where(and(eq(members.active, true), eq(members.showPublicly, true)))
-    .orderBy(asc(members.sortOrder), asc(members.name));
-  // Leadership roles are public; names only with consent (show_publicly).
-  const leaders = await db
-    .select()
-    .from(members)
-    .where(and(eq(members.active, true), eq(members.group, "leadership")))
-    .orderBy(asc(members.sortOrder), asc(members.name));
-  const years = [...new Set(leaders.map((m) => m.schoolYear).filter((y): y is string => !!y))]
-    .sort()
-    .reverse();
-  const year =
-    leadershipYear && years.includes(leadershipYear) ? leadershipYear : (years[0] ?? null);
-  const [{ hidden } = { hidden: 0 }] = await db
-    .select({ hidden: count() })
-    .from(members)
-    .where(
-      and(eq(members.active, true), eq(members.showPublicly, false), eq(members.group, "member")),
-    );
-  const publicMembers = rows.filter((m) => m.group === "member");
-  return {
-    leadership: leaders
-      .filter((m) => (year ? m.schoolYear === year : !m.schoolYear))
-      .map((m) =>
-        m.showPublicly
-          ? toItem(locale, m)
-          : { ...toItem(locale, m), name: "", className: "", photoUrl: null },
+  const [rows, report, logged, imported] = await Promise.all([
+    db
+      .select({
+        id: members.id,
+        name: members.name,
+        nameEn: members.nameEn,
+        className: members.className,
+        photoUrl: members.photoUrl,
+        showPhoto: members.showPhoto,
+        year: memberYears.schoolYear,
+        role: memberYears.role,
+        position: memberYears.position,
+        positionEn: memberYears.positionEn,
+        showPublicly: memberYears.showPublicly,
+      })
+      .from(memberYears)
+      .innerJoin(members, eq(memberYears.memberId, members.id))
+      // Minors' names are only listed after consent (show_publicly), never by default.
+      .where(and(eq(members.anonymized, false), eq(members.active, true)))
+      .orderBy(
+        desc(memberYears.schoolYear),
+        asc(memberYears.role),
+        asc(memberYears.sortOrder),
+        asc(members.name),
       ),
-    /** School year of the leadership shown ("2025-2026"), null for undated leaders. */
-    leadershipYear: year,
-    /** All years with leaders, newest first. */
-    leadershipYears: years,
-    /** Members marked public, sorted by name (no photos or classes: a plain name list). */
-    members: publicMembers
-      .map((m) => ({ id: m.id, name: pick(locale, m.name, m.nameEn) }))
-      .sort((a, b) => a.name.localeCompare(b.name, locale)),
-    /** Active members whose names are not public (no consent yet). */
-    hiddenCount: hidden,
-    /** Active members (public or not, leadership roles not counted) — an aggregate, no names. */
-    activeCount: publicMembers.length + hidden,
-  };
+    db
+      .select({
+        year: impactStats.schoolYear,
+        active: impactStats.membersActive,
+        hours: impactStats.volunteerHours,
+      })
+      .from(impactStats)
+      .where(eq(impactStats.direction, "total")),
+    db
+      .select({
+        year: volunteerHours.schoolYear,
+        hours: sql<number>`coalesce(sum(${volunteerHours.hours}), 0)`,
+      })
+      .from(volunteerHours)
+      .groupBy(volunteerHours.schoolYear),
+    db
+      .select({
+        year: members.schoolYear,
+        hours: sql<number>`coalesce(sum(${members.volunteerHours}), 0)`,
+      })
+      .from(members)
+      .groupBy(members.schoolYear),
+  ]);
+  const reportBy = new Map(report.map((r) => [r.year, r]));
+  const loggedBy = new Map(logged.map((r) => [r.year, Number(r.hours)]));
+  const importedBy = new Map(imported.map((r) => [r.year, Number(r.hours)]));
+
+  const teams: YearTeam[] = [];
+  for (const r of rows) {
+    if (!isSchoolYear(r.year)) continue;
+    let team = teams.at(-1);
+    if (team?.year !== r.year) {
+      team = {
+        year: r.year,
+        leaders: [],
+        members: [],
+        memberCount: 0,
+        leaderCount: 0,
+        hiddenCount: 0,
+        hours: 0,
+      };
+      teams.push(team);
+    }
+    const name = pick(locale, r.name, r.nameEn);
+    if (r.role === "leadership") {
+      team.leaderCount++;
+      team.leaders.push(
+        r.showPublicly
+          ? {
+              id: r.id,
+              name,
+              role: pick(locale, r.position, r.positionEn),
+              className: displayClassName(locale, r.className),
+              photoUrl: r.showPhoto ? r.photoUrl : null,
+            }
+          : {
+              id: r.id,
+              name: "",
+              role: pick(locale, r.position, r.positionEn),
+              className: "",
+              photoUrl: null,
+            },
+      );
+    } else {
+      team.memberCount++;
+      if (r.showPublicly) team.members.push({ id: r.id, name });
+      else team.hiddenCount++;
+    }
+  }
+  for (const team of teams) {
+    team.members.sort((a, b) => a.name.localeCompare(b.name, locale));
+    const official = reportBy.get(team.year);
+    // The annual report's figure, not a count of rows, when the year has one.
+    if (official?.active) team.memberCount = official.active;
+    team.hours = official?.hours
+      ? official.hours
+      : Math.round(((loggedBy.get(team.year) ?? 0) + (importedBy.get(team.year) ?? 0)) * 10) / 10;
+  }
+  return teams;
 }

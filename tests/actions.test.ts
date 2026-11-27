@@ -170,6 +170,17 @@ mock.module("@/lib/admin/activity", () => ({
   diffFields: () => undefined,
   shortId: (id: string) => id.slice(0, 8),
 }));
+/** Memberships written by `addToYear` (member id → school year). */
+const yearLog: string[] = [];
+mock.module("@/lib/members/years", () => ({
+  addToYear: async (_db: unknown, memberId: string, year: string) =>
+    void yearLog.push(`${memberId}:${year}`),
+}));
+const realSettings = await import("@/lib/data/settings");
+mock.module("@/lib/data/settings", () => ({
+  ...realSettings,
+  getCurrentSchoolYear: async () => "2026-2027",
+}));
 mock.module("@/lib/media/server", () => ({
   deleteMediaUrls: async () => {},
   isOwnMediaUrl: () => true,
@@ -195,6 +206,7 @@ beforeEach(() => {
   setLog.length = 0;
   clerkLog.length = 0;
   rateKeys.length = 0;
+  yearLog.length = 0;
   accounts.clear();
   adminCount = 2;
   periods = [openPeriod()];
@@ -466,6 +478,8 @@ describe("application lifecycle", () => {
     });
     expect(setLog[0]).toMatchObject({ status: "accepted", decidedBy: "me" });
     expect(clerkLog).toEqual(["role:u1:member"]);
+    // The accepted person joins the current school year's team.
+    expect(yearLog).toEqual(["m1:2026-2027"]);
   });
 
   test("approving an application that already has a member creates no second row", async () => {

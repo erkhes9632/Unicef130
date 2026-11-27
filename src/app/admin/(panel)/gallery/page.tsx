@@ -1,4 +1,4 @@
-import { and, count, desc, eq, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, type SQL } from "drizzle-orm";
 import { Images, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -12,8 +12,12 @@ import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
 import { PAGE_SIZE } from "@/lib/admin/list-limits";
 import { pageOffset, pageParam, param, searchParam, wordPrefix } from "@/lib/admin/list-query";
+import { yearFilterField, yearParam } from "@/lib/admin/year-filter";
 import { requireAdmin } from "@/lib/auth/session";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
 import { formatDate, fromIsoDate } from "@/lib/dates/format";
+import { schoolYearDays } from "@/lib/school-year";
+import { schoolYearDaySql } from "@/lib/school-year-sql";
 import { deleteAlbum } from "./actions";
 
 export const metadata: Metadata = { title: "Зургийн цомог" };
@@ -24,13 +28,19 @@ export default async function AdminGalleryPage({ searchParams }: PageProps<"/adm
   const q = searchParam(sp);
   const state = param(sp, "state", 10);
   const page = pageParam(sp);
+  const year = yearParam(sp);
   const where: SQL[] = [];
+  if (year) {
+    // Range on the indexed "YYYY-MM-DD" date.
+    const d = schoolYearDays(year);
+    where.push(gte(albums.date, d.from), lt(albums.date, d.to));
+  }
   if (q) where.push(wordPrefix([albums.title, albums.titleEn], q));
   if (state === "published") where.push(eq(albums.published, true));
   if (state === "draft") where.push(eq(albums.published, false));
   const condition = where.length ? and(...where) : undefined;
   const db = await getDb();
-  const [[total], rows] = await Promise.all([
+  const [[total], rows, years, current] = await Promise.all([
     db.select({ n: count() }).from(albums).where(condition),
     db
       .select({
@@ -45,9 +55,11 @@ export default async function AdminGalleryPage({ searchParams }: PageProps<"/adm
       .leftJoin(images, eq(images.albumId, albums.id))
       .where(condition)
       .groupBy(albums.id)
-      .orderBy(desc(albums.date))
+      .orderBy(desc(albums.date), desc(albums.createdAt))
       .limit(PAGE_SIZE)
       .offset(pageOffset(page)),
+    db.selectDistinct({ y: schoolYearDaySql(albums.date) }).from(albums),
+    getCurrentSchoolYear(),
   ]);
 
   return (
@@ -66,6 +78,10 @@ export default async function AdminGalleryPage({ searchParams }: PageProps<"/adm
       <FilterBar
         search={{ label: "Хайх (нэр)", placeholder: "хандив" }}
         fields={[
+          yearFilterField(
+            years.map((r) => r.y),
+            current,
+          ),
           {
             type: "select",
             name: "state",

@@ -10,6 +10,8 @@ import {
   type ApplicationStatus,
 } from "@/db/schema";
 import { logActivity, shortId } from "@/lib/admin/activity";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
+import { addToYear } from "@/lib/members/years";
 import { setRole } from "@/lib/users/clerk-admin";
 import { memberDisplayName } from "./logic";
 
@@ -19,13 +21,14 @@ import { memberDisplayName } from "./logic";
 type Application = typeof applications.$inferSelect;
 
 /**
- * An accepted applicant becomes a member of the period's school year (once): the account's
+ * An accepted applicant becomes a member of the current school year (once): the account's
  * existing member row is reused, otherwise a hidden one is created (not listed publicly until
- * an admin switches the consent flag on).
+ * an admin records consent for that year).
  */
-async function ensureMember(db: Database, app: Application) {
+async function ensureMember(db: Database, app: Application, year: string) {
   if (app.memberId) {
     await db.update(members).set({ active: true }).where(eq(members.id, app.memberId));
+    await addToYear(db, app.memberId, year);
     return app.memberId;
   }
   const [linked] = app.userId
@@ -65,12 +68,13 @@ async function ensureMember(db: Database, app: Application) {
       .returning({ id: members.id });
     memberId = member!.id;
   }
+  await addToYear(db, memberId, year);
   await db.update(applications).set({ memberId }).where(eq(applications.id, app.id));
   return memberId;
 }
 
 /**
- * Applies a decision. Accepted → member row + role "member" (Clerk + D1). Moving an accepted
+ * Applies a decision. Accepted → member row in the current school year + role "member". Moving an accepted
  * application to another status takes the member role back (admins keep theirs) and marks the
  * member row inactive. Returns how many applications changed.
  */
@@ -81,6 +85,7 @@ export async function applyStatus(
 ): Promise<number> {
   const db = await getDb();
   const rows = await db.select().from(applications).where(inArray(applications.id, ids));
+  const year = await getCurrentSchoolYear();
   let changed = 0;
   for (const app of rows) {
     if (app.status === status) continue;
@@ -93,7 +98,7 @@ export async function applyStatus(
       ? await db.select({ role: users.role }).from(users).where(eq(users.id, app.userId)).limit(1)
       : [];
     if (status === "accepted") {
-      await ensureMember(db, app);
+      await ensureMember(db, app, year);
       if (account && !account.role) await setRole(db, app.userId!, "member");
     } else if (app.status === "accepted") {
       if (account?.role === "member") await setRole(db, app.userId!, null);

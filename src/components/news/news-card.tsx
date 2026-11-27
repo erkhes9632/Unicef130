@@ -8,9 +8,20 @@ import type { Locale } from "@/i18n/routing";
 import type { NewsItem } from "@/lib/data/news";
 import { formatDate } from "@/lib/dates/format";
 import { newsCoverTransition } from "@/lib/motion/transitions";
+import { displayYear } from "@/lib/school-year";
 
-export async function NewsCard({ item, priority }: { item: NewsItem; priority?: boolean }) {
+export async function NewsCard({
+  item,
+  priority,
+  showYear = false,
+}: {
+  item: NewsItem;
+  priority?: boolean;
+  /** Small school-year label (lists that are not grouped by year, e.g. search results). */
+  showYear?: boolean;
+}) {
   const t = await getTranslations("News");
+  const ty = await getTranslations("SchoolYear");
   const locale = await getLocale();
 
   return (
@@ -35,7 +46,11 @@ export async function NewsCard({ item, priority }: { item: NewsItem; priority?: 
           <Badge variant="secondary" className="rounded-full">
             {t(`categories.${item.category}`)}
           </Badge>
+          {item.featured && (
+            <Badge className="rounded-full bg-brand-sun text-brand-ink">{t("featured")}</Badge>
+          )}
           <time dateTime={item.publishedAt}>{formatDate(locale, item.publishedAt, "long")}</time>
+          {showYear && <span>· {ty("label", { year: displayYear(item.schoolYear) })}</span>}
           {item.untranslated && <UntranslatedBadge />}
         </div>
         <h3 className="text-lg leading-snug font-bold" lang={item.untranslated ? "mn" : undefined}>

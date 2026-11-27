@@ -11,6 +11,8 @@ type CurrentUser = {
   id: string;
   email: string;
   name: string;
+  /** Given name ("Нэр"), "" when the account has none. */
+  firstName: string;
   role: AppRole | null;
   twoFactorEnabled: boolean;
   applyBlocked: boolean;
@@ -32,6 +34,7 @@ function toCurrentUser(row: UserRow | null): CurrentUser | null {
     id: row.id,
     email: row.email,
     name: row.name,
+    firstName: row.firstName,
     role: toRole(row.role),
     twoFactorEnabled: row.twoFactorEnabled,
     applyBlocked: row.applyBlocked,

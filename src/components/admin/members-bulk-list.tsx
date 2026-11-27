@@ -39,7 +39,9 @@ type AdminMemberRow = {
   showPhoto: boolean;
   active: boolean;
   showPublicly: boolean;
+  /** Imported report hours and the year they belong to. */
   volunteerHours: number | null;
+  hoursYear: string | null;
   team: string;
   /** Linked to a site account (approved applicant or linked by an admin). */
   userId: string | null;
@@ -68,20 +70,25 @@ function WhereShown({ group }: { group: AdminMemberRow["group"] }) {
 }
 
 /**
- * Member list: names are hidden by default (most members are minors). «Нийтэд харуулах»
- * asks once — for one person or the whole selection — whether a parent or guardian agreed.
+ * One school year's member list: names are hidden by default (most members are minors).
+ * «Нийтэд харуулах» (for this year) asks once — for one person or the whole selection —
+ * whether a parent or guardian agreed. The bin removes the person from this year only.
  */
 export function MembersBulkList({
   rows,
+  year,
   setPublic,
-  deleteMember,
+  remove,
   move,
 }: {
   rows: AdminMemberRow[];
+  year: string;
   setPublic: SetPublic;
-  deleteMember: (id: string) => Promise<ActionState>;
+  remove: (id: string) => Promise<ActionState>;
   move: (id: string, direction: "up" | "down") => Promise<ActionState>;
 }) {
+  const yearLabel = year.replace("-", "–");
+  const editHref = (id: string) => `/admin/members/${id}?year=${year}`;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmIds, setConfirmIds] = useState<string[] | null>(null);
   const [pending, start] = useTransition();
@@ -154,10 +161,7 @@ export function MembersBulkList({
               onChange={() => toggle(m.id)}
             />
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/admin/members/${m.id}`}
-                className="font-semibold hover:text-brand-cyan-strong"
-              >
+              <Link href={editHref(m.id)} className="font-semibold hover:text-brand-cyan-strong">
                 {m.name}
               </Link>
               {m.nameEn && <span className="ml-2 text-xs text-muted-foreground">{m.nameEn}</span>}
@@ -171,7 +175,12 @@ export function MembersBulkList({
                 {m.userId && (
                   <span className="font-semibold text-brand-cyan-strong">· сайтад бүртгэлтэй</span>
                 )}
-                {m.volunteerHours !== null && <span>· {m.volunteerHours} цаг</span>}
+                {m.volunteerHours !== null && (
+                  <span>
+                    · {m.volunteerHours} цаг
+                    {m.hoursYear && m.hoursYear !== year && ` (${m.hoursYear.replace("-", "–")})`}
+                  </span>
+                )}
                 {m.photoUrl && (
                   <span className="inline-flex items-center gap-1">
                     <Camera className="size-3" aria-hidden="true" />{" "}
@@ -224,13 +233,15 @@ export function MembersBulkList({
                 {m.showPublicly ? "Нуух" : "Нийтэд харуулах"}
               </Button>
               <Button asChild variant="ghost" size="icon-sm" aria-label={`Засах: ${m.name}`}>
-                <Link href={`/admin/members/${m.id}`}>
+                <Link href={editHref(m.id)}>
                   <Pencil />
                 </Link>
               </Button>
               <ConfirmAction
-                action={deleteMember.bind(null, m.id)}
-                description={`${m.name}-г гишүүдийн жагсаалтаас бүрмөсөн устгах уу? Бүртгэгдсэн цаг нь клубын нийт дүнд үлдэхгүй.`}
+                action={remove.bind(null, m.id)}
+                title="Энэ жилээс хасах уу?"
+                confirmLabel="Хасах"
+                description={`${m.name}-г ${yearLabel} оны багаас хасах уу? Хүний мэдээлэл, бусад жилүүд, цаг нь хэвээр үлдэнэ.`}
               />
             </div>
           </li>

@@ -13,10 +13,11 @@ import { SdgExplorer, type ExplorerGoal } from "@/components/impact/sdg-explorer
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { listYearActivities } from "@/lib/data/events";
-import { displayYear, getImpactYear, listImpactYears, type ImpactRow } from "@/lib/data/impact";
+import { getImpactYear, listImpactYears, type ImpactRow } from "@/lib/data/impact";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
 import { getHomeStats, getSiteSettings } from "@/lib/data/settings";
 import { formatDate, formatDateRange, formatMnt, formatNumber } from "@/lib/dates/format";
+import { displayYear } from "@/lib/school-year";
 import { SDGS } from "@/lib/sdg";
 import { pageMetadata } from "@/lib/seo";
 import { statKind } from "@/lib/stat-icon";

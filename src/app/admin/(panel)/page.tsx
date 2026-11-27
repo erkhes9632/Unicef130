@@ -14,11 +14,21 @@ import { AdminPageHeader } from "@/components/admin/page-header";
 import { StatsDashboard } from "@/components/stats/stats-dashboard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getDb } from "@/db";
 import { requireAdmin } from "@/lib/auth/session";
-import { formatDate } from "@/lib/dates/format";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
+import { formatDate, formatNumber } from "@/lib/dates/format";
 import { nowMs } from "@/lib/dates/ub-time";
+import { latestTeamYear, wizardYears, yearTotalsForDashboard } from "@/lib/members/years";
+import { givenName } from "@/lib/names";
+import { displayYear } from "@/lib/school-year";
 import { dashboardTodos } from "@/lib/stats/dashboard";
 import { siteStatus } from "@/lib/stats/status";
+
+/** The given name for the greeting ("Сайн байна уу, Анужин!"), never the full name. */
+function greetingName(me: { firstName: string; name: string }) {
+  return me.firstName.trim() || givenName(me.name);
+}
 
 const quickActions: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin/news/new", label: "Мэдээ нэмэх", icon: NewspaperIcon },
@@ -36,15 +46,26 @@ export default async function AdminDashboard() {
   const me = await requireAdmin();
   const { env } = await getCloudflareContext({ async: true });
   const now = nowMs();
-  const [status, { todos, latestApplications }] = await Promise.all([
+  const db = await getDb();
+  const current = await getCurrentSchoolYear();
+  const [status, { todos, latestApplications }, year, latest] = await Promise.all([
     siteStatus(env.DB, now),
     dashboardTodos(env.DB, now),
+    yearTotalsForDashboard(db, current),
+    latestTeamYear(db),
   ]);
+  const { from, to } = wizardYears(latest, current);
+  const yearLabel = displayYear(current);
+  const yearTiles = [
+    { label: "Удирдлага", value: year.leaders, href: "/admin/members" },
+    { label: "Гишүүн", value: year.members, href: "/admin/members" },
+    { label: "Сайн дурын цаг", value: year.hours, href: "/admin/hours" },
+  ];
 
   return (
     <>
       <AdminPageHeader
-        title={me.name ? `Сайн байна уу, ${me.name}!` : "Сайн байна уу!"}
+        title={greetingName(me) ? `Сайн байна уу, ${greetingName(me)}!` : "Сайн байна уу!"}
         description="Клубын сайт ямар байгаа, юу хийх хэрэгтэйг энд харна."
       />
 
@@ -72,6 +93,49 @@ export default async function AdminDashboard() {
             </ul>
           )}
         </div>
+
+        {from !== null && to === current && year.leaders + year.members === 0 ? (
+          <section
+            aria-labelledby="new-year-title"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand-cyan-soft p-5 ring-1 ring-border"
+          >
+            <div>
+              <h2 id="new-year-title" className="flex items-center gap-2 font-bold">
+                <CalendarPlus className="size-5" aria-hidden="true" /> Шинэ хичээлийн жил эхлүүлэх
+              </h2>
+              <p className="mt-1 text-sm">
+                Одоогийн жил: {displayYear(from)} → Шинэ жил: {displayYear(to)}. {yearLabel} оны баг
+                хараахан үүсээгүй — сайт {displayYear(from)} оны багийг харуулж байна.
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/admin/school-year">Эхлүүлэх →</Link>
+            </Button>
+          </section>
+        ) : null}
+
+        <section
+          aria-labelledby="year-title"
+          className="rounded-2xl bg-card p-5 ring-1 ring-border"
+        >
+          <h2 id="year-title" className="mb-3 font-bold">
+            {yearLabel} хичээлийн жил{" "}
+            <span className="font-normal text-muted-foreground">(одоогийн)</span>
+          </h2>
+          <ul className="grid grid-cols-3 gap-3">
+            {yearTiles.map((tile) => (
+              <li key={tile.label}>
+                <Link href={tile.href} className="block rounded-xl bg-muted/60 p-3 hover:bg-muted">
+                  <span className="block font-heading text-2xl font-extrabold">
+                    {formatNumber(tile.value)}
+                  </span>
+                  <span className="text-sm">{tile.label}</span>
+                  <span className="block text-xs text-muted-foreground">{yearLabel}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section
           aria-labelledby="todo-title"

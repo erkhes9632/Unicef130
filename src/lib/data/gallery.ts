@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
+import { schoolYearDaySql } from "@/lib/school-year-sql";
 import type { GalleryImage } from "@/lib/types";
 import { pick } from "./localize";
 
@@ -11,6 +12,8 @@ export type AlbumItem = {
   title: string;
   description: string;
   date: string;
+  /** School year of the album date ("2025-2026", computed in SQL). */
+  schoolYear: string;
   /** The activity the photos are from. */
   eventId: string | null;
   coverUrl: string | null;
@@ -18,7 +21,9 @@ export type AlbumItem = {
   images: GalleryImage[];
 };
 
-type AlbumRow = typeof albums.$inferSelect;
+/** Every column + the school year of the album date (indexed `date`). */
+const columns = { ...getTableColumns(albums), schoolYear: schoolYearDaySql(albums.date) };
+type AlbumRow = typeof albums.$inferSelect & { schoolYear: string };
 type ImageRow = typeof images.$inferSelect;
 
 function toImage(r: ImageRow): GalleryImage {
@@ -46,6 +51,7 @@ function toItem(locale: Locale, a: AlbumRow, imgs: ImageRow[]): AlbumItem {
     title,
     description: pick(locale, a.description, a.descriptionEn),
     date: a.date,
+    schoolYear: a.schoolYear,
     eventId: a.eventId,
     coverUrl: a.coverUrl ?? list[0]?.thumbUrl ?? null,
     imageCount: list.length,
@@ -69,17 +75,18 @@ async function imagesFor(albumIds: string[]) {
 export async function listAlbums(locale: Locale) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(albums)
     .where(eq(albums.published, true))
-    .orderBy(desc(albums.date));
+    // Newest first; albums of the same day: the newest created first.
+    .orderBy(desc(albums.date), desc(albums.createdAt));
   const imgs = await imagesFor(rows.map((r) => r.id));
   return rows.map((a) => toItem(locale, a, imgs.get(a.id) ?? []));
 }
 
 export async function getAlbumBySlug(locale: Locale, slug: string) {
   const db = await getDb();
-  const [a] = await db.select().from(albums).where(eq(albums.slug, slug)).limit(1);
+  const [a] = await db.select(columns).from(albums).where(eq(albums.slug, slug)).limit(1);
   if (!a || !a.published) return null;
   const imgs = await imagesFor([a.id]);
   return toItem(locale, a, imgs.get(a.id) ?? []);
@@ -98,7 +105,7 @@ export async function getGalleryPreview(locale: Locale, limit = 6) {
 /** A published album by id (photos under a news post, the album of an activity). */
 export async function getAlbumById(locale: Locale, id: string) {
   const db = await getDb();
-  const [a] = await db.select().from(albums).where(eq(albums.id, id)).limit(1);
+  const [a] = await db.select(columns).from(albums).where(eq(albums.id, id)).limit(1);
   if (!a || !a.published) return null;
   const imgs = await imagesFor([a.id]);
   return toItem(locale, a, imgs.get(a.id) ?? []);

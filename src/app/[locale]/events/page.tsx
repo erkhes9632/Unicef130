@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
+import { getYearLabels } from "@/components/common/year-labels";
 import { EventCard } from "@/components/events/event-card";
 import { EventsBrowser } from "@/components/events/events-browser";
 import { resolveLocale } from "@/i18n/locale";
@@ -26,7 +27,11 @@ export async function generateMetadata({
 /** Cached page: all events are rendered once; list / calendar / tabs work in the browser. */
 export default async function EventsPage({ params }: PageProps<"/[locale]/events">) {
   const locale = await resolveLocale(params);
-  const [t, items] = await Promise.all([getTranslations("Events"), listAllEvents(locale)]);
+  const [t, items, years] = await Promise.all([
+    getTranslations("Events"),
+    listAllEvents(locale),
+    getYearLabels(),
+  ]);
   const plural = (count: number) => t("eventsOnDay", { count }).replace(String(count), "#");
 
   return (
@@ -48,6 +53,7 @@ export default async function EventsPage({ params }: PageProps<"/[locale]/events
             title: e.title,
             startsAt: e.startsAt,
             endsAt: e.endsAt,
+            year: e.year,
           }))}
           cards={Object.fromEntries(items.map((e) => [e.id, <EventCard key={e.id} item={e} />]))}
           joinCards={{
@@ -73,6 +79,7 @@ export default async function EventsPage({ params }: PageProps<"/[locale]/events
               eventsOnDay: { one: plural(1), other: plural(2) },
               pastEvent: t("pastEvent"),
             },
+            years,
           }}
         />
       </Section>

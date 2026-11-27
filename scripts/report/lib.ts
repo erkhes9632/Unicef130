@@ -4,8 +4,9 @@
  *
  * Table groups (also listed in README → Yearly report):
  * - WIPE + REIMPORT: news, events*, albums, images, impact_stats, slug_redirects, members*
- *   (*rows linked to an account, an application, a sign-up or logged hours are kept and only
- *   refreshed), settings rows `stats` and `partners`, the report fields of `club`/`page.about`.
+ *   (*rows linked to an account, an application, a sign-up, logged hours or another school
+ *   year's team are kept and only refreshed), member_years of the report year (cascade; an
+ *   existing row keeps its consent), settings rows `stats` and `partners`, the report fields of `club`/`page.about`.
  * - KEEP (never touched): users, applications, recruitment_periods, event_signups,
  *   volunteer_hours, activity_log, rate_limit, contact_messages, faqs, all other settings.
  */
@@ -248,7 +249,7 @@ export function buildImport(r: Report, m: Manifest) {
     `DELETE FROM "slug_redirects";`,
     `DELETE FROM "impact_stats";`,
     `DELETE FROM "events" WHERE "id" NOT IN (SELECT "event_id" FROM "event_signups") AND "id" NOT IN (SELECT "event_id" FROM "volunteer_hours" WHERE "event_id" IS NOT NULL);`,
-    `DELETE FROM "members" WHERE "user_id" IS NULL AND "id" NOT IN (SELECT "member_id" FROM "applications" WHERE "member_id" IS NOT NULL) AND "id" NOT IN (SELECT "member_id" FROM "volunteer_hours" WHERE "member_id" IS NOT NULL);`,
+    `DELETE FROM "members" WHERE "user_id" IS NULL AND "id" NOT IN (SELECT "member_id" FROM "applications" WHERE "member_id" IS NOT NULL) AND "id" NOT IN (SELECT "member_id" FROM "volunteer_hours" WHERE "member_id" IS NOT NULL) AND "id" NOT IN (SELECT "member_id" FROM "member_years" WHERE "school_year" <> ${sqlValue(year)});`,
   );
 
   // --- Activities: event + album + photos + news post ---
@@ -406,6 +407,33 @@ export function buildImport(r: Report, m: Manifest) {
       }),
     );
 
+  /**
+   * The person's membership in the report year (role, position, order). An existing row keeps
+   * its «Нийтэд харуулах» and consent: the import never publishes or hides a name.
+   */
+  const memberYear = (
+    memberId: string,
+    role: "leadership" | "member",
+    position: string,
+    positionEn: string | null,
+    sortOrder: number,
+  ) =>
+    insert("member_years", {
+      id: `my-${memberId}-${year}`,
+      member_id: memberId,
+      school_year: year,
+      role,
+      position,
+      position_en: positionEn,
+      sort_order: sortOrder,
+      show_publicly: false,
+      created_at: ts,
+      updated_at: ts,
+    }).replace(
+      /;$/,
+      ` ON CONFLICT("member_id", "school_year") DO UPDATE SET "role" = excluded."role", "position" = excluded."position", "position_en" = excluded."position_en", "sort_order" = excluded."sort_order";`,
+    );
+
   // --- Members (private: names never public, hours only as the aggregate) ---
   r.leaders.forEach((l, i) =>
     out.push(
@@ -426,6 +454,7 @@ export function buildImport(r: Report, m: Manifest) {
         created_at: ts,
         updated_at: ts,
       }),
+      memberYear(`m${yy}-lead-${i + 1}`, "leadership", l.role, l.roleEn, i + 1),
     ),
   );
   for (const p of r.activeMembers)
@@ -447,6 +476,13 @@ export function buildImport(r: Report, m: Manifest) {
         created_at: ts,
         updated_at: ts,
       }),
+      memberYear(
+        `m${yy}-mem-${String(p.n).padStart(2, "0")}`,
+        "member",
+        "Гишүүн",
+        "Member",
+        100 + p.n,
+      ),
     );
 
   // --- Settings: content rows replaced, report fields merged into club / About ---

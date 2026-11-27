@@ -153,7 +153,8 @@ Admins can't demote, ban or delete themselves, and the last admin can't be remov
 - **Events:** mark attendance. Marking someone as present adds their volunteer hours.
 - **Content:** news, gallery, FAQ, about page and site settings. Sections left empty are simply hidden. If an English field is empty, the Mongolian text is shown instead.
 - **Dashboard (Хяналтын самбар):** a line that says whether the site is fine, a "Хийх зүйлс" box (new applications, enrollment closing soon, no published FAQ, accounts without a name), quick actions, the newest applications, then the statistics (see "Analytics").
-- **Members:** names are hidden by default. «Нийтэд харуулах» asks the admin to confirm a parent's or guardian's consent (stored with the time and the admin) and refreshes the public pages within seconds. Leaders appear on «Бидний тухай» and `/members`, other members in the `/members` name list. The page separates "Тайлангийн гишүүн" (annual report) from "Сайтад бүртгэлтэй" (website accounts).
+- **Members:** organised by school year (year switcher, opens on the current year; «Удирдлага» then «Гишүүд»; past years editable, marked «Өмнөх жилийн мэдээлэл»). Names are hidden by default. «Нийтэд харуулах» (per year) asks the admin to confirm a parent's or guardian's consent (stored with the time and the admin) and refreshes the public pages within seconds. The bin removes a person from that year only; «Бүрмөсөн устгах» is on the edit page.
+- **Шинэ хичээлийн жил эхлүүлэх** (dashboard, Сайтын тохиргоо, Гишүүд): choose the new year's leaders (existing or new people), optionally copy members (nobody by default), confirm. Nothing is deleted.
 - **Support page:** Admin → «Дэмжих хуудас» edits the `/support` text; the contact e-mail and Instagram are in Сайтын тохиргоо.
 
 Shortcuts: `Ctrl/⌘ + K` to search, `Ctrl/⌘ + S` to save.
@@ -297,7 +298,8 @@ Most of our users are students under 18, so we keep things minimal. More details
 3. Update who has access to Cloudflare, Clerk and GitHub. Keep at least two people on each.
 4. Rotate the secrets.
 5. Write down when the domain renews and who pays for it.
-6. Create the new school year's enrollment and add last year's report.
+6. Run «Шинэ хичээлийн жил эхлүүлэх» (Admin → dashboard) to set up the new team, create the new
+   school year's enrollment and add last year's report.
 7. Read this file and `DEPLOY_CHECKLIST.md`, and try publishing a test news post.
 
 ## Notes for developers
@@ -324,12 +326,29 @@ The look is warm and friendly: an off-white and cream light theme, a warm charco
 - **Languages.** Every string lives in both `messages/mn.json` and `messages/en.json` (a test checks that they match). On English pages, news or events without an English version are shown in Mongolian with an "Available in Mongolian" badge.
 - **Header.** The desktop menu appears from 1280 px wide; below that there's a drawer. There's one role button: visitors see "Become a member", members see "My page", admins see "Admin".
 
+## School years
+
+The club runs by school year, 1 September – 31 August (Ulaanbaatar time), stored as `2025-2026`
+and shown as `2025–2026`. One helper: `src/lib/school-year.ts` (SQL forms in
+`school-year-sql.ts`). «Одоогийн хичээлийн жил» (Сайтын тохиргоо) is empty by default = the year
+of today; an admin can set it to start the new year early (the wizard does this when needed).
+
+- Members: a person lives in `members`; their membership per year in `member_years` (role
+  Удирдлага/Гишүүн, position, order, `show_publicly`, consent). Hours stay on the person
+  (`volunteer_hours.school_year`) and are summed per year. `members.group/role/sort_order/
+show_publicly` are the pre-0012 values, kept until a later cleanup migration.
+- `/members` and «Бидний тухай» show the current year's team; until it has one, the latest year
+  with a team plus "… оны баг удахгүй нэмэгдэнэ". Earlier years are under «Өмнөх жилүүд».
+- News, events and albums take their year from their date (computed in SQL). Public lists are
+  grouped per year, newest first, with `?year=` chips; admin lists have a year filter.
+- Accepted applications join the current year.
+
 ## Showing student names
 
 Students' names are hidden by default (most members are minors). There is no global switch: each
-member's «Нийтэд харуулах» (Admin → Гишүүд) decides. Turning it on asks the admin to confirm
-that a parent or guardian agreed; the confirmation is stored (`members.consent_confirmed_at`,
-`consent_confirmed_by`). Leaders then show with their name on «Бидний тухай» and `/members`,
+member's «Нийтэд харуулах» for a school year (Admin → Гишүүд) decides. Turning it on asks the
+admin to confirm that a parent or guardian agreed; the confirmation is stored per year
+(`member_years.consent_confirmed_at`, `consent_confirmed_by`). Leaders then show with their name on «Бидний тухай» and `/members`,
 other members in the `/members` "Манай гишүүд" list. Individual hours are never public.
 
 ## Logo

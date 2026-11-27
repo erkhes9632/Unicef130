@@ -5,13 +5,13 @@ import {
   isActiveMember,
   memberYearTotals,
   parseHours,
-  schoolYearOf,
   schoolYearOptions,
   signupOpen,
   signupStatusFor,
   suggestedEventHours,
   yearTotals,
 } from "@/lib/members/logic";
+import { schoolYearOf } from "@/lib/school-year";
 
 describe("school year (starts 1 September, Ulaanbaatar time)", () => {
   test("boundaries", () => {

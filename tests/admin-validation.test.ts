@@ -122,6 +122,7 @@ describe("admin schemas", () => {
   });
   test("settings: contact channels, https social links, safe images", () => {
     const s = {
+      schoolYear: { current: "" },
       contact: {
         address: "",
         addressEn: "",

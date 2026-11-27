@@ -9,11 +9,12 @@ import { resolveLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { getBranding } from "@/lib/branding";
 import { listDirectionActivities } from "@/lib/data/events";
-import { displayYear } from "@/lib/data/impact";
 import { pick } from "@/lib/data/localize";
-import { listMembers } from "@/lib/data/members";
+import { listTeamsByYear } from "@/lib/data/members";
 import { getNewsSlugsForEvents } from "@/lib/data/news";
-import { getSiteSettings, paragraphs } from "@/lib/data/settings";
+import { getCurrentSchoolYear, getSiteSettings, paragraphs } from "@/lib/data/settings";
+import { pickShownTeam } from "@/lib/members/logic";
+import { displayYear } from "@/lib/school-year";
 import { pageMetadata } from "@/lib/seo";
 import { clubDirections } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -50,9 +51,17 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
   const t = await getTranslations("About");
   const tn = await getTranslations("News");
   const tc = await getTranslations("Common");
-  const [{ leadership, leadershipYear }, { about, club }, activities, branding] = await Promise.all(
-    [listMembers(locale), getSiteSettings(), listDirectionActivities(locale), getBranding(locale)],
-  );
+  const tm = await getTranslations("Members");
+  const [teams, current, { about, club }, activities, branding] = await Promise.all([
+    listTeamsByYear(locale),
+    getCurrentSchoolYear(),
+    getSiteSettings(),
+    listDirectionActivities(locale),
+    getBranding(locale),
+  ]);
+  // The current year's leaders, or the latest year's while the new team is not added yet.
+  const { shown: team, waiting } = pickShownTeam(teams, current);
+  const leadership = team?.leaders ?? [];
   const newsSlugs = await getNewsSlugsForEvents(activities.map((a) => a.id));
   const intro = pick(locale, about.intro, about.introEn);
   const mission = pick(locale, about.mission, about.missionEn);
@@ -208,11 +217,13 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
         <Section surface="tint">
           <SectionHeading
             title={
-              leadershipYear
-                ? t("leadershipOfYear", { year: displayYear(leadershipYear) })
-                : t("leadershipTitle")
+              team ? t("leadershipOfYear", { year: displayYear(team.year) }) : t("leadershipTitle")
             }
-            description={t("leadershipDescription")}
+            description={
+              waiting && team
+                ? tm("teamSoon", { year: displayYear(waiting), shown: displayYear(team.year) })
+                : t("leadershipDescription")
+            }
             action={
               <Button asChild variant="outline">
                 <Link href="/members">

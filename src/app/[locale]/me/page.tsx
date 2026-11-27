@@ -11,7 +11,8 @@ import { requireMember } from "@/lib/auth/session";
 import { getSiteSettings } from "@/lib/data/settings";
 import { formatDate, formatNumber } from "@/lib/dates/format";
 import { getMyMemberPage } from "@/lib/members/data";
-import { activeProgress, schoolYearOf } from "@/lib/members/logic";
+import { activeProgress } from "@/lib/members/logic";
+import { schoolYearOf } from "@/lib/school-year";
 
 // Per visitor (session / query string): never cached, unlike the public pages.
 export const dynamic = "force-dynamic";

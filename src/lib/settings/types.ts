@@ -1,5 +1,6 @@
 import "@/lib/validation/zod-config";
 import { z } from "zod";
+import { isSchoolYear } from "@/lib/school-year";
 
 /**
  * Site settings edited in /admin (stored as JSON rows in the D1 `settings` table).
@@ -127,6 +128,12 @@ export type SupportContent = {
   donate: TextPair;
 };
 
+/**
+ * «Одоогийн хичээлийн жил». Empty = the year of today (1 Sep – 31 Aug, UB); an admin may set it
+ * to start the new year early. Read it through `currentSchoolYear()` (lib/school-year.ts).
+ */
+export type SchoolYearSettings = { current: string };
+
 /** Manual site-wide banner (the recruitment banner appears on its own while a period is open). */
 export type Announcement = { enabled: boolean; text: string; textEn: string; href: string };
 
@@ -143,6 +150,7 @@ export type SiteSettings = {
   helpOptions: HelpOptionItem[];
   about: AboutContent;
   support: SupportContent;
+  schoolYear: SchoolYearSettings;
 };
 
 /** Settings row keys in D1. */
@@ -159,6 +167,7 @@ export const SETTINGS_KEYS = {
   support: "page.support",
   membership: "membership",
   announcement: "announcement",
+  schoolYear: "schoolYear",
 } as const satisfies Record<keyof SiteSettings, string>;
 
 // ---------------------------------------------------------------------------
@@ -282,6 +291,7 @@ export const defaultSettings: SiteSettings = {
   helpOptions: defaultHelpOptions,
   about: defaultAbout,
   support: defaultSupport,
+  schoolYear: { current: "" },
 };
 
 // ---------------------------------------------------------------------------
@@ -318,6 +328,13 @@ const list = <T extends z.ZodType>(item: T, max: number) =>
     );
 
 const storedSchemas = {
+  schoolYear: z.object({
+    current: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || isSchoolYear(v))
+      .catch(""),
+  }),
   announcement: z.object({
     enabled: bool(false),
     text: str(200),
@@ -451,6 +468,7 @@ export function parseSettings(rows: Map<string, unknown>): SiteSettings {
     helpOptions: read("helpOptions"),
     about: read("about"),
     support: read("support"),
+    schoolYear: read("schoolYear"),
   };
   // Legacy rows (before the settings redesign): `donationUrl` string.
   const legacyDonation = rows.get("donationUrl");

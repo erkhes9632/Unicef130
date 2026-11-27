@@ -2,14 +2,7 @@
  * Member area rules — pure functions (hours totals, event sign-up), unit-tested.
  */
 import type { SignupStatus } from "@/db/schema";
-import { UB_OFFSET_MS } from "@/lib/dates/ub-time";
-
-/** School years start on 1 September (Ulaanbaatar time): 2026-10-01 → "2026-2027". */
-export function schoolYearOf(date: Date | number) {
-  const ub = new Date(new Date(date).getTime() + UB_OFFSET_MS);
-  const y = ub.getUTCFullYear();
-  return ub.getUTCMonth() >= 8 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
-}
+import { isSchoolYear, schoolYearOf, sortYearsDesc } from "@/lib/school-year";
 
 type HoursEntry = { schoolYear: string; hours: number };
 
@@ -116,11 +109,32 @@ export function isActiveMember(total: number, threshold: number | null) {
 }
 
 /** Recent school years for selects: the current one first, then those that appear in data. */
-export function schoolYearOptions(known: readonly (string | null)[], now: number = Date.now()) {
-  const current = schoolYearOf(now);
-  const set = new Set([
-    current,
-    ...known.filter((y): y is string => !!y && /^\d{4}-\d{4}$/.test(y)),
-  ]);
-  return [...set].sort((a, b) => b.localeCompare(a));
+export function schoolYearOptions(
+  known: readonly (string | null)[],
+  now: number = Date.now(),
+  current: string = schoolYearOf(now),
+) {
+  return sortYearsDesc([current, ...known.filter(isSchoolYear)]);
+}
+
+/**
+ * Which team the public members / About pages show: the current year's, or — while it has none
+ * yet — the latest earlier year that has one (`waiting` = the current year, for "… оны баг
+ * удахгүй нэмэгдэнэ"). `requested` (an earlier year's own page) is shown on top instead, null
+ * when that year has no team. Never empty when any year has a team. `teams` is newest first.
+ */
+export function pickShownTeam<T extends { year: string }>(
+  teams: readonly T[],
+  current: string,
+  requested?: string,
+) {
+  const exact = teams.find((t) => t.year === (requested ?? current));
+  const shown =
+    exact ?? (requested ? undefined : (teams.find((t) => t.year < current) ?? teams[0]));
+  return {
+    shown: shown ?? null,
+    waiting: !requested && !exact && shown ? current : null,
+    /** The years below the shown one, newest first («Өмнөх жилүүд»). */
+    earlier: shown ? teams.filter((t) => t.year < shown.year) : [],
+  };
 }

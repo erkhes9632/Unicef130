@@ -74,7 +74,11 @@ describe("every Server Action checks the role on the server", () => {
   });
 
   test("helpers that trust their arguments are not Server Actions", () => {
-    for (const f of ["src/lib/recruitment/admin-ops.ts", "src/lib/users/delete.ts"]) {
+    for (const f of [
+      "src/lib/recruitment/admin-ops.ts",
+      "src/lib/users/delete.ts",
+      "src/lib/members/years.ts",
+    ]) {
       const src = readFileSync(f, "utf8");
       expect(src.startsWith('"use server"')).toBe(false);
       expect(src).toContain('import "server-only"');

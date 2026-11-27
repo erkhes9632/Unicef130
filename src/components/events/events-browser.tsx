@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, CalendarX2, List } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { useHeaderSession } from "@/components/auth/use-header-session";
 import { EmptyState } from "@/components/common/empty-state";
+import { pickYear, YearChips, YearGroups, type YearLabels } from "@/components/common/year-groups";
 import { Button } from "@/components/ui/button";
 import { useUrlQuery } from "@/hooks/use-url-query";
 import { Link } from "@/i18n/navigation";
@@ -16,7 +17,7 @@ let loadedAt: number | undefined;
 /** The visitor's clock, read once per page load (a stable snapshot). */
 const clientNow = () => (loadedAt ??= Date.now());
 
-export type EventMeta = CalendarEvent & { endsAt: string | null };
+export type EventMeta = CalendarEvent & { endsAt: string | null; year: string };
 
 type Labels = {
   listView: string;
@@ -31,6 +32,7 @@ type Labels = {
   pastTitle: string;
   allPast: string;
   calendar: React.ComponentProps<typeof MonthCalendar>["labels"];
+  years: YearLabels;
 };
 
 const tabClass = (active: boolean) =>
@@ -88,17 +90,22 @@ export function EventsBrowser({
   const view = query.get("view") === "calendar" ? "calendar" : "list";
   const scope = query.get("tab") === "past" ? "past" : "upcoming";
   const now = useSyncExternalStore(noSubscribe, clientNow, () => renderedAt);
-  const upcoming = events
+  // School-year chips (list view): years that have events, newest first.
+  const years = [...new Set(events.map((e) => e.year))].sort((a, b) => b.localeCompare(a));
+  const year = pickYear(query.get("year"), years);
+  const listed = year ? events.filter((e) => e.year === year) : events;
+  // Upcoming: soonest first. Past: newest first. Both under one heading per school year.
+  const upcoming = listed
     .filter((e) => isUpcoming(e, now))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-  const past = events
+  const past = listed
     .filter((e) => !isUpcoming(e, now))
     .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
   const set = (next: Record<string, string | undefined>) => (e: React.MouseEvent) => {
     e.preventDefault();
     setQuery(next);
   };
-  const grid = (list: EventMeta[]) => (
+  const cardGrid = (list: EventMeta[]) => (
     <div className="grid gap-4 lg:grid-cols-2">
       {list.map((e) => (
         <div key={e.id} className="contents">
@@ -106,6 +113,9 @@ export function EventsBrowser({
         </div>
       ))}
     </div>
+  );
+  const grid = (list: EventMeta[]) => (
+    <YearGroups items={list} labels={labels.years} render={cardGrid} />
   );
 
   let body: React.ReactNode;
@@ -133,7 +143,7 @@ export function EventsBrowser({
           }}
         />
         {inMonth.length > 0 ? (
-          grid(inMonth)
+          cardGrid(inMonth)
         ) : (
           <EmptyState icon={CalendarX2} title={labels.emptyMonth} />
         )}
@@ -161,7 +171,7 @@ export function EventsBrowser({
         </EmptyState>
         <div>
           <h2 className="mb-5 text-2xl font-extrabold">{labels.pastTitle}</h2>
-          {grid(past.slice(0, 6))}
+          <YearGroups items={past.slice(0, 6)} labels={labels.years} render={cardGrid} as="h3" />
           {past.length > 6 && (
             <Button asChild variant="outline" className="mt-6">
               <a href="?tab=past" onClick={set({ tab: "past" })}>
@@ -190,7 +200,7 @@ export function EventsBrowser({
           </a>
           <a
             href="?view=calendar"
-            onClick={set({ view: "calendar", tab: undefined })}
+            onClick={set({ view: "calendar", tab: undefined, year: undefined })}
             className={tabClass(view === "calendar")}
             aria-current={view === "calendar" ? "page" : undefined}
           >
@@ -218,6 +228,20 @@ export function EventsBrowser({
           </div>
         )}
       </div>
+      {view === "list" && (
+        <YearChips
+          years={years}
+          active={year}
+          labels={labels.years}
+          href={(y) => {
+            const p = new URLSearchParams(query);
+            if (y) p.set("year", y);
+            else p.delete("year");
+            return p.size ? `?${p}` : "?";
+          }}
+          onPick={(y) => set({ year: y || undefined })}
+        />
+      )}
       {body}
     </>
   );

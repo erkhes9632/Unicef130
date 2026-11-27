@@ -141,7 +141,8 @@
     "clearFilter": "Clear filter",
     "moreArticles": "More posts",
     "newer": "Newer post",
-    "older": "Older post"
+    "older": "Older post",
+    "featured": "Featured"
   },
   "Events": {
     "metaTitle": "Events",
@@ -193,7 +194,15 @@
     "statsTitle": "The club in numbers",
     "whatTitle": "What do members do?",
     "namesHiddenNote": "Students' names are published only after a parent or guardian has agreed. Where we don't have that yet, only the role is shown.",
-    "ourMembers": "Our members"
+    "ourMembers": "Our members",
+    "teamSoon": "The {year} team will be added soon. For now we show the {shown} team.",
+    "earlierYears": "Previous years",
+    "membersOfYear": "Members {year}",
+    "countLeaders": "Leadership",
+    "countMembers": "Members",
+    "countHours": "Volunteer hours",
+    "countsLabel": "{year} in numbers",
+    "hiddenMembers": "{count, plural, one {# more member's name} other {# more members' names}} will be published after consent."
   },
   "Gallery": {
     "metaTitle": "Gallery",
@@ -561,5 +570,12 @@
     "contactLink": "How to reach us",
     "meLink": "My page",
     "contactChannels": "The site has no contact form. You reach the club by e-mail or Instagram; those messages stay with that service (Gmail, Instagram) and are not stored on this site."
+  },
+  "SchoolYear": {
+    "heading": "{year} school year",
+    "continued": "{year} school year (continued)",
+    "filterLabel": "School year",
+    "all": "All",
+    "label": "{year} school year"
   }
 }

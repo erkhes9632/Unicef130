@@ -11,3 +11,17 @@ export function initials(name: string) {
     .map((p) => p[0]!.toLocaleUpperCase())
     .join("");
 }
+
+/**
+ * The given name of a display name in Mongolian order ("Овог Нэр", see `displayName`):
+ * "Батын Анужин" → "Анужин", "Б. Анужин" → "Анужин", "Анужин" → "Анужин".
+ */
+export function givenName(name: string) {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .at(-1)
+      ?.replace(/^[^\s.]{1,3}\./u, "") ?? ""
+  );
+}

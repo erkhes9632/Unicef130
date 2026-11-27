@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   CalendarHeart,
+  ChevronDown,
   GraduationCap,
   HandHeart,
   HeartHandshake,
@@ -19,13 +20,16 @@ import { MemberCard } from "@/components/members/member-card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { displayYear, getLatestImpact, getReportMembership } from "@/lib/data/impact";
-import { listMembers } from "@/lib/data/members";
+import { getLatestImpact, getReportMembership } from "@/lib/data/impact";
+import { listTeamsByYear, type YearTeam } from "@/lib/data/members";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
 import { formatNumber } from "@/lib/dates/format";
+import { pickShownTeam } from "@/lib/members/logic";
+import { displayYear } from "@/lib/school-year";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
-/** Shared by /members and /members/[year] (leadership of an earlier year; cached pages). */
+/** Shared by /members and /members/[year] (an earlier year on top; cached pages). */
 export async function membersMetadata(locale: Locale, year?: string): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "Members" });
   return pageMetadata({
@@ -42,23 +46,79 @@ const pillars = [
   { key: "charity", icon: HandHeart, tone: "bg-brand-gold-soft text-brand-gold-strong" },
 ] as const;
 
+type T = Awaited<ReturnType<typeof getTranslations<"Members">>>;
+
+/** "Удирдлага 5 · Гишүүн 52 · Сайн дурын цаг 734" (aggregates only, never per person). */
+function TeamCounts({ team, t }: { team: YearTeam; t: T }) {
+  const items = [
+    { label: t("countLeaders"), value: team.leaderCount },
+    { label: t("countMembers"), value: team.memberCount },
+    { label: t("countHours"), value: team.hours },
+  ].filter((i) => i.value > 0);
+  if (items.length === 0) return null;
+  return (
+    <dl
+      aria-label={t("countsLabel", { year: displayYear(team.year) })}
+      className="flex flex-wrap gap-2 text-sm"
+    >
+      {items.map((i) => (
+        <div
+          key={i.label}
+          className="inline-flex items-baseline gap-1.5 rounded-full bg-card px-4 py-2 ring-1 ring-border"
+        >
+          <dt className="text-muted-foreground">{i.label}</dt>
+          <dd className="font-heading font-extrabold">{formatNumber(i.value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Public member names of a year (consent only) + how many are not shown. */
+function MemberNames({ team, t }: { team: YearTeam; t: T }) {
+  if (team.members.length === 0) return null;
+  return (
+    <>
+      <ul className="flex flex-wrap gap-2">
+        {team.members.map((m) => (
+          <li
+            key={m.id}
+            className="rounded-full bg-brand-green-soft px-4 py-2 font-semibold text-foreground"
+          >
+            {m.name}
+          </li>
+        ))}
+      </ul>
+      {team.hiddenCount > 0 && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {t("hiddenMembers", { count: team.hiddenCount })}
+        </p>
+      )}
+    </>
+  );
+}
+
 /**
  * Who we are, without exposing students: the official numbers, what members do (the three
- * pillars), the leadership (a name only where an admin confirmed consent) and how to join.
- * Members' names appear only for rows marked «Нийтэд харуулах» (a plain list, no photos).
+ * pillars), the current school year's team (leaders, then public names, then counts), earlier
+ * years collapsed below («Өмнөх жилүүд»), and how to join. Until the current year has a team,
+ * the latest year that has one is shown with its own label and a "coming soon" note. Names
+ * appear only where an admin confirmed consent for that year.
  */
 export async function MembersView({ locale, requested }: { locale: Locale; requested?: string }) {
   const t = await getTranslations();
-  const [{ leadership, leadershipYear, leadershipYears, members, activeCount }, impact, official] =
-    await Promise.all([
-      listMembers(locale, { leadershipYear: requested }),
-      getLatestImpact().catch(() => null),
-      getReportMembership(),
-    ]);
-  if (requested && leadershipYear !== requested) notFound();
+  const tm = await getTranslations("Members");
+  const [teams, current, impact, official] = await Promise.all([
+    listTeamsByYear(locale),
+    getCurrentSchoolYear(),
+    getLatestImpact().catch(() => null),
+    getReportMembership(),
+  ]);
+  const { shown, waiting, earlier } = pickShownTeam(teams, current, requested);
+  if (requested && !shown) notFound();
   // The annual report's figure, not a count of database rows (website accounts differ).
-  const activeShown = official?.active || activeCount;
-  const isEmpty = activeShown === 0 && leadership.length === 0;
+  const activeShown = official?.active || (shown?.memberCount ?? 0);
+  const isEmpty = !shown;
 
   const stats = [
     ...(activeShown > 0
@@ -110,6 +170,44 @@ export async function MembersView({ locale, requested }: { locale: Locale; reque
         </section>
       )}
 
+      {shown && (
+        <Section surface="tint">
+          {/* Plain heading (no scroll reveal): this block is often in the first viewport. */}
+          <h2 className="mb-8 text-[clamp(1.6rem,1.2rem+1.6vw,2.4rem)] leading-[1.15] font-extrabold sm:mb-10">
+            {t("Members.leadershipOfYear", { year: displayYear(shown.year) })}
+          </h2>
+          {waiting && (
+            <InfoNote className="-mt-4 mb-6">
+              {t("Members.teamSoon", {
+                year: displayYear(waiting),
+                shown: displayYear(shown.year),
+              })}
+            </InfoNote>
+          )}
+          {shown.leaders.length > 0 && (
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {shown.leaders.map((m, i) => (
+                <MemberCard key={m.id} member={m} index={i} size="large" anonymous={!m.name} />
+              ))}
+            </ul>
+          )}
+          {shown.leaders.some((m) => !m.name) && (
+            <InfoNote className="mt-6">{t("Members.namesHiddenNote")}</InfoNote>
+          )}
+          {shown.members.length > 0 && (
+            <div className="mt-10">
+              <h3 className="mb-4 text-xl font-extrabold">
+                {t("Members.membersOfYear", { year: displayYear(shown.year) })}
+              </h3>
+              <MemberNames team={shown} t={tm} />
+            </div>
+          )}
+          <div className="mt-8">
+            <TeamCounts team={shown} t={tm} />
+          </div>
+        </Section>
+      )}
+
       <Section>
         <SectionHeading
           eyebrow={t("Home.whatEyebrow")}
@@ -131,59 +229,49 @@ export async function MembersView({ locale, requested }: { locale: Locale; reque
         </ul>
       </Section>
 
-      {leadership.length > 0 && (
+      {earlier.length > 0 && (
         <Section surface="tint">
-          <SectionHeading
-            title={
-              leadershipYear
-                ? t("Members.leadershipOfYear", { year: displayYear(leadershipYear) })
-                : t("Members.leadership")
-            }
-          />
-          {leadershipYears.length > 1 && (
-            <nav aria-label={t("Members.otherYears")} className="-mt-4 mb-6">
-              <ul className="flex flex-wrap gap-2 text-sm">
-                {leadershipYears.map((y) => (
-                  <li key={y}>
-                    <Link
-                      href={y === leadershipYears[0] ? "/members" : `/members/${y}`}
-                      aria-current={y === leadershipYear ? "page" : undefined}
-                      className={cn(
-                        "inline-flex min-h-11 items-center rounded-full px-4 font-semibold ring-1 ring-border hover:bg-muted",
-                        y === leadershipYear && "bg-brand-green-soft",
-                      )}
-                    >
-                      {displayYear(y)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-          <ul className="reveal-group grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {leadership.map((m, i) => (
-              <MemberCard key={m.id} member={m} index={i} size="large" anonymous={!m.name} />
-            ))}
-          </ul>
-          {leadership.some((m) => !m.name) && (
-            <InfoNote className="mt-6">{t("Members.namesHiddenNote")}</InfoNote>
-          )}
-        </Section>
-      )}
-
-      {members.length > 0 && (
-        <Section>
-          <SectionHeading title={t("Members.ourMembers")} />
-          <ul className="flex flex-wrap gap-2">
-            {members.map((m) => (
-              <li
-                key={m.id}
-                className="rounded-full bg-brand-green-soft px-4 py-2 font-semibold text-foreground"
+          <SectionHeading title={t("Members.earlierYears")} />
+          <div className="space-y-3">
+            {earlier.map((team) => (
+              <details
+                key={team.year}
+                id={`year-${team.year}`}
+                className="group rounded-3xl bg-card shadow-soft ring-1 ring-border"
               >
-                {m.name}
-              </li>
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-heading text-lg font-extrabold [&::-webkit-details-marker]:hidden">
+                  {t("SchoolYear.heading", { year: displayYear(team.year) })}
+                  <ChevronDown
+                    className="size-5 shrink-0 transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                </summary>
+                <div className="space-y-6 px-5 pb-6">
+                  {team.leaders.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 font-bold">
+                        {t("Members.leadershipOfYear", { year: displayYear(team.year) })}
+                      </h3>
+                      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        {team.leaders.map((m, i) => (
+                          <MemberCard key={m.id} member={m} index={i} anonymous={!m.name} />
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {team.members.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 font-bold">
+                        {t("Members.membersOfYear", { year: displayYear(team.year) })}
+                      </h3>
+                      <MemberNames team={team} t={tm} />
+                    </div>
+                  )}
+                  <TeamCounts team={team} t={tm} />
+                </div>
+              </details>
             ))}
-          </ul>
+          </div>
         </Section>
       )}
 

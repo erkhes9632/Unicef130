@@ -6,10 +6,19 @@ import { Link } from "@/i18n/navigation";
 import type { EventItem } from "@/lib/data/events";
 import { formatDateRange, formatTimeRange } from "@/lib/dates/format";
 import { isUpcoming } from "@/lib/dates/ub-time";
+import { displayYear } from "@/lib/school-year";
 import { DateBadge } from "./date-badge";
 
-export async function EventCard({ item }: { item: EventItem }) {
+export async function EventCard({
+  item,
+  showYear = false,
+}: {
+  item: EventItem;
+  /** Small school-year label (lists not grouped by year, e.g. search results). */
+  showYear?: boolean;
+}) {
   const t = await getTranslations("Events");
+  const ty = await getTranslations("SchoolYear");
   const locale = await getLocale();
   const past = !isUpcoming(item);
   const time = item.allDay
@@ -57,6 +66,7 @@ export async function EventCard({ item }: { item: EventItem }) {
               {item.location}
             </span>
           )}
+          {showYear && <span>{ty("label", { year: displayYear(item.year) })}</span>}
         </div>
       </div>
     </article>

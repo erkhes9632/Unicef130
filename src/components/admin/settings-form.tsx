@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -90,9 +91,12 @@ function Pair({
 export function SettingsForm({
   action,
   initial,
+  schoolYear,
 }: {
   action: (prev: ActionState, data: FormData) => Promise<ActionState>;
   initial: SiteSettings;
+  /** The year of today ("Автоматаар") and the years an admin may pick. */
+  schoolYear: { auto: string; options: string[] };
 }) {
   const [state, formAction] = useActionState(action, {});
   const [stats, setStats] = useState(() => withIds<StatItem>(initial.stats));
@@ -535,6 +539,35 @@ export function SettingsForm({
             />
           </AdminField>
         </div>
+      </FormSection>
+
+      <FormSection
+        title="Хичээлийн жил"
+        description="Сайт хичээлийн жилээр (9-р сарын 1 – 8-р сарын 31) зохион байгуулагдана: «Гишүүд» хуудас одоогийн жилийн багийг харуулж, гишүүн нэмэх, элсэлтээр тэнцсэн хүн энэ жилд орно. Анхнаасаа өнөөдрийн огнооноос тооцогдоно; шинэ жилийг хэдэн өдрийн өмнө эхлүүлэх бол энд сонгоно."
+      >
+        <AdminField label="Одоогийн хичээлийн жил" htmlFor="schoolYear.current">
+          <NativeSelect
+            id="schoolYear.current"
+            name="schoolYear.current"
+            defaultValue={initial.schoolYear.current}
+            className="max-w-72"
+          >
+            <option value="">Автоматаар ({schoolYear.auto.replace("-", "–")})</option>
+            {schoolYear.options.map((y) => (
+              <option key={y} value={y}>
+                {y.replace("-", "–")}
+              </option>
+            ))}
+          </NativeSelect>
+        </AdminField>
+        <p className="text-sm">
+          <Link
+            href="/admin/school-year"
+            className="inline-flex min-h-11 items-center font-semibold text-brand-cyan-strong hover:underline"
+          >
+            Шинэ хичээлийн жил эхлүүлэх →
+          </Link>
+        </p>
       </FormSection>
 
       <StickyActions>

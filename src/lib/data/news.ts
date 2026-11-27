@@ -1,7 +1,21 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, lt, lte, ne } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  gt,
+  inArray,
+  isNotNull,
+  lt,
+  lte,
+  ne,
+  sql,
+} from "drizzle-orm";
 import { getDb } from "@/db";
 import { news } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
+import { schoolYearSql } from "@/lib/school-year-sql";
 import { normalizeSdgs } from "@/lib/sdg";
 import { newsCategories, type NewsCategory, type RichTextDoc } from "@/lib/types";
 import { pick, untranslated } from "./localize";
@@ -16,6 +30,8 @@ export type NewsItem = {
   category: NewsCategory;
   tags: string[];
   publishedAt: string;
+  /** School year of the publication date ("2025-2026"), computed in SQL. */
+  schoolYear: string;
   sdgs: number[];
   eventId: string | null;
   featured: boolean;
@@ -27,7 +43,12 @@ export type NewsItem = {
   untranslated: boolean;
 };
 
-type Row = typeof news.$inferSelect;
+/** Every column + the school year of the publication date (indexed `published_at`). */
+const columns = {
+  ...getTableColumns(news),
+  schoolYear: schoolYearSql(sql`coalesce(${news.publishedAt}, ${news.createdAt})`),
+};
+type Row = typeof news.$inferSelect & { schoolYear: string };
 
 function toItem(locale: Locale, r: Row): NewsItem {
   return {
@@ -43,6 +64,7 @@ function toItem(locale: Locale, r: Row): NewsItem {
       : "activity",
     tags: r.tags ?? [],
     publishedAt: (r.publishedAt ?? r.createdAt).toISOString(),
+    schoolYear: r.schoolYear,
     sdgs: normalizeSdgs(r.sdgs),
     eventId: r.eventId,
     featured: r.featured,
@@ -57,17 +79,24 @@ function toItem(locale: Locale, r: Row): NewsItem {
 const visible = () =>
   and(eq(news.status, "published"), isNotNull(news.publishedAt), lte(news.publishedAt, new Date()));
 
-/** Every visible post, newest first (the news page filters and pages them in the browser). */
+/**
+ * Every visible post, newest first (the news page groups them by school year and filters and
+ * pages them in the browser). Ties on the date keep a stable order (newest created first).
+ */
 export async function listAllNews(locale: Locale) {
   const db = await getDb();
-  const rows = await db.select().from(news).where(visible()).orderBy(desc(news.publishedAt));
+  const rows = await db
+    .select(columns)
+    .from(news)
+    .where(visible())
+    .orderBy(desc(news.publishedAt), desc(news.createdAt));
   return rows.map((r) => toItem(locale, r));
 }
 
 export async function getLatestNews(locale: Locale, limit = 3) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(news)
     .where(visible())
     // Featured posts first (home page), then the newest.
@@ -79,7 +108,7 @@ export async function getLatestNews(locale: Locale, limit = 3) {
 export async function getNewsBySlug(locale: Locale, slug: string) {
   const db = await getDb();
   const [row] = await db
-    .select()
+    .select(columns)
     .from(news)
     .where(and(visible(), eq(news.slug, slug)))
     .limit(1);
@@ -89,14 +118,14 @@ export async function getNewsBySlug(locale: Locale, slug: string) {
 export async function getRelatedNews(locale: Locale, item: NewsItem, limit = 3) {
   const db = await getDb();
   const same = await db
-    .select()
+    .select(columns)
     .from(news)
     .where(and(visible(), eq(news.category, item.category), ne(news.id, item.id)))
     .orderBy(desc(news.publishedAt))
     .limit(limit);
   if (same.length >= limit) return same.map((r) => toItem(locale, r));
   const rest = await db
-    .select()
+    .select(columns)
     .from(news)
     .where(and(visible(), ne(news.category, item.category), ne(news.id, item.id)))
     .orderBy(desc(news.publishedAt))
@@ -110,13 +139,13 @@ export async function getAdjacentNews(locale: Locale, item: NewsItem) {
   const at = new Date(item.publishedAt);
   const [older, newer] = await Promise.all([
     db
-      .select()
+      .select(columns)
       .from(news)
       .where(and(visible(), lt(news.publishedAt, at), ne(news.id, item.id)))
       .orderBy(desc(news.publishedAt))
       .limit(1),
     db
-      .select()
+      .select(columns)
       .from(news)
       .where(and(visible(), gt(news.publishedAt, at), ne(news.id, item.id)))
       .orderBy(asc(news.publishedAt))
@@ -135,7 +164,7 @@ export async function getAdjacentNews(locale: Locale, item: NewsItem) {
 export async function searchNews(locale: Locale, query: string, limit = 20) {
   const db = await getDb();
   const rows = await db
-    .select()
+    .select(columns)
     .from(news)
     .where(visible())
     .orderBy(desc(news.publishedAt))

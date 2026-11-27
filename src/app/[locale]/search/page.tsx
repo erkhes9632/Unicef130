@@ -14,6 +14,7 @@ import { getPathname } from "@/i18n/navigation";
 import { searchEvents } from "@/lib/data/events";
 import { searchNews } from "@/lib/data/news";
 import { searchOtherContent } from "@/lib/data/search";
+import { displayYear } from "@/lib/school-year";
 import { pageMetadata } from "@/lib/seo";
 
 // Per visitor (session / query string): never cached, unlike the public pages.
@@ -38,6 +39,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
   const sp = await searchParams;
   const query = (typeof sp.q === "string" ? sp.q : "").trim().slice(0, 100);
   const t = await getTranslations("Search");
+  const ty = await getTranslations("SchoolYear");
   const [news, events, other] =
     query.length >= 2
       ? await Promise.all([
@@ -95,7 +97,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                 </h2>
                 <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {news.map((n) => (
-                    <NewsCard key={n.id} item={n} />
+                    <NewsCard key={n.id} item={n} showYear />
                   ))}
                 </div>
               </section>
@@ -107,7 +109,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                 </h2>
                 <div className="reveal-group grid gap-4 lg:grid-cols-2">
                   {events.map((e) => (
-                    <EventCard key={e.id} item={e} />
+                    <EventCard key={e.id} item={e} showYear />
                   ))}
                 </div>
               </section>
@@ -122,6 +124,9 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
                     <li key={a.id}>
                       <Link href={`/gallery/${a.slug}`} className={card}>
                         <span className="font-bold">{a.title}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {ty("label", { year: displayYear(a.schoolYear) })}
+                        </span>
                         {a.description && (
                           <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">
                             {a.description}

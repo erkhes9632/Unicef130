@@ -12,9 +12,13 @@ import { getDb } from "@/db";
 import { events } from "@/db/schema";
 import { PAGE_SIZE } from "@/lib/admin/list-limits";
 import { pageOffset, pageParam, param, searchParam, wordPrefix } from "@/lib/admin/list-query";
+import { yearFilterField, yearParam } from "@/lib/admin/year-filter";
 import { requireAdmin } from "@/lib/auth/session";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
 import { nowMs } from "@/lib/dates/ub-time";
+import { schoolYearRange } from "@/lib/school-year";
+import { schoolYearSql } from "@/lib/school-year-sql";
 import { deleteEvent } from "./actions";
 
 export const metadata: Metadata = { title: "Арга хэмжээ" };
@@ -26,8 +30,14 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
   const when = param(sp, "when", 10);
   const state = param(sp, "state", 10);
   const page = pageParam(sp);
+  const year = yearParam(sp);
   const now = nowMs();
   const where: SQL[] = [];
+  if (year) {
+    // Range on the indexed start date.
+    const r = schoolYearRange(year);
+    where.push(gte(events.startsAt, new Date(r.from)), lt(events.startsAt, new Date(r.to)));
+  }
   if (q) where.push(wordPrefix([events.title, events.titleEn], q));
   if (when === "upcoming") where.push(gte(events.startsAt, new Date(now)));
   if (when === "past") where.push(lt(events.startsAt, new Date(now)));
@@ -35,7 +45,7 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
   if (state === "draft") where.push(eq(events.published, false));
   const condition = where.length ? and(...where) : undefined;
   const db = await getDb();
-  const [[total], rows] = await Promise.all([
+  const [[total], rows, years, current] = await Promise.all([
     db.select({ n: count() }).from(events).where(condition),
     db
       .select({
@@ -50,6 +60,8 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
       .orderBy(desc(events.startsAt))
       .limit(PAGE_SIZE)
       .offset(pageOffset(page)),
+    db.selectDistinct({ y: schoolYearSql(events.startsAt) }).from(events),
+    getCurrentSchoolYear(),
   ]);
 
   return (
@@ -68,6 +80,10 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
       <FilterBar
         search={{ label: "Хайх (нэр)", placeholder: "волейбол / мод тарих" }}
         fields={[
+          yearFilterField(
+            years.map((r) => r.y),
+            current,
+          ),
           {
             type: "select",
             name: "when",

@@ -8,14 +8,15 @@ import { HoursBoard } from "@/components/admin/hours-client";
 import { AdminPageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { getDb } from "@/db";
-import { events, members, volunteerHours } from "@/db/schema";
+import { events, members, memberYears as memberYearsTable, volunteerHours } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/session";
-import { getSiteSettings } from "@/lib/data/settings";
+import { getCurrentSchoolYear, getSiteSettings } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
 import { ubToday } from "@/lib/dates/ub-time";
 import { listHoursEntries } from "@/lib/members/hours";
-import { schoolYearOf, schoolYearOptions } from "@/lib/members/logic";
+import { schoolYearOptions } from "@/lib/members/logic";
 import { yearSummary } from "@/lib/members/year-summary";
+import { displayYear } from "@/lib/school-year";
 import { addHours, deleteHoursEntry } from "./actions";
 
 export const metadata: Metadata = { title: "Сайн дурын цаг" };
@@ -24,18 +25,25 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
   await requireAdmin();
   const sp = await searchParams;
   const db = await getDb();
-  const [loggedYears, memberYears, settings, recentEvents] = await Promise.all([
+  const [loggedYears, memberYears, teamYears, settings, current, recentEvents] = await Promise.all([
     db.selectDistinct({ y: volunteerHours.schoolYear }).from(volunteerHours),
     db.selectDistinct({ y: members.schoolYear }).from(members).where(isNotNull(members.schoolYear)),
+    db.selectDistinct({ y: memberYearsTable.schoolYear }).from(memberYearsTable),
     getSiteSettings(),
+    getCurrentSchoolYear(),
     db
       .select({ id: events.id, title: events.title })
       .from(events)
       .orderBy(desc(events.startsAt))
       .limit(40),
   ]);
-  const years = schoolYearOptions([...loggedYears, ...memberYears].map((r) => r.y));
-  const year = typeof sp.year === "string" && years.includes(sp.year) ? sp.year : years[0]!;
+  // Newest first; the address has no year → the current one.
+  const years = schoolYearOptions(
+    [...loggedYears, ...memberYears, ...teamYears].map((r) => r.y),
+    undefined,
+    current,
+  );
+  const year = typeof sp.year === "string" && years.includes(sp.year) ? sp.year : current;
   const team = typeof sp.team === "string" ? sp.team : "";
   const threshold = settings.membership.activeMemberHours;
   const [{ listed, totalAll }, entries] = await Promise.all([
@@ -61,7 +69,7 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
     <>
       <AdminPageHeader
         title="Сайн дурын цаг"
-        description={`Гишүүдийн цагийн бүртгэл. Хувь хүний цаг сайт дээр хэзээ ч харагдахгүй. ${year}: нийт ${totalAll} цаг${threshold ? ` · идэвхтэй гишүүний босго ${threshold} цаг` : " · идэвхтэй гишүүний босгыг Сайтын тохиргооноос оруулна"}.`}
+        description={`Гишүүдийн цагийн бүртгэл. Хувь хүний цаг сайт дээр хэзээ ч харагдахгүй. ${displayYear(year)}: нийт ${totalAll} цаг${threshold ? ` · идэвхтэй гишүүний босго ${threshold} цаг` : " · идэвхтэй гишүүний босгыг Сайтын тохиргооноос оруулна"}.`}
         actions={
           <Button asChild variant="outline">
             <a href={`/admin/hours/export?year=${encodeURIComponent(year)}`}>
@@ -76,8 +84,11 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
             type: "select",
             name: "year",
             label: "Хичээлийн жил",
-            // "" = the latest year (the default when the address has none).
-            options: years.map((y, i) => ({ value: i === 0 ? "" : y, label: y })),
+            // "" = the current year (the default when the address has none).
+            options: years.map((y) => ({
+              value: y === current ? "" : y,
+              label: y === current ? `${displayYear(y)} (одоогийн)` : displayYear(y),
+            })),
           },
           {
             type: "select",
@@ -103,7 +114,7 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
 
       <section className="mt-10" aria-labelledby="entries">
         <h2 id="entries" className="mb-2 font-bold">
-          Бичлэгүүд ({year})
+          Бичлэгүүд ({displayYear(year)})
         </h2>
         {entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">Энэ жилд бичлэг алга.</p>
@@ -128,7 +139,7 @@ export default async function AdminHoursPage({ searchParams }: PageProps<"/admin
         )}
         <p className="mt-2 text-xs text-muted-foreground">
           Арга хэмжээний ирцийг «Арга хэмжээ → Сайн дурынхан»-аас тэмдэглэхэд цаг энд автоматаар
-          орно. Одоогийн хичээлийн жил: {schoolYearOf(new Date())}.{" "}
+          орно. Одоогийн хичээлийн жил: {displayYear(current)}.{" "}
           <Link href="/admin/settings" className="underline">
             Босго тохируулах
           </Link>

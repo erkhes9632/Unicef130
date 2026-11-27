@@ -6,7 +6,9 @@ import { events, members, settings } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import { getLatestImpact, getReportMembership } from "@/lib/data/impact";
 import { formatNumber } from "@/lib/dates/format";
+import { nowMs } from "@/lib/dates/ub-time";
 import { logger } from "@/lib/logger";
+import { currentSchoolYear } from "@/lib/school-year";
 import {
   MAX_FEATURED_STATS,
   defaultSettings,
@@ -149,4 +151,13 @@ export function paragraphs(text: string): string[] {
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
+}
+
+/**
+ * The club's current school year («Одоогийн хичээлийн жил»): the admin's setting, else the year
+ * of today (Ulaanbaatar). Public pages are cached, so a page shows the year of its last render.
+ */
+export async function getCurrentSchoolYear(): Promise<string> {
+  const s = await getSiteSettings();
+  return currentSchoolYear(s.schoolYear.current, nowMs());
 }

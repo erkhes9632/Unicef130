@@ -3,7 +3,9 @@ import { getTranslations } from "next-intl/server";
 import { JoinEmptyState } from "@/components/common/join-empty-state";
 import { PageHero } from "@/components/common/page-hero";
 import { Section } from "@/components/common/section";
+import { getYearLabels } from "@/components/common/year-labels";
 import { AlbumCard } from "@/components/gallery/album-card";
+import { GalleryBrowser } from "@/components/gallery/gallery-browser";
 import { resolveLocale } from "@/i18n/locale";
 import { listAlbums } from "@/lib/data/gallery";
 import { pageMetadata } from "@/lib/seo";
@@ -21,10 +23,14 @@ export async function generateMetadata({
   });
 }
 
+/** Cached page: albums newest first, grouped by school year in the browser (?year= chips). */
 export default async function GalleryPage({ params }: PageProps<"/[locale]/gallery">) {
   const locale = await resolveLocale(params);
-  const t = await getTranslations("Gallery");
-  const albums = await listAlbums(locale);
+  const [t, albums, years] = await Promise.all([
+    getTranslations("Gallery"),
+    listAlbums(locale),
+    getYearLabels(),
+  ]);
 
   return (
     <>
@@ -37,11 +43,13 @@ export default async function GalleryPage({ params }: PageProps<"/[locale]/galle
       <Section className="pt-8 sm:pt-10">
         <h2 className="sr-only">{t("metaTitle")}</h2>
         {albums.length > 0 ? (
-          <div className="reveal-group grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {albums.map((a, i) => (
-              <AlbumCard key={a.id} album={a} priority={i === 0} />
-            ))}
-          </div>
+          <GalleryBrowser
+            albums={albums.map((a) => ({ id: a.id, year: a.schoolYear }))}
+            cards={Object.fromEntries(
+              albums.map((a, i) => [a.id, <AlbumCard key={a.id} album={a} priority={i === 0} />]),
+            )}
+            labels={years}
+          />
         ) : (
           <JoinEmptyState title={t("empty")} />
         )}

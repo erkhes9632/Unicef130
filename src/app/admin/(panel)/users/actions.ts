@@ -8,7 +8,9 @@ import { actionError, type ActionState } from "@/lib/admin/action-state";
 import { logActivity, shortId } from "@/lib/admin/activity";
 import { roleLabel, toRole } from "@/lib/auth/roles";
 import { AuthError, assertAdmin, refreshUserFromClerk } from "@/lib/auth/session";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
 import { logger } from "@/lib/logger";
+import { addToYear } from "@/lib/members/years";
 import { memberDisplayName } from "@/lib/recruitment/logic";
 import { countActiveAdmins, deleteClerkUser, setBanned, setRole } from "@/lib/users/clerk-admin";
 import { removeUserData } from "@/lib/users/delete";
@@ -61,6 +63,7 @@ export async function changeUserRole(userId: string, action: string): Promise<Ac
         .limit(1);
       if (linked) {
         await db.update(members).set({ active: true }).where(eq(members.id, linked.id));
+        await addToYear(db, linked.id, await getCurrentSchoolYear());
       } else {
         // Never link silently: an imported member with this e-mail is offered as a button.
         const [match] = target.email
@@ -76,16 +79,20 @@ export async function changeUserRole(userId: string, action: string): Promise<Ac
             message:
               "Энэ и-мэйлтэй гишүүний бүртгэл байна. Давхардуулахгүйн тулд «Гишүүнтэй холбох»-ыг ашиглана уу.",
           };
-        await db.insert(members).values({
-          name: memberDisplayName(target.name) || target.email,
-          role: "Гишүүн",
-          roleEn: "Member",
-          group: "member",
-          showPublicly: false,
-          sortOrder: 500,
-          userId,
-          email: target.email || null,
-        });
+        const [created] = await db
+          .insert(members)
+          .values({
+            name: memberDisplayName(target.name) || target.email,
+            role: "Гишүүн",
+            roleEn: "Member",
+            group: "member",
+            showPublicly: false,
+            sortOrder: 500,
+            userId,
+            email: target.email || null,
+          })
+          .returning({ id: members.id });
+        await addToYear(db, created!.id, await getCurrentSchoolYear());
       }
     }
     await setRole(db, userId, next);

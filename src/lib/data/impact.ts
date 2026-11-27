@@ -33,9 +33,6 @@ type ImpactYear = {
   membership: ReportMembership | null;
 };
 
-/** "2025-2026" → "2025–2026" */
-export const displayYear = (y: string) => y.replace("-", "–");
-
 /** School years that have impact numbers, newest first. */
 export const listImpactYears = cache(async (): Promise<string[]> => {
   try {

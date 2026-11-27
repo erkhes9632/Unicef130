@@ -1,4 +1,4 @@
-import { and, count, desc, eq, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -13,8 +13,12 @@ import { news } from "@/db/schema";
 import { categoryLabel } from "@/lib/admin/labels";
 import { PAGE_SIZE } from "@/lib/admin/list-limits";
 import { pageOffset, pageParam, searchParam, wordPrefix } from "@/lib/admin/list-query";
+import { yearFilterField, yearParam } from "@/lib/admin/year-filter";
 import { requireAdmin } from "@/lib/auth/session";
+import { getCurrentSchoolYear } from "@/lib/data/settings";
 import { formatDate } from "@/lib/dates/format";
+import { displayYear, schoolYearOf, schoolYearRange } from "@/lib/school-year";
+import { schoolYearSql } from "@/lib/school-year-sql";
 import { deleteNews } from "./actions";
 
 export const metadata: Metadata = { title: "Мэдээ" };
@@ -31,12 +35,19 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
   const status = sp.status === "draft" || sp.status === "published" ? sp.status : undefined;
   const q = searchParam(sp);
   const page = pageParam(sp);
+  const year = yearParam(sp);
+  // Drafts have no publication date yet: they count by their creation date.
+  const date = sql`coalesce(${news.publishedAt}, ${news.createdAt})`;
   const where: SQL[] = [];
   if (status) where.push(eq(news.status, status));
+  if (year) {
+    const r = schoolYearRange(year);
+    where.push(gte(date, r.from), lt(date, r.to));
+  }
   if (q) where.push(wordPrefix([news.title, news.titleEn], q));
   const condition = where.length ? and(...where) : undefined;
   const db = await getDb();
-  const [[total], rows] = await Promise.all([
+  const [[total], rows, years, current] = await Promise.all([
     db.select({ n: count() }).from(news).where(condition),
     db
       .select({
@@ -46,13 +57,16 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
         status: news.status,
         category: news.category,
         publishedAt: news.publishedAt,
-        updatedAt: news.updatedAt,
+        createdAt: news.createdAt,
       })
       .from(news)
       .where(condition)
-      .orderBy(desc(news.updatedAt))
+      // Newest first by date (publication date, drafts by creation).
+      .orderBy(desc(date), desc(news.createdAt))
       .limit(PAGE_SIZE)
       .offset(pageOffset(page)),
+    db.selectDistinct({ y: schoolYearSql(date) }).from(news),
+    getCurrentSchoolYear(),
   ]);
 
   return (
@@ -70,7 +84,13 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
       />
       <FilterBar
         search={{ label: "Хайх (гарчиг)", placeholder: "хандив / мод тарих" }}
-        fields={[{ type: "select", name: "status", label: "Төлөв", options: statusOptions }]}
+        fields={[
+          yearFilterField(
+            years.map((r) => r.y),
+            current,
+          ),
+          { type: "select", name: "status", label: "Төлөв", options: statusOptions },
+        ]}
         count={total?.n ?? 0}
         noun="мэдээ"
         emptyText="Ийм мэдээ олдсонгүй."
@@ -96,6 +116,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
                     </Badge>
                     <span>{categoryLabel[r.category] ?? r.category}</span>
                     {r.publishedAt && <span>{formatDate("mn", r.publishedAt, "long")}</span>}
+                    <span>· {displayYear(schoolYearOf(r.publishedAt ?? r.createdAt))}</span>
                   </p>
                 </div>
                 <Button asChild variant="ghost" size="icon-sm" aria-label="Засах">
