@@ -60,7 +60,8 @@ if (!live)
     "✘ Could not tell which version is live (expected one version at 100 %). Nothing was changed.",
   );
 
-if ((await run(["bunx", "opennextjs-cloudflare", "build"])).code !== 0)
+// cf:build = OpenNext build + scripts/patch-bundle.ts (the same bundle as `bun run preview`).
+if ((await run(["bun", "run", "cf:build"])).code !== 0)
   stop("✘ Build failed. Nothing was changed.");
 const upload = await run(["bunx", "opennextjs-cloudflare", "upload"]);
 const next = dryRun ? "<new-version>" : parseUploadedVersion(upload.output);

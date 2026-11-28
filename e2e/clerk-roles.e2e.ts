@@ -18,9 +18,12 @@ test("applicant: signs up with an e-mail code, applies once, sees the status", a
 
   await page.locator('input[name="identifier"]').fill(E2E.applicant);
   await page.locator(".cl-formButtonPrimary").click();
-  await page.locator(".cl-otpCodeFieldInput").first().waitFor();
-  await page.keyboard.type("424242");
-  await page.waitForURL("**/join");
+  // Deterministic code entry: the six boxes are drawn over ONE real input. Keys typed before it
+  // had focus were lost (the old flake); filling the input itself does not depend on focus.
+  const code = page.locator('input[autocomplete="one-time-code"]');
+  await expect(code).toBeEditable();
+  await code.fill("424242");
+  await page.waitForURL("**/join", { timeout: 45_000 });
 
   await expect(page.getByText(E2E.applicant)).toBeVisible();
   await page.locator("#join-fullName").fill("Батын Анужин");

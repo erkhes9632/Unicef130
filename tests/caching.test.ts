@@ -5,7 +5,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { edgeCacheable, toEdgeCopy } from "@/lib/edge-cache";
+import { edgeCacheable, fileCacheable, toEdgeCopy, toFileCopy } from "@/lib/edge-cache";
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((f) => {
@@ -157,5 +157,37 @@ describe("release pre-warm", () => {
     });
     expect(edgeCacheable(pinned)).toBe(false);
     expect(edgeCacheable(new Request("https://example.org/news"))).toBe(true);
+  });
+});
+
+describe("crawler files (sitemap.xml, robots.txt)", () => {
+  const req = (path: string, init?: RequestInit) => new Request(`https://x.test${path}`, init);
+  test("only plain GETs of the two files get a data-centre copy", () => {
+    expect(fileCacheable(req("/sitemap.xml"))).toBe(true);
+    expect(fileCacheable(req("/robots.txt"))).toBe(true);
+    expect(fileCacheable(req("/sitemap.xml?x=1"))).toBe(false);
+    expect(fileCacheable(req("/sitemap.xml", { method: "POST" }))).toBe(false);
+    expect(fileCacheable(req("/manifest.webmanifest"))).toBe(false);
+    expect(fileCacheable(req("/news"))).toBe(false);
+    expect(
+      fileCacheable(
+        req("/sitemap.xml", { headers: { "cloudflare-workers-version-overrides": 'w="v"' } }),
+      ),
+    ).toBe(false);
+  });
+  test("errors and cookies are never stored; copies are public for the TTL", () => {
+    expect(toFileCopy(new Response("x", { status: 500 }), 600)).toBeNull();
+    expect(toFileCopy(new Response("x", { headers: { "set-cookie": "a=b" } }), 600)).toBeNull();
+    const copy = toFileCopy(
+      new Response("<urlset/>", { headers: { "cache-control": "private, no-store" } }),
+      600,
+    );
+    expect(copy?.headers.get("cache-control")).toBe("public, max-age=600");
+    expect(copy?.headers.get("x-origin-cache-control")).toBe("private, no-store");
+  });
+  test("worker.ts serves them from the copy before the app", () => {
+    const worker = readFileSync("worker.ts", "utf8");
+    expect(worker.indexOf("fileCacheable(request)")).toBeGreaterThan(-1);
+    expect(worker.indexOf("fileCacheable(request)")).toBeLessThan(worker.indexOf("checkRoute("));
   });
 });

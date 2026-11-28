@@ -22,7 +22,15 @@ import { drizzle } from "drizzle-orm/d1";
 import { runWithCloudflareRequestContext } from "open-next-init";
 import handler from "open-next-worker";
 import * as schema from "./src/db/schema";
-import { edgeCacheable, EDGE_TTL, fromEdgeCopy, toEdgeCopy } from "./src/lib/edge-cache";
+import {
+  edgeCacheable,
+  EDGE_TTL,
+  FILE_TTL,
+  fileCacheable,
+  fromEdgeCopy,
+  toEdgeCopy,
+  toFileCopy,
+} from "./src/lib/edge-cache";
 import { finishEvenIfCancelled } from "./src/lib/finish-request";
 import { logger } from "./src/lib/logger";
 import { serveMedia } from "./src/lib/media/serve";
@@ -121,6 +129,16 @@ export default {
       if (cached) return cached;
       const response = await serveMedia(env.MEDIA, url.pathname.slice(7), request);
       if (response.status === 200) ctx.waitUntil(cache.put(request, response.clone()));
+      return response;
+    }
+    // sitemap.xml / robots.txt: built from D1 per request, so served from a data-centre copy.
+    if (fileCacheable(request)) {
+      const key = new Request(request.url, { method: "GET" });
+      const hit = await cache.match(key);
+      if (hit) return fromEdgeCopy(hit);
+      const response = await finishEvenIfCancelled(ctx, app.fetch(withHost(request), env, ctx));
+      const copy = toFileCopy(response, FILE_TTL);
+      if (copy) ctx.waitUntil(cache.put(key, copy));
       return response;
     }
     // Unknown public URLs (bots, typos, removed pages): the shared 404 page, no new render.

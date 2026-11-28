@@ -100,9 +100,10 @@ test fails after the switch, it prints the rollback command
 switches all traffic first and only then checks, so a failure there means rolling back.
 
 Why: a new version starts with an empty page cache, and a burst of first renders on the Free
-plan (each 60–210 ms of CPU) can get isolates stopped (Error 1102) and leave them answering 500
-for the pages they were rendering (2026-11-27, version 70bc22ea). Warming before the switch means
-visitors only ever get cached pages.
+plan (each 40–330 ms of CPU) can get a request stopped (Error 1102). Warming before the switch
+means visitors only ever get cached pages. A stopped render used to leave its page answering 500
+in that isolate for every later request (2026-11-27, version 70bc22ea) — fixed by the bundle
+patch below.
 
 **Production resources**
 
@@ -293,7 +294,8 @@ more than that, so visitors should only ever get cached pages.
   Durable Object failed and stale pages never refreshed.
 - **After a deploy** the cache is empty: `bun run deploy` runs `bun run cache:warm`, which visits
   every page from the sitemap one at a time, a second apart, reads each response to the end,
-  and retries a 5xx once after 8 s. Pages that still fail are listed, but the script exits 0 (`--strict` makes it exit 1).
+  and retries a 5xx once after 8 s. Any page that still fails makes it exit 1 (with the body of
+  the first failure).
 - **Unknown URLs:** `worker.ts` answers them with a static HTML file per language
   (`public/errors/404.html`, `404-en.html`, status 404) — a path no route can match, or a
   news/event/album address whose slug (or old slug) isn't in D1 (`src/lib/not-found-route.ts`).
@@ -309,6 +311,14 @@ more than that, so visitors should only ever get cached pages.
   reason every app response is finished with `waitUntil` even when the visitor leaves
   (`src/lib/finish-request.ts`). `e2e/cold-cache.e2e.ts` checks the first request after a cache
   purge for every public page.
+- **No render shared between requests** (`scripts/patch-bundle.ts`, run by `bun run cf:build`,
+  so preview, upload, release and deploy ship the same bundle): Next.js' ResponseCache let every
+  request for a page wait for the render another request had started. When Cloudflare stopped
+  that request (Error 1102), its render never settled and the page answered an empty 500 for
+  every later request of that isolate — the production-only outage of 2026-11-27 (detail pages,
+  `/en`, `/sign-in`). The patch makes each request render (or read the cache) itself; the build
+  fails if Next.js changes and the patch no longer applies. Tested with Next's own ResponseCache
+  in `tests/bundle-patch.test.ts`. Re-check after every Next.js upgrade.
 - **Account areas** (`/admin`, `/me`, signed-in `/join`, `/search`) are rendered per request. The
   proxy runs only there and decides per request; `/join` for signed-out visitors (the same view
   for everyone) and the `/sign-in` shell (Clerk runs in the browser) are cached. The data-centre
