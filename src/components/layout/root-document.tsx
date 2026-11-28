@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { fontBody, fontDisplay } from "@/app/fonts";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { MEMBER_HINT_SCRIPT } from "@/lib/auth/role-hint";
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,6 +16,12 @@ export function RootDocument({ lang, children }: { lang: "mn" | "en"; children: 
       suppressHydrationWarning
       className={cn(fontDisplay.variable, fontBody.variable, "h-full antialiased")}
     >
+      {/* App Router root layout: a plain <head> is the documented way (no next/head). */}
+      {/* eslint-disable-next-line @next/next/no-head-element */}
+      <head>
+        {/* Before the first paint: hides «Гишүүн болох» for members (no layout shift). */}
+        <script dangerouslySetInnerHTML={{ __html: MEMBER_HINT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col overflow-x-clip">
         <ThemeProvider>{children}</ThemeProvider>
       </body>

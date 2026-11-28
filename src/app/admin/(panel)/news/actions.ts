@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { news } from "@/db/schema";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { diffFields, logActivity } from "@/lib/admin/activity";
-import { revalidatePublic } from "@/lib/admin/revalidate";
+import { revalidatePublicItem } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 import { recordSlugRename } from "@/lib/data/redirects";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
@@ -51,6 +51,7 @@ export async function saveNews(
   let savedId = id;
   try {
     const user = await assertAdmin();
+    let oldSlug: string | null = null;
     const parsed = parseForm(data);
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -78,6 +79,7 @@ export async function saveNews(
         .returning({ id: news.id });
       if (!res.length) return { ok: false, message: "Мэдээ олдсонгүй." };
       if (prev?.slug) await recordSlugRename("news", prev.slug, slug);
+      oldSlug = prev?.slug ?? null;
       if (prev?.coverUrl && prev.coverUrl !== input.coverUrl)
         await deleteMediaUrls([prev.coverUrl]);
       await logActivity(user, "news.update", {
@@ -109,7 +111,7 @@ export async function saveNews(
         summary: `«${input.title}» мэдээ нэмэв`,
       });
     }
-    revalidatePublic("news");
+    revalidatePublicItem("news", [`/news/${slug}`, oldSlug && `/news/${oldSlug}`]);
   } catch (err) {
     return actionError(err);
   }
@@ -123,7 +125,7 @@ export async function deleteNews(id: string): Promise<ActionState> {
     const [row] = await db
       .delete(news)
       .where(eq(news.id, id))
-      .returning({ title: news.title, coverUrl: news.coverUrl });
+      .returning({ title: news.title, coverUrl: news.coverUrl, slug: news.slug });
     if (!row) return { ok: false, message: "Мэдээ олдсонгүй." };
     await deleteMediaUrls([row.coverUrl]);
     await logActivity(user, "news.delete", {
@@ -131,7 +133,7 @@ export async function deleteNews(id: string): Promise<ActionState> {
       id,
       summary: `«${row.title}» мэдээг устгав`,
     });
-    revalidatePublic("news");
+    revalidatePublicItem("news", [`/news/${row.slug}`]);
     return { ok: true, message: "Мэдээ устгагдлаа." };
   } catch (err) {
     return actionError(err);

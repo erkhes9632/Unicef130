@@ -7,7 +7,7 @@ import { getDb } from "@/db";
 import { eventSignups, events } from "@/db/schema";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { diffFields, logActivity } from "@/lib/admin/activity";
-import { revalidatePublic } from "@/lib/admin/revalidate";
+import { revalidatePublicItem } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 import { recordSlugRename } from "@/lib/data/redirects";
 import { parseUbInputValue } from "@/lib/dates/ub-input";
@@ -75,6 +75,7 @@ export async function saveEvent(
   let savedId = id;
   try {
     const user = await assertAdmin();
+    let oldSlug: string | null = null;
     const parsed = parseForm(data);
     if (!parsed.success) return validationError(parsed.error);
     const input = parsed.data;
@@ -98,6 +99,7 @@ export async function saveEvent(
         .returning({ id: events.id });
       if (!res.length) return { ok: false, message: "Арга хэмжээ олдсонгүй." };
       if (prev?.slug) await recordSlugRename("events", prev.slug, slug);
+      oldSlug = prev?.slug ?? null;
       if (prev?.coverUrl && prev.coverUrl !== input.coverUrl)
         await deleteMediaUrls([prev.coverUrl]);
       await logActivity(user, "event.update", {
@@ -131,7 +133,7 @@ export async function saveEvent(
         summary: `«${input.title}» арга хэмжээ нэмэв`,
       });
     }
-    revalidatePublic("events");
+    revalidatePublicItem("events", [`/events/${slug}`, oldSlug && `/events/${oldSlug}`]);
   } catch (err) {
     return actionError(err);
   }
@@ -145,7 +147,7 @@ export async function deleteEvent(id: string): Promise<ActionState> {
     const [row] = await db
       .delete(events)
       .where(eq(events.id, id))
-      .returning({ title: events.title, coverUrl: events.coverUrl });
+      .returning({ title: events.title, coverUrl: events.coverUrl, slug: events.slug });
     if (!row) return { ok: false, message: "Арга хэмжээ олдсонгүй." };
     await deleteMediaUrls([row.coverUrl]);
     await logActivity(user, "event.delete", {
@@ -153,7 +155,7 @@ export async function deleteEvent(id: string): Promise<ActionState> {
       id,
       summary: `«${row.title}» арга хэмжээг устгав`,
     });
-    revalidatePublic("events");
+    revalidatePublicItem("events", [`/events/${row.slug}`]);
     return { ok: true, message: "Арга хэмжээ устгагдлаа." };
   } catch (err) {
     return actionError(err);

@@ -1,7 +1,6 @@
 "use client";
 
 import { FileText, LogOut, ShieldCheck, UserRound } from "lucide-react";
-import NextLink from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -58,15 +57,16 @@ export function AccountDropdown({
               {localized ? (
                 <Link href={href}>{body}</Link>
               ) : (
-                <NextLink href={href}>{body}</NextLink>
+                // /admin: a full page load for the account-area CSP (lib/auth/account-paths.ts).
+                <a href={href}>{body}</a>
               )}
             </DropdownMenuItem>
           );
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          {/* No prefetch: the page signs the visitor out as soon as it opens. */}
-          <Link href={signOut.href} prefetch={false}>
+          {/* A full page load (account area): it signs the visitor out as soon as it opens. */}
+          <Link href={signOut.href}>
             <LogOut aria-hidden="true" /> {signOut.label}
           </Link>
         </DropdownMenuItem>

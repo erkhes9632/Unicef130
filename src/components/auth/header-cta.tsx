@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowRight, ShieldCheck, UserRound } from "lucide-react";
-import NextLink from "next/link";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import type { RoleHint } from "@/lib/auth/role-hint";
@@ -25,10 +24,12 @@ export function HeaderCta({ labels, className }: { labels: CtaLabels; className?
   if (kind === "admin")
     return (
       <Button asChild variant="outline" className={className}>
-        <NextLink href="/admin" prefetch={false}>
+        {/* A full page load: /admin needs the account-area CSP (see lib/auth/account-paths.ts). */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional full page load */}
+        <a href="/admin">
           <ShieldCheck aria-hidden="true" />
           {labels.admin}
-        </NextLink>
+        </a>
       </Button>
     );
   return (

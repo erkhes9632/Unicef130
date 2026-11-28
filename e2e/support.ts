@@ -45,3 +45,13 @@ export function localSql(sql: string) {
     stdio: "pipe",
   });
 }
+
+/** Read-only SQL against the LOCAL D1: the result rows. */
+export function localQuery<T = Record<string, unknown>>(sql: string): T[] {
+  const out = execFileSync(
+    "bunx",
+    ["wrangler", "d1", "execute", "DB", "--local", "--json", "--command", sql],
+    { stdio: ["ignore", "pipe", "pipe"] },
+  ).toString();
+  return (JSON.parse(out) as { results: T[] }[])[0]?.results ?? [];
+}

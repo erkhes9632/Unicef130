@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { readHeaderSession } from "@/lib/auth/role-hint";
+import { readHeaderSession, syncMemberHint } from "@/lib/auth/role-hint";
 
 const EVENT = "club-role-hint";
 const subscribe = (onChange: () => void) => {
@@ -22,6 +22,7 @@ export function useHeaderSession() {
     () => signedOut,
   );
   const session = JSON.parse(raw) as ReturnType<typeof readHeaderSession>;
+  useEffect(() => syncMemberHint(session.role, session.signedIn), [session.role, session.signedIn]);
   useEffect(() => {
     if (!session.signedIn || session.role || refreshing) return;
     if (sessionStorage.getItem(EVENT)) return;

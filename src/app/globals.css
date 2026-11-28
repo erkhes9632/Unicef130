@@ -212,6 +212,12 @@
   color-scheme: dark;
 }
 
+/* «Гишүүн болох» buttons are hidden for signed-in members before the first paint
+   (MEMBER_HINT_SCRIPT in src/lib/auth/role-hint.ts): no layout shift. */
+html[data-member-hint] .hide-for-members {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

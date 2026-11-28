@@ -1,6 +1,6 @@
 import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { revalidateTag } from "next/cache";
+import { refresh, revalidateTag } from "next/cache";
 import { after } from "next/server";
 import { logger } from "@/lib/logger";
 import { getSiteUrl } from "@/lib/seo";
@@ -38,17 +38,75 @@ export type EditedContent = keyof typeof AFFECTS;
 const sectionTag = (s: Section) =>
   s === "home" ? "_N_T_/[locale]/page" : `_N_T_/[locale]/${s}/layout`;
 
+const SECTION_PATH: Record<Section, string> = {
+  home: "/",
+  news: "/news",
+  events: "/events",
+  gallery: "/gallery",
+  members: "/members",
+  impact: "/impact",
+  about: "/about",
+  support: "/support",
+  join: "/join",
+};
+const ALL_SECTIONS = Object.keys(SECTION_PATH) as Section[];
+
+/** A public path in both languages (mn without a prefix, en under /en). */
+export function bothLocales(path: string): string[] {
+  return [path, `/en${path === "/" ? "" : path}`];
+}
+
 /**
  * Marks the public pages that show `content` as stale. Without arguments every public page is
  * marked (site settings, FAQ and enrollment change the header, footer or banner of every page).
+ * The data-centre copies of those sections (worker.ts, EDGE_TTL) are dropped too, so the next
+ * visit reads the OpenNext cache and starts the re-render: the change shows within seconds
+ * instead of after the copy's two minutes. `detailPaths`: item pages to drop as well
+ * (e.g. `/news/<old slug>` and `/news/<new slug>`).
  */
 export function revalidatePublic(...content: EditedContent[]) {
-  if (content.length === 0) {
-    revalidateTag(PUBLIC_PAGES_TAG, "max");
-    return;
+  revalidateSections(content, []);
+}
+
+/** `revalidatePublic(content)` plus the item's own pages (both languages). */
+export function revalidatePublicItem(content: EditedContent, detailPaths: (string | null)[]) {
+  revalidateSections(
+    [content],
+    detailPaths.filter((p): p is string => !!p),
+  );
+}
+
+function revalidateSections(content: EditedContent[], detailPaths: string[]) {
+  const sections = content.length ? [...new Set(content.flatMap((c) => AFFECTS[c]))] : ALL_SECTIONS;
+  if (content.length === 0) revalidateTag(PUBLIC_PAGES_TAG, "max");
+  else for (const s of sections) revalidateTag(sectionTag(s), "max");
+  dropEdgeCopies([...sections.map((s) => SECTION_PATH[s]), ...new Set(detailPaths)]);
+  // "max" is stale-while-revalidate and no longer refreshes the admin page that called the
+  // action (Next 16): without this, a deleted row or a moved photo stayed on screen.
+  try {
+    refresh();
+  } catch {
+    // Not inside a Server Action (tests, scripts).
   }
-  const sections = new Set(content.flatMap((c) => AFFECTS[c]));
-  for (const s of sections) revalidateTag(sectionTag(s), "max");
+}
+
+/** Deletes the data-centre copies of `paths` (mn + en) after the response. Never fatal. */
+function dropEdgeCopies(paths: string[]) {
+  try {
+    after(async () => {
+      try {
+        const origin = await getSiteUrl();
+        const cache = (caches as unknown as { default: Cache }).default;
+        await Promise.all(
+          paths.flatMap(bothLocales).map((p) => cache.delete(new Request(`${origin}${p}`))),
+        );
+      } catch (err) {
+        logger.warn("revalidate", "dropping data-centre copies failed", err);
+      }
+    });
+  } catch {
+    // Outside a request (scripts, tests): there is no data-centre copy to drop.
+  }
 }
 
 /**
@@ -68,7 +126,7 @@ export function refreshPublicPages(content: EditedContent, paths: string[]) {
       ]);
       const cache = (caches as unknown as { default: Cache }).default;
       for (const path of paths)
-        for (const url of [`${origin}${path}`, `${origin}/en${path === "/" ? "" : path}`]) {
+        for (const url of bothLocales(path).map((p) => `${origin}${p}`)) {
           await cache.delete(new Request(url));
           const res = await env.WORKER_SELF_REFERENCE?.fetch(url, {
             // The background re-render message needs the host (see worker.ts → withHost).

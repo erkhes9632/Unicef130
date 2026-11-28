@@ -7,7 +7,7 @@ import { getDb } from "@/db";
 import { albums, images } from "@/db/schema";
 import { actionError, fd, validationError, type ActionState } from "@/lib/admin/action-state";
 import { logActivity } from "@/lib/admin/activity";
-import { revalidatePublic } from "@/lib/admin/revalidate";
+import { revalidatePublic, revalidatePublicItem } from "@/lib/admin/revalidate";
 import { assertAdmin } from "@/lib/auth/session";
 import { recordSlugRename } from "@/lib/data/redirects";
 import { deleteMediaUrls, isOwnMediaUrl } from "@/lib/media/server";
@@ -22,6 +22,7 @@ export async function saveAlbum(
   let savedId = id;
   try {
     const user = await assertAdmin();
+    let oldSlug: string | null = null;
     const parsed = albumInputSchema.safeParse({
       title: fd.str(data, "title"),
       titleEn: fd.str(data, "titleEn"),
@@ -57,6 +58,7 @@ export async function saveAlbum(
       if (!res.length) return { ok: false, message: "Цомог олдсонгүй." };
       // The old address keeps working: /gallery/<old> → 308 → /gallery/<new> (mn and en).
       if (prev?.slug) await recordSlugRename("albums", prev.slug, slug);
+      oldSlug = prev?.slug ?? null;
       await logActivity(user, "album.update", {
         type: "album",
         id,
@@ -74,7 +76,7 @@ export async function saveAlbum(
         summary: `«${input.title}» цомог нэмэв`,
       });
     }
-    revalidatePublic("albums");
+    revalidatePublicItem("albums", [`/gallery/${slug}`, oldSlug && `/gallery/${oldSlug}`]);
   } catch (err) {
     return actionError(err);
   }
@@ -92,7 +94,7 @@ export async function deleteAlbum(id: string): Promise<ActionState> {
     const [row] = await db
       .delete(albums)
       .where(eq(albums.id, id))
-      .returning({ title: albums.title, coverUrl: albums.coverUrl });
+      .returning({ title: albums.title, coverUrl: albums.coverUrl, slug: albums.slug });
     if (!row) return { ok: false, message: "Цомог олдсонгүй." };
     await deleteMediaUrls([row.coverUrl, ...imgs.flatMap((i) => [i.url, i.thumbUrl])]);
     await logActivity(user, "album.delete", {
@@ -100,7 +102,7 @@ export async function deleteAlbum(id: string): Promise<ActionState> {
       id,
       summary: `«${row.title}» цомгийг устгав`,
     });
-    revalidatePublic("albums");
+    revalidatePublicItem("albums", [`/gallery/${row.slug}`]);
     return { ok: true, message: "Цомог устгагдлаа." };
   } catch (err) {
     return actionError(err);

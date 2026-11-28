@@ -7,11 +7,16 @@
  * Any 5xx in the second round (or twice in a row for the same address) fails with exit 1, the
  * body of the first failure and the command to roll back. GET requests only.
  *
+ * Then a signed-out browser check (scripts/lib/clerk-check.ts): the Clerk sign-in card must
+ * appear within 10 s on /sign-in, /en/sign-in, after clicking «Нэвтрэх» on / and /en, and on
+ * /join (+ en). The HTML can be fine while clerk-js is blocked in the browser (2026-11-28).
+ *
  *   bun run smoke                            # SITE_URL from wrangler.jsonc
  *   bun run smoke -- --url http://localhost:8787
  *   bun run smoke -- --version <id>          # an uploaded version at 0 % (release check)
  */
 import { parseArgs } from "node:util";
+import { checkClerkWidgets } from "./lib/clerk-check";
 import {
   describeFailure,
   publicPaths,
@@ -65,4 +70,24 @@ if (failed.length) {
   );
   process.exit(1);
 }
-console.log("✓ Smoke test passed: no 5xx on any public page, /sign-in or /join (mn + en).");
+console.log("✓ No 5xx on any public page, /sign-in or /join (mn + en).");
+
+const clerk = await checkClerkWidgets(base, headers);
+if (clerk.length) {
+  console.error(
+    [
+      "",
+      "=".repeat(72),
+      `✘ smoke test FAILED on ${base}: the Clerk sign-in card did not appear (signed out).`,
+      "=".repeat(72),
+      ...clerk.map((f) => `  ${f}`),
+      "",
+      pinned
+        ? `Version ${values.version} is NOT live: visitors were not affected.`
+        : "If this version was just released, roll back now (`bun run release` prints the command).",
+      "=".repeat(72),
+    ].join("\n"),
+  );
+  process.exit(1);
+}
+console.log("✓ Smoke test passed: no 5xx, and the Clerk sign-in card appears (signed out).");

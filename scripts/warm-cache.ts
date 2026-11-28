@@ -12,6 +12,12 @@
  *   bun run cache:warm                       # SITE_URL from wrangler.jsonc
  *   bun run cache:warm -- --url http://localhost:8787
  *   bun run cache:warm -- --version <id>     # an uploaded version at 0 % (release pre-warm)
+ *   bun run cache:warm -- --pause 12         # seconds between pages (default 1)
+ *
+ * Pacing: the Free plan tolerates first renders over 10 ms only up to a burst budget (about
+ * 30–50 renders), then stops every request over 10 ms until it refills over the next minutes
+ * (seen 2026-11-27/28: `exceededCpu` at exactly 10 ms on every render after ~35). `bun run
+ * release` therefore warms with `--pause 12`, and a 5xx is retried after 30 s and 60 s.
  */
 import { parseArgs } from "node:util";
 import {
@@ -25,7 +31,11 @@ import {
 
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
-  options: { url: { type: "string" }, version: { type: "string" } },
+  options: {
+    url: { type: "string" },
+    version: { type: "string" },
+    pause: { type: "string" },
+  },
 });
 const base = (values.url ?? siteConfig().siteUrl).replace(/\/+$/, "");
 // --version <id>: check an uploaded version that is not live yet (release pre-warm).
@@ -33,21 +43,25 @@ const headers = versionHeaders(values.version);
 const pinned = !!values.version;
 if (!base) throw new Error("No site URL: pass --url");
 
+const pauseMs = Math.max(0, Number(values.pause ?? 1)) * 1000;
+const RETRY_AFTER_MS = [30_000, 60_000];
+
 const paths = await publicPaths(base, headers);
 const failed: Failure[] = [];
 for (const path of paths) {
   let result = await visit(base, path, headers);
-  if (result.status === 0 || result.status >= 500) {
-    // A render stopped for CPU can leave its isolate unusable for a moment: give it time.
-    await Bun.sleep(8000);
-    const retry = await visit(base, path, headers);
-    console.log(`${result.status || "ERR"} ${path} → retry ${retry.status || "ERR"}`);
-    result = retry;
-  } else console.log(`${result.status} ${path}`);
+  const tries = [`${result.status || "ERR"}`];
+  for (const wait of RETRY_AFTER_MS) {
+    if (result.status !== 0 && result.status < 500) break;
+    // Stopped for CPU (1102): the budget refills over time; a later try usually renders.
+    await Bun.sleep(wait);
+    result = await visit(base, path, headers);
+    tries.push(`${result.status || "ERR"}`);
+  }
+  console.log(`${tries.join(" → retry ")} ${path}`);
   if (result.status === 0 || result.status >= 500) failed.push(result);
-  // One render at a time, spaced out: on the Free plan every first render is far over 10 ms of
-  // CPU, and a steady stream of them in one isolate is what gets stopped (Error 1102).
-  await Bun.sleep(1000);
+  // One render at a time, spaced out (see Pacing above).
+  await Bun.sleep(pauseMs);
 }
 
 console.log(`\n${paths.length} pages warmed.`);

@@ -2,7 +2,6 @@
 
 import { ArrowRight, CalendarDays, CalendarX2, List } from "lucide-react";
 import { useSyncExternalStore } from "react";
-import { useHeaderSession } from "@/components/auth/use-header-session";
 import { EmptyState } from "@/components/common/empty-state";
 import { pickYear, YearChips, YearGroups, type YearLabels } from "@/components/common/year-groups";
 import { Button } from "@/components/ui/button";
@@ -85,8 +84,6 @@ export function EventsBrowser({
 }) {
   const { query, setQuery } = useUrlQuery();
   // "Become a member" only for visitors and applicants (display hint; cached page).
-  const { role } = useHeaderSession();
-  const canJoin = role !== "member" && role !== "admin";
   const view = query.get("view") === "calendar" ? "calendar" : "list";
   const scope = query.get("tab") === "past" ? "past" : "upcoming";
   const now = useSyncExternalStore(noSubscribe, clientNow, () => renderedAt);
@@ -163,11 +160,10 @@ export function EventsBrowser({
           description={labels.emptyUpcomingHint}
           className="py-8"
         >
-          {canJoin && (
-            <Button asChild>
-              <Link href="/join">{labels.emptyUpcomingCta}</Link>
-            </Button>
-          )}
+          {/* Hidden for members by CSS before paint (no layout shift), see role-hint.ts. */}
+          <Button asChild className="hide-for-members">
+            <Link href="/join">{labels.emptyUpcomingCta}</Link>
+          </Button>
         </EmptyState>
         <div>
           <h2 className="mb-5 text-2xl font-extrabold">{labels.pastTitle}</h2>

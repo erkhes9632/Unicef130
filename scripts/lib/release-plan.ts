@@ -38,7 +38,8 @@ export function releaseSteps(live: string, next: string) {
   ];
   return {
     pin: deploy(`${live}@100% ${next}@0%`, `release ${next.slice(0, 8)}: pre-warm at 0%`),
-    warm: ["bun", "scripts/warm-cache.ts", "--version", next],
+    // Paced: the Free plan's CPU burst budget refills between pages (scripts/warm-cache.ts).
+    warm: ["bun", "scripts/warm-cache.ts", "--version", next, "--pause", "12"],
     check: ["bun", "scripts/smoke.ts", "--version", next],
     unpin: deploy(
       `${live}@100%`,

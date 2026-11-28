@@ -288,7 +288,7 @@ more than that, so visitors should only ever get cached pages.
   home, gallery, events, news; see `src/lib/admin/revalidate.ts`); site settings, FAQ and
   enrollment mark every page. In production a re-render costs 40–280 ms of CPU, so the queue
   runs one at a time (`NEXT_CACHE_DO_QUEUE_MAX_REVALIDATION=1`). The data-centre copy lives two
-  minutes and only fresh (`HIT`) pages are copied.
+  minutes and only fresh (`HIT`) pages are copied; an admin save drops the affected copies.
 - **Host header:** every request the Worker passes to the app carries a Host (`withHost` in
   `worker.ts`); OpenNext puts it into the background re-render message, and without it the
   Durable Object failed and stale pages never refreshed.
@@ -319,6 +319,14 @@ more than that, so visitors should only ever get cached pages.
   `/en`, `/sign-in`). The patch makes each request render (or read the cache) itself; the build
   fails if Next.js changes and the patch no longer applies. Tested with Next's own ResponseCache
   in `tests/bundle-patch.test.ts`. Re-check after every Next.js upgrade.
+- **Links into account areas** are full page loads (`Link` in `src/i18n/navigation.ts` turns
+  them into a plain `<a>`): the proxy's CSP that lets Clerk load only arrives with a full page,
+  and a client-side navigation from a public page left /sign-in without its card (2026-11-28).
+  `bun run smoke` checks the card in a real browser (signed out, within 10 s): /sign-in,
+  /en/sign-in, «Нэвтрэх» clicked on / and /en, and /join.
+- **Admin edits show within seconds:** `revalidatePublic` / `revalidatePublicItem` also drop
+  the data-centre copies of the affected pages (both languages, old and new slug) in the admin's
+  data centre, and refresh the admin page itself.
 - **Account areas** (`/admin`, `/me`, signed-in `/join`, `/search`) are rendered per request. The
   proxy runs only there and decides per request; `/join` for signed-out visitors (the same view
   for everyone) and the `/sign-in` shell (Clerk runs in the browser) are cached. The data-centre

@@ -40,6 +40,27 @@ describe("cheap 404s (worker.ts)", () => {
     expect(checkRoute("/about/x").kind).toBe("missing");
   });
 
+  test("file-like addresses: only the app's own files reach the app (bots get the static 404)", () => {
+    for (const p of ["/sitemap.xml", "/robots.txt", "/manifest.webmanifest"])
+      expect([p, checkRoute(p).kind]).toEqual([p, "app"]);
+    for (const p of [
+      "/wp-login.php",
+      "/wp-admin/install.php",
+      "/xmlrpc.php",
+      "/.env",
+      "/.git/config",
+      "/config.json",
+      "/news/x.php",
+      "/en/wp-login.php",
+      "/sitemap.xml.gz",
+    ])
+      expect([p, checkRoute(p).kind]).toEqual([p, "missing"]);
+    expect(checkRoute("/en/a.php")).toEqual({ kind: "missing", locale: "en" });
+    // Next's own files and media keep going to the app.
+    expect(checkRoute("/_next/static/chunks/a.js").kind).toBe("app");
+    expect(checkRoute("/media/content/a.webp").kind).toBe("app");
+  });
+
   test("detail pages are checked against D1 by slug", () => {
     expect(checkRoute("/news/nope")).toEqual({
       kind: "slug",

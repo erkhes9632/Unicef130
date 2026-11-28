@@ -32,7 +32,7 @@ describe("release", () => {
     const s = releaseSteps(LIVE, NEXT);
     expect(s.pin).toContain(`${LIVE}@100%`);
     expect(s.pin).toContain(`${NEXT}@0%`);
-    expect(s.warm).toEqual(["bun", "scripts/warm-cache.ts", "--version", NEXT]);
+    expect(s.warm).toEqual(["bun", "scripts/warm-cache.ts", "--version", NEXT, "--pause", "12"]);
     expect(s.check).toEqual(["bun", "scripts/smoke.ts", "--version", NEXT]);
     expect(s.unpin).toContain(`${LIVE}@100%`);
     expect(s.unpin.join(" ")).not.toContain(`${NEXT}@`);

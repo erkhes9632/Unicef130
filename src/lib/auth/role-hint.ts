@@ -19,6 +19,20 @@ export function readHeaderSession(cookie: string): { signedIn: boolean; role: Ro
   };
 }
 
+/**
+ * Runs in <head> before the first paint of every page: marks `<html data-member-hint>` for
+ * signed-in members and admins (same rule as `readHeaderSession`), so «Гишүүн болох» buttons
+ * marked `hide-for-members` are hidden by CSS before they are drawn — removing them after
+ * hydration moved the page up by their height (layout shift, 2026-11-28).
+ */
+export const MEMBER_HINT_SCRIPT = `try{var c=document.cookie;if(/(?:^|;\\s*)__client_uat(?:_[\\w-]+)?=[1-9]\\d*/.test(c)&&/(?:^|;\\s*)${ROLE_HINT_COOKIE}=(member|admin)(?:;|$)/.test(c))document.documentElement.setAttribute("data-member-hint","")}catch(e){}`;
+
+/** Keeps the pre-paint mark in step when the hint changes without a reload. */
+export function syncMemberHint(role: RoleHint | null, signedIn: boolean) {
+  const on = signedIn && (role === "member" || role === "admin");
+  document.documentElement.toggleAttribute("data-member-hint", on);
+}
+
 /** Set-Cookie value for the hint (not HttpOnly: the header script reads it). */
 export function roleHintCookie(role: RoleHint | null, secure: boolean) {
   const attrs = `Path=/; SameSite=Lax${secure ? "; Secure" : ""}`;

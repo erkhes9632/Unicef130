@@ -1,6 +1,6 @@
 import { clerk, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { E2E, findUser } from "./support";
+import { E2E, findUser, localQuery } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -26,6 +26,12 @@ test("applicant: signs up with an e-mail code, applies once, sees the status", a
   await page.waitForURL("**/join", { timeout: 45_000 });
 
   await expect(page.getByText(E2E.applicant)).toBeVisible();
+  // Validation in the browser: an empty form lists what to fix and sends nothing.
+  await page.getByRole("button", { name: "Илгээх" }).click();
+  await expect(page.getByText("Илгээхийн өмнө дараах талбаруудыг шалгана уу:")).toBeVisible();
+  await page.locator("#join-phone").fill("1234");
+  await page.locator("#join-phone").blur();
+  await expect(page.locator("#join-phone")).toHaveAttribute("aria-invalid", "true");
   await page.locator("#join-fullName").fill("Батын Анужин");
   await page.locator("#join-className").selectOption("10А");
   await page.locator("#join-phone").fill("8811 2233");
@@ -34,9 +40,15 @@ test("applicant: signs up with an e-mail code, applies once, sees the status", a
     .fill("Хүүхдийн эрхийн талаар илүү ихийг мэдэж, бусдад туслахыг хүсэж байна.");
   await page.locator("main fieldset button[role=checkbox]").first().click();
   await page.locator("main form > div button[role=checkbox]").last().click();
-  await page.getByRole("button", { name: "Илгээх" }).click();
+  // A double click sends one application (button disabled while sending; one per account).
+  await page.getByRole("button", { name: "Илгээх" }).dblclick();
 
   await expect(page.getByRole("heading", { name: "Хүлээгдэж байна" })).toBeVisible();
+  expect(
+    localQuery(
+      "SELECT id FROM applications WHERE email = 'e2e-applicant+clerk_test@example.com' AND period_id = 'e2e-period'",
+    ),
+  ).toHaveLength(1);
   await page.reload();
   await expect(page.locator("#join-fullName")).toHaveCount(0);
 });
@@ -93,6 +105,20 @@ test("admin approves → the applicant becomes a member", async ({ page }) => {
   await expect
     .poll(async () => (await findUser(E2E.applicant))?.publicMetadata.role)
     .toBe("member");
+  // D1 follows Clerk, and the new member is in the current school year (hidden by default).
+  const clerkId = (await findUser(E2E.applicant))!.id;
+  expect(localQuery(`SELECT role FROM users WHERE id = '${clerkId}'`)).toEqual([
+    { role: "member" },
+  ]);
+  const year = localQuery<{ value: string }>(
+    "SELECT value FROM settings WHERE key = 'schoolYear'",
+  )[0]?.value;
+  const current = year ? (JSON.parse(year) as { current?: string }).current : undefined;
+  expect(
+    localQuery(
+      `SELECT y.school_year, y.show_publicly FROM member_years y JOIN members m ON m.id = y.member_id WHERE m.user_id = '${clerkId}'`,
+    ),
+  ).toContainEqual({ school_year: current || "2026-2027", show_publicly: 0 });
 });
 
 test("member: /join links to /me, which shows the member area", async ({ page }) => {

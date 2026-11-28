@@ -115,7 +115,11 @@ function chain(root = false): unknown {
   });
 }
 mock.module("@/db", () => ({ getDb: async () => chain(true), createDb: () => chain(true) }));
-mock.module("next/cache", () => ({ revalidatePath: () => {}, revalidateTag: () => {} }));
+mock.module("next/cache", () => ({
+  revalidatePath: () => {},
+  revalidateTag: () => {},
+  refresh: () => {},
+}));
 mock.module("next/navigation", () => ({
   redirect: (url: string) => {
     throw Object.assign(new Error("NEXT_REDIRECT"), { digest: `NEXT_REDIRECT;${url}` });

@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowRight, Search, ShieldCheck, UserRound } from "lucide-react";
-import NextLink from "next/link";
 import { useTranslations } from "next-intl";
 import { ctaKind, type CtaLabels } from "@/components/auth/header-cta";
 import { useHeaderSession } from "@/components/auth/use-header-session";
@@ -58,9 +57,11 @@ export function MobileNavDrawer({
         <div className="px-4 pb-2">
           {kind === "admin" ? (
             <Button asChild size="lg" variant="secondary" className="w-full">
-              <NextLink href="/admin" prefetch={false} onClick={close}>
+              {/* Full page load: /admin needs the account-area CSP (lib/auth/account-paths.ts). */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional full page load */}
+              <a href="/admin" onClick={close}>
                 <ShieldCheck aria-hidden="true" /> {labels.admin}
-              </NextLink>
+              </a>
             </Button>
           ) : (
             <Button

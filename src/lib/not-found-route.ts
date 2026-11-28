@@ -41,11 +41,20 @@ const YEAR_SECTIONS = new Set(["impact", "members"]);
 const OPEN_SECTIONS = new Set(["me", "sign-in", "join"]);
 
 const NOT_PAGES = /^\/(?:_next|api|admin|auth|media|brand|cdn-cgi|mn)(?:\/|$)/;
+/**
+ * The only file-like addresses the app answers (src/app/sitemap.ts, robots.ts, manifest.ts).
+ * Files in public/ are served by Workers static assets before the Worker runs, so anything else
+ * with an extension (bots: /wp-login.php, /.env, /xmlrpc.php …) is a 404 — it used to be a
+ * full Next.js render of the not-found page, 20–110 ms of CPU each (2026-11-28).
+ */
+const APP_FILES = new Set(["/sitemap.xml", "/robots.txt", "/manifest.webmanifest"]);
 
 export function checkRoute(pathname: string): RouteCheck {
-  if (NOT_PAGES.test(pathname) || /\.[^/]+$/.test(pathname)) return { kind: "app" };
   const en = pathname === "/en" || pathname.startsWith("/en/");
   const locale = en ? "en" : "mn";
+  if (NOT_PAGES.test(pathname)) return { kind: "app" };
+  if (/(?:^|\/)\.|\.[^/]+$/.test(pathname))
+    return APP_FILES.has(pathname) ? { kind: "app" } : { kind: "missing", locale };
   const parts = (en ? pathname.slice(3) : pathname).split("/").filter(Boolean);
   if (parts.length === 0) return { kind: "app" };
   const [section, second, ...rest] = parts as [string, ...string[]];
